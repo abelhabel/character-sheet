@@ -1,0 +1,72 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <script>
+    class Module {
+      constructor(name) {
+        this.name = name;
+        this.module = '';
+        Module.modules[name] = this;
+      }
+
+      get exports() {
+        return this.module;
+      }
+
+      set exports(n) {
+        this.module = n;
+        Module.loaders.forEach(l => l());
+      }
+
+      static onLoad(files, fn) {
+        var index = -1 + this.loaders.push(
+          () => {
+            var loaded = files.filter(f => {
+              return this.modules[f];
+            });
+            if(loaded.length == files.length) {
+              fn();
+              this.loaders.splice(index, 1);
+            }
+          }
+        )
+      }
+    }
+
+    function require(name) {
+      return Module.modules[name] && Module.modules[name].module || null;
+    }
+    Module.modules = {};
+    Module.loaders = [];
+    Module.onLoad(['seven.js', 'CS.js', 'heroes-like.js'], () => {
+      console.log('all loaded')
+      const CS = require('CS.js');
+      function loadSeven() {
+        const seven = require("seven.js");
+        var pools = {
+          bodyFaculties: 5,
+          mindFaculties: 5
+        };
+        var cs = new CS(seven, document.body, pools);
+        cs.render();
+      }
+
+      function loadHeroes() {
+        const heroes = require("heroes-like.js")
+        var cs = new CS(heroes, document.body);
+        cs.render();
+      }
+
+
+      loadHeroes();
+    })
+
+
+  </script>
+</head>
+<body>
+  <script src='seven.js'></script>
+  <script src='heroes-like.js'></script>
+  <script src='CS.js'></script>
+</body>
+</html>
