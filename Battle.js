@@ -1,6 +1,6 @@
 const PL = require("PositionList2d.js");
 class Battle {
-  constructor(team1, team2, w, h, tw, th, board, order) {
+  constructor(team1, team2, w, h, tw, th, board, order, effects) {
     this.team1 = team1;
     this.team2 = team2;
     this.w = w;
@@ -10,6 +10,9 @@ class Battle {
     this.board = board;
     this.board.width = w * tw;
     this.board.height = h * th;
+    this.effects = effects;
+    this.effects.width = w * tw;
+    this.effects.height = h * th;
     this.order = order;
     this.turnOrder = [];
     this.grid = new PL(w, h);
@@ -21,6 +24,7 @@ class Battle {
   }
 
   setEvents() {
+
     var moved = false;
     var attacked = false;
     var mp = 0;
@@ -52,6 +56,17 @@ class Battle {
         });
       }
     })
+
+    var b = document.createElement('button');
+    b.textContent = 'End Turn';
+    this.endTurnButton = b;
+    b.addEventListener('click', () => {
+      if(this.currentActor.ai) return;
+      mp = 0;
+      this.turnOrder.push(this.currentActor);
+      this.act();
+    })
+    document.body.appendChild(b);
   }
 
   loadSpriteSheets() {
@@ -162,18 +177,21 @@ class Battle {
     })
   }
 
-  playHitAnimation(a) {
+  playHitAnimation(a, b) {
     var counter = 10;
-    var c = this.board.getContext('2d');
+    var c = this.effects.getContext('2d');
+
     var int = setInterval(() => {
+      c.clearRect(a.x * this.tw, a.y * this.th, this.tw, this.th);
+      c.clearRect(b.x * this.tw, b.y * this.th, this.tw, this.th);
       counter -= 1;
       if(counter < 1) {
         return clearInterval(int);
       }
-      c.fillStyle = `rgba(255, 0, 0, ${counter / 10})`;
-      console.log('hitAnimation', c.fillStyle)
-      // c.clearRect(a.x * this.tw, a.y * this.th, this.tw, this.th);
+      c.fillStyle = `rgba(255, 255, 0, ${counter / 10})`;
       c.fillRect(a.x * this.tw, a.y * this.th, this.tw, this.th);
+      c.fillStyle = `rgba(255, 0, 0, ${counter / 10})`;
+      c.fillRect(b.x * this.tw, b.y * this.th, this.tw, this.th);
     }, 50);
   }
 
@@ -246,7 +264,7 @@ class Battle {
   }
 
   attack(a, b) {
-    this.playHitAnimation(b);
+    this.playHitAnimation(a, b);
     this.sounds.attack.play();
     let flanks = this.flanks(b) - 1;
     let flankMultiplier = 1 + (flanks / 5);
@@ -300,7 +318,7 @@ class Battle {
           clearInterval(int);
           resolve();
         }
-      }, 500);
+      }, 300);
 
     })
   }
@@ -329,12 +347,15 @@ class Battle {
     path.splice(a.stats.movement);
     var action = this.inRange(a, t) ? Promise.resolve() : this.walk(a, path);
     action.then(() => {
-      if(this.inRange(a, t)) {
-        this.attack(a, t);
-      }
-      this.turnOrder.push(a);
-      this.render();
-      if(this.turnOrder.length) this.act();
+      setTimeout(() => {
+        if(this.inRange(a, t)) {
+          this.attack(a, t);
+        }
+        this.turnOrder.push(a);
+        this.render();
+        if(this.turnOrder.length) this.act();
+
+      }, 500)
     })
 
   }
@@ -355,22 +376,10 @@ class Battle {
     })
   }
 
-  makeEndTurnButton() {
-    var b = document.createElement('button');
-    b.textContent = 'End Turn';
-    this.endTurnButton = b;
-    b.addEventListener('click', () => {
-      if(this.currentActor.ai) return;
-      this.act();
-    })
-    document.body.appendChild(b);
-  }
-
   start() {
     this.loadSounds();
     this.setTurnOrder();
     this.makeMonsterCards();
-    this.makeEndTurnButton();
     this.loadSpriteSheets()
     .then(images => {
       this.cacheCanvases();

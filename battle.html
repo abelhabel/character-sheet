@@ -44,21 +44,30 @@
       const Battle = require('Battle.js');
       var undead = monsters.filter(m => m.nameAndFamily.family == 'Undead');
       var beasts = monsters.filter(m => m.nameAndFamily.family == 'Beasts');
-      beasts.forEach(a => a.ai = true)
+      // beasts.forEach(a => a.ai = true)
       undead.forEach(a => a.ai = true)
       var w = h = 8;
       h = 10;
       var tw = th = 32;
-      var canvas = document.createElement('canvas');
+      var container = document.createElement('div');
+      container.style.position = 'relative';
+      container.style.height = h * th + "px";
+      var grid = document.createElement('canvas');
+      var effects = document.createElement('canvas');
+      grid.style.position = effects.style.postition = 'absolute';
+      grid.style.left = effects.style.left = '0px';
+      grid.style.top = effects.style.top = '0px';
+      container.appendChild(grid);
+      container.appendChild(effects);
       var initiative = document.createElement('canvas');
-      canvas.style.display = initiative.style.display = 'block';
-      canvas.style.border = initiative.style.border = '1px solid green';
-      canvas.width = canvas.height = w * tw;
+      grid.style.display = initiative.style.display = 'block';
+      grid.style.border = initiative.style.border = '1px solid green';
+      grid.width = grid.height = w * tw;
       initiative.width = (undead.length + beasts.length) * tw;
       initiative.height = th;
-      document.body.appendChild(canvas);
+      document.body.appendChild(container);
       document.body.appendChild(initiative);
-      var battle = new Battle(undead, beasts, w, h, tw, th, canvas, initiative);
+      var battle = new Battle(undead, beasts, w, h, tw, th, grid, initiative, effects);
       battle.start();
     })
   </script>
