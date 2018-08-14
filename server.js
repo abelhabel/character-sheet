@@ -13,7 +13,10 @@ function guid() {
   }
   return s4() + s4() + '-' + s4() + '-' + s4() + '-' + s4() + '-' + s4() + s4() + s4();
 }
-const files = {}
+const files = {
+  'monsters.js': wrap.pre() + require('./monsters.js') + wrap.post('monsters.js')
+}
+// console.log(files['monsters.js'])
 function loadFile(name) {
   if(name.match('.js')) {
     files[name] = wrap.pre() + fs.readFileSync(__dirname + '/' + name) + wrap.post(name);
@@ -23,9 +26,13 @@ function loadFile(name) {
 }
 
 loadFile('CS.js');
+loadFile('PositionList2d.js');
+loadFile('Battle.js');
 loadFile('seven.js');
 loadFile('heroes-like.js');
+loadFile('pathfinding.js');
 loadFile('index.html');
+loadFile('battle.html');
 loadFile('DungeonCrawl_ProjectUtumnoTileset.png');
 const server = http.createServer(function(req, res) {
   var url = new URL('http://home.com' + req.url);
@@ -35,7 +42,12 @@ const server = http.createServer(function(req, res) {
     return res.end(files[name]);
   }
   if(name == 'saveMonster') {
-    req.pipe(fs.createWriteStream('monsters/' + guid() + '.json'));
+    return req.pipe(fs.createWriteStream('monsters/' + guid() + '.json'));
+  }
+  if(name.match('.wav')) {
+    console.log('loading sound', name)
+    res.writeHead(200, {'Content-Type': 'audio/wav'})
+    return fs.createReadStream(name).pipe(res);
   }
 
   res.end();
