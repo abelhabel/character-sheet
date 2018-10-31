@@ -55,10 +55,6 @@ class PositionList2d {
     var dx = x2 - x1;
     var dy = y2 - y1;
     var a = Math.atan2(dy, dx);
-    var xdir = (x2 - x1);
-    if(xdir) xdir = xdir / Math.abs(xdir);
-    var ydir = (y2 - y1);
-    if(ydir) ydir = ydir / Math.abs(ydir);
     var targets = [];
     for(var step = 0; step < l; step++) {
       let x = Math.round(x2 + step * Math.cos(a));
@@ -106,6 +102,19 @@ class PositionList2d {
       if(y < 0 || y > this.h-1) continue;
       for(var x = cx - r; x <= cx + r; x++) {
         if(x < 0 || x > this.w-1) continue;
+        out.push({item: this.get(x, y), x:x, y: y});
+      }
+    }
+    return out;
+  }
+
+  inRadius(cx, cy, r = 1) {
+    var out = [];
+    for(var y = cy - r; y <= cy + r; y++) {
+      if(y < 0 || y > this.h-1) continue;
+      for(var x = cx - r; x <= cx + r; x++) {
+        if(x < 0 || x > this.w-1) continue;
+        if(this.distance(cx, cy, x, y) > r) continue;
         out.push({item: this.get(x, y), x:x, y: y});
       }
     }

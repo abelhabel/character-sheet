@@ -4,8 +4,14 @@ class Battle {
   constructor(team1, team2, w, h, tw, th, board, order, effects) {
     this.team1 = team1;
     this.team2 = team2;
-    this.team1.forEach(m => m.team = 'team1');
-    this.team2.forEach(m => m.team = 'team2');
+    this.team1.forEach(m => {
+      m.team = 'team1';
+      m.battle = this;
+    });
+    this.team2.forEach(m => {
+      m.team = 'team2';
+      m.battle = this;
+    });
     this.w = w;
     this.h = h;
     this.tw = tw;
@@ -29,6 +35,18 @@ class Battle {
     this.sounds = {};
     this.monsterCards = [];
     this.currentActor = null;
+    this.auras = {
+      team1: [],
+      team2: []
+    };
+    [...this.team1, ...this.team2].forEach(m => {
+      m.passiveAbilities.forEach(a => {
+        if((a.stats.shape == 'circle' || a.stats.shape == 'square') && a.stats.targetFamily !== 'self') {
+          this.auras[m.team].push(a);
+        }
+      })
+    })
+    console.log('AURAS', this.auras)
     this.setEvents();
   }
 
@@ -40,7 +58,6 @@ class Battle {
     var actor = null;
     this.inputCanvas.addEventListener('click', (e) => {
       let a = this.currentActor;
-      if(actor != a) mp = a.stats.movement;
       actor = a;
       let x = Math.floor(e.offsetX / this.tw);
       let y = Math.floor(e.offsetY / this.th);
@@ -48,27 +65,26 @@ class Battle {
       if(a.selectedAbility && a.selectedAbility.stats.target == 'ground') {
         t = {x, y};
       }
-      console.log('clicked:', t)
-      if(t) {
-        if(t.team != a.team) {
-          console.log('enemy', this.inRange(a, t))
-          if(this.inRange(a, t)) {
-            this.attack(a, t);
-            mp = 0;
-            this.turnOrder.push(a);
-            this.act();
-          }
-        }
+      var targets = this.abilityTargets(a, a.selectedAbility, x, y);
+
+      console.log('clicked:', a.movesLeft)
+      if(targets.validTargets) {
+        this.attack(a, t);
+        mp = 0;
+        this.turnOrder.push(a);
+        this.act();
       } else
-      if(mp > 0) {
-        var d = currentPath.length - 1;
-        if(d > a.stats.movement) return
+      if(a.movesLeft > 0) {
         var path = this.grid.path(a.x, a.y, x, y);
+        path.shift();
+        console.log('path', path.length, a.movesLeft, a.tilesMoved);
+        if(a.movesLeft < path.length) return;
         var walked = path.length - 1;
+        console.log('walk from click()')
         this.walk(a, path)
         .then(() => {
+          console.log('WALK DONE')
           mp -= walked
-          console.log(mp, a.stats.movement)
         });
       }
     })
@@ -145,7 +161,8 @@ class Battle {
   }
 
   abilityTargets(a, ability, x, y) {
-    var out = {actors: [], tiles: []};
+    var out = {actors: [], tiles: [], validTargets: false};
+    if(!ability) return out;
     if(ability.stats.shape == 'point') {
       out.tiles = [{item: this.grid.get(x, y), x: x, y: y}];
     } else
@@ -155,10 +172,16 @@ class Battle {
     if(ability.stats.shape == 'cone') {
       out.tiles = this.grid.inCone(a.x, a.y, x, y, ability.stats.radius);
     }
-    if(ability.stats.shape == 'area') {
+    if(ability.stats.shape == 'circle') {
+      out.tiles = this.grid.inRadius(x, y, ability.stats.radius);
+    }
+    if(ability.stats.shape == 'square') {
       out.tiles = this.grid.around(x, y, ability.stats.radius);
     }
 
+    if(ability.stats.targetFamily == 'self') {
+      out.actors = a.x == x && a.y == y ? [a] : out.actors;
+    } else
     if(ability.stats.targetFamily == 'allies') {
       out.actors = out.tiles.filter(b => b.item && b.item.team == a.team).map(m => m.item);
     } else
@@ -167,7 +190,12 @@ class Battle {
     } else {
       out.actors = out.tiles.filter(b => b.item).map(m => m.item);
     }
-
+    if(ability.stats.target == 'ground' && out.tiles.length) {
+      out.validTargets = true;
+    } else
+    if(out.actors.length) {
+      out.validTargets = true;
+    }
     return out;
   }
 
@@ -411,12 +439,14 @@ class Battle {
 
   drawActiveEffects() {
     if(!this.currentActor) return;
+    console.log('drawActiveEffects')
     var container = document.getElementById('monster-effects');
     container.innerHTML = '';
     var title = document.createElement('p');
     title.textContent = 'Effects';
     container.appendChild(title);
     this.currentActor.activeEffects.forEach(e => {
+      console.log('ACTIVE EFFECTS', e.ability.bio.name)
       var canvas = document.createElement('canvas');
       let a = e.ability;
       var {w, h} = a.bio.sprite;
@@ -527,7 +557,7 @@ class Battle {
   canWalkTo(a, b) {
     let path = this.grid.path(a.x, a.y, b.x, b.y);
     let length = path.length - 1;
-    return length <= a.stats.movement
+    return length <= a.movesLeft;
   }
 
   findTarget(a) {
@@ -581,7 +611,22 @@ class Battle {
     )
   }
 
-  dealDamage(a, b, d, ability) {
+  trigger(event, target, source, power, ability) {
+    console.log('EVENT:', event);
+    target.triggers.forEach(a => {
+      if(a.bio.activation != event) return;
+      if(a.stats.duration) {
+        var t = a.stats.targetFamily == 'self' ? target : source;
+        t.addEffect(this, a, a.roll());
+        console.log(t.bio.name, 'added effect', a.bio.name)
+      } else {
+        console.log('TRIGGER ability', a.bio.name);
+        this.attack(target, source, a, true);
+      }
+    })
+  }
+
+  dealDamage(a, b, d, ability, fromEffect) {
     var c = 'damaged';
     if(this.isHarmful(b, ability)) {
       b.harm(d);
@@ -590,10 +635,37 @@ class Battle {
       c = 'healed';
     }
     console.log(`${a.bio.name} ${c} ${b.bio.name} ${d} (${ability.stats.element}) (${b.totalHealth})`);
+    if(!fromEffect) {
+      this.trigger('when self is hit', b, a, d, ability);
+      this[b.team].forEach(t => {
+        if(t == b) return;
+        // allied triggers
+        this.trigger('when ally is hit', t, b, d, ability);
+        let dist = this.grid.distance(b.x, b.y, t.x, t.y);
+        if(dist < 4) {
+          this.trigger('when nearby ally is hit', t, b, d, ability);
+        }
+        if(dist < 2) {
+          this.trigger('when adjacent ally is hit', t, b, d, ability);
+        }
+      })
+      this[a.team].forEach(t => {
+        if(t == b) return;
+        // enemy triggers
+        this.trigger('when enemy is hit', t, b, d, ability);
+        let dist = this.grid.distance(b.x, b.y, t.x, t.y);
+        if(dist < 4) {
+          this.trigger('when nearby enemy is hit', t, b, d, ability);
+        }
+        if(dist < 2) {
+          this.trigger('when adjacent enemy is hit', t, b, d, ability);
+        }
+      })
+    }
     if(!b.alive) this.kill(b);
   }
 
-  dealAttackDamage(a, b, ability) {
+  dealAttackDamage(a, b, ability, fromEffect) {
     let df = b.totalStat('defence');
     let at = a.totalStat('attack');
     let stacks = a.stacks;
@@ -601,20 +673,31 @@ class Battle {
     let flankMultiplier = 1 + (flanks / 5);
     let abilityMultiplier = ability.stats.multiplier / 100;
     let roll = this.roll(ability.stats.minPower, ability.stats.maxPower);
-    let multiplier = (at / df);
+    let multiplier = (Math.max(1, at) / Math.max(1, df));
     console.log('stacks', stacks, 'roll', roll, 'multiplier', multiplier, 'flanks', flankMultiplier, 'ability', abilityMultiplier)
     let d = Math.ceil(stacks * multiplier * roll * flankMultiplier * abilityMultiplier);
-    this.dealDamage(a, b, d, ability);
+    this.dealDamage(a, b, d, ability, fromEffect);
+    if(!fromEffect) {
+      this.trigger('when attack hits', a, b, d, ability);
+    }
     return d;
   }
 
-  dealSpellDamage(a, b, ability) {
+  dealSpellDamage(a, b, ability, fromEffect) {
+    let spellResistance = b.totalStat('spellResistance');
+    let resistRoll = this.roll(1, 100);
+    console.log('resist', resistRoll, 'against spellResistance', spellResistance);
+    if(resistRoll < spellResistance) {
+      console.log(b.bio.name, 'resisted spell', ability.bio.name);
+      return 0;
+    }
+    let stacks = a.stacks;
     let abilityMultiplier = ability.stats.multiplier / 100;
     let spellPower = 1 + a.totalStat('spellPower') / 10;
     let roll = this.roll(ability.stats.minPower, ability.stats.maxPower);
-    let d = Math.ceil(roll * spellPower * abilityMultiplier);
-    console.log('spellPower', spellPower, 'abilityMultiplier', abilityMultiplier, 'roll', roll);
-    this.dealDamage(a, b, d, ability);
+    let d = Math.ceil(roll * stacks * spellPower * abilityMultiplier);
+    console.log('stacks', stacks, 'spellPower', spellPower, 'abilityMultiplier', abilityMultiplier, 'roll', roll);
+    this.dealDamage(a, b, d, ability, fromEffect);
     return d;
   }
 
@@ -632,32 +715,36 @@ class Battle {
       console.log('applying effect:', e.ability.bio.name, 'to', a.bio.name);
       e.rounds += 1;
       if(source == 'attack' || source == 'spell') {
-        this.dealDamage(e.source, a, e.power, e.ability);
+        this.dealDamage(e.source, a, e.power, e.ability, true);
       }
     })
   }
 
-  attack(a, b) {
-    var ability = a.selectedAbility;
+  attack(a, b, ability, fromEffect) {
+    ability = ability || a.selectedAbility;
     var targets = this.abilityTargets(a, ability, b.x, b.y);
 
     console.log(`${a.bio.name} picked ability: ${ability.bio.name}`);
+    if(!a.canUseAbility(ability)) {
+      console.log(`${a.bio.name} is out of mana (${a.totalMana}) for ${ability.bio.name} (${ability.stats.resourceCost})`)
+      return;
+    }
     a.useAbility(ability);
     targets.actors.forEach((t, i) => {
       var power = 0;
       if(ability.stats.source == 'attack') {
-        power = this.dealAttackDamage(a, t, ability);
+        power = this.dealAttackDamage(a, t, ability, fromEffect);
       }
       if(ability.stats.source == 'spell') {
-        power = this.dealSpellDamage(a, t, ability);
+        power = this.dealSpellDamage(a, t, ability, fromEffect);
       }
       if(ability.stats.source == 'curse') {
-        power = this.dealAttributeDamage(a, t, ability);
+        power = this.dealAttributeDamage(a, t, ability, fromEffect);
       }
       if(ability.stats.source == 'blessing') {
-        power = this.dealAttributeDamage(a, t, ability);
+        power = this.dealAttributeDamage(a, t, ability, fromEffect);
       }
-      if(ability.stats.duration) {
+      if(ability.stats.duration && power) {
         t.addEffect(a, ability, power);
       }
       this.playHitAnimation(a, t, ability);
@@ -695,14 +782,14 @@ class Battle {
   walk(a, path) {
     return new Promise((resolve, reject) => {
       var int = setInterval(() => {
+        console.log('path', path)
         let p = path.shift();
         if(!p) {
           clearInterval(int);
           return resolve();
         }
         this.grid.remove(a.x, a.y);
-        a.x = p[0];
-        a.y = p[1];
+        a.move(p[0], p[1]);
         this.grid.setItem(a);
         this.render();
         this.sounds.move.play();
@@ -721,8 +808,10 @@ class Battle {
 
   act() {
     var a = this.turnOrder.shift();
-    console.log('Turn start for', a.bio.name, a.alive)
     this.undefend(a);
+    a.resetMovement();
+    console.log('Turn start for', a.bio.name, a.alive)
+    console.log(a.totalStat('movement'))
     this.currentActor = a;
     if(!a.canUseAbility(a.selectedAbility)) a.selectAbility(a.selectedAbility);
     this.applyEffects(a);
@@ -741,7 +830,8 @@ class Battle {
     var p = this.findClosestTile(a, t);
     var path = this.grid.path(a.x, a.y, p.x, p.y);
     path.shift();
-    path.splice(a.stats.movement);
+    path.splice(a.movesLeft);
+    console.log('walk from act()')
     var action = this.inRange(a, t) ? Promise.resolve() : this.walk(a, path);
     action.then(() => {
       setTimeout(() => {

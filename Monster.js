@@ -5,9 +5,67 @@ const nextId = (function() {
   }
 })();
 const abilities = require('abilities.js');
+
+class StatBonus {
+  constructor() {
+    this.blessing = {
+      ability: '',
+      value: 0
+    },
+    this.curse = {
+      ability: '',
+      value: 0
+    };
+  }
+
+  static combine() {
+    var out = new StatBonus();
+    for(let i = 0; i < arguments.length; i++) {
+      if(arguments[i].blessing.ability) {
+        out.add(arguments[i].blessing.ability, arguments[i].blessing.value);
+      }
+      if(arguments[i].curse.ability) {
+        console.log(arguments[i].curse.ability)
+        out.add(arguments[i].curse.ability, arguments[i].curse.value);
+      }
+    }
+    return out;
+  }
+
+  get cursedBy() {
+    if(!this.curse.ability) return '';
+    return this.curse.ability.bio.name;
+  }
+
+  get blessedBy() {
+    if(!this.blessing.ability) return '';
+    return this.blessing.ability.bio.name;
+  }
+
+  get total() {
+    return this.blessing.value - this.curse.value;
+  }
+
+  add(ability, power) {
+    if(ability.stats.source == 'blessing') {
+      let roll = power || ability.roll();
+      if(roll < this.blessing.value) return;
+      this.blessing.value = roll;
+      this.blessing.ability = ability;
+    } else
+    if(ability.stats.source == 'curse') {
+      let roll = ability.roll();
+      if(roll < this.curse.value) return;
+      this.curse.value = roll;
+      this.curse.ability = ability;
+    }
+  }
+}
+
 const Ability = require('Ability.js');
 class Monster {
   constructor(t, stacks) {
+    this.battle = null;
     this.id = nextId();
     this.ai = false;
     this.x = 0;
@@ -38,22 +96,24 @@ class Monster {
     this.initialStacks = stacks || 1;
     this.damageTaken = 0;
     this.manaUsed = 0;
+    this.tilesMoved = 0;
     this.effects = [];
     this.abilities = this.abilities.abilities.map(name => {
       let a = abilities.find(c => c.bio.name == name);
-      return new Ability(a);
+      return new Ability(a, this);
     });
     this.passiveAbilities = [];
     this.activeAbilities = [];
+    this.triggers = [];
     this.spells = [];
     this.attacks = [];
     this.curses = [];
     this.blessings = [];
     this.abilities.forEach(a => {
-      if(a.bio.type == 'passive') {
+      if(a.bio.type == 'passive' && a.bio.activation == 'when selected') {
         this.passiveAbilities.push(a);
       } else
-      if(a.bio.type == 'active') {
+      if(a.bio.type == 'active' && a.bio.activation == 'when selected') {
         this.activeAbilities.push(a);
       }
       if(a.stats.source == 'attack') {
@@ -68,7 +128,25 @@ class Monster {
       if(a.stats.source == 'blessing') {
         this.blessings.push(a);
       }
+      if(a.bio.activation != 'when selected') {
+        this.triggers.push(a);
+      }
     })
+  }
+
+  resetMovement() {
+    this.tilesMoved = 0;
+  }
+
+  get movesLeft() {
+    return this.totalStat('movement') - this.tilesMoved;
+  }
+
+  move(x, y) {
+    console.log('move monster', this.bio.name)
+    this.x = x;
+    this.y = y;
+    this.tilesMoved += 1;
   }
 
   addStack(s) {
@@ -81,18 +159,12 @@ class Monster {
   }
 
   heal(d) {
-    this.damageTaken -= d;
+    this.damageTaken = Math.max(0, this.damageTaken - d);
   }
 
-  hasEffectTag(tag) {
-    return this.effects.find(e => {
-      return ~e.ability.stats.tags.indexOf(tag);
-    })
-  }
-
-
-  addEffect(source, ability, power) {
+  addEffect(source, ability, power, triggered) {
     this.effects.push({
+      triggered: !!triggered,
       power: power,
       rounds: 0,
       source: source,
@@ -100,30 +172,64 @@ class Monster {
     });
   }
 
+  passiveAbilityBonus(name) {
+    var out = new StatBonus();
+    this.passiveAbilities.forEach(a => {
+      if(a.stats.attribute != name) return;
+      let flanks = this.battle.flanks(this);
+      console.log('FLANKS', flanks, a.bio.name, a.bio.condition)
+      if(a.bio.condition == 'flanked' && flanks < 2) {
+        return;
+      }
+      out.add(a);
+    })
+    return out;
+  }
+
+  activeEffectBonus(name) {
+    var out = new StatBonus();
+    this.activeEffects.forEach(e => {
+      if(e.ability.stats.attribute != name) return;
+      out.add(e.ability, e.power);
+    });
+    return out;
+  }
+
+  auraBonus(name) {
+    var out = new StatBonus();
+    this.battle && this.battle.auras[this.team].forEach(a => {
+      if(!a.stats.attribute != name) return;
+      var {source, targetFamily, multiplier, radius} = a.stats;
+      var d = this.battle.grid.distance(this.x, this.y, a.owner.x, a.owner.y);
+      if(a.stats.shape == 'square') {
+        d -= radius * 0.415;
+      }
+      if(d > radius) return;
+      if(a.owner.team == this.team && targetFamily == 'allies' && source == 'blessing') {
+        out.add(a);
+      }
+      if(a.owner.team != this.team && targetFamily == 'enemies' && source == 'curse') {
+        out.add(a);
+      }
+    })
+    return out;
+  }
+
   totalStat(name) {
     var base = this.stats[name] || 1;
     var bonus = this['bonus' + name] || 0;
-    var passive = 0;
-    var curseEffect = 0;
-    var blessingEffect = 0;
-    this.passiveAbilities.forEach(a => {
-      if(a.stats.attribute != name) return;
-      passive = Math.max(a.stats.minPower, passive);
-    })
-    this.activeEffects.filter(e => e.ability.stats.attribute == name)
-    .forEach(e => {
-      console.log('counting effect bonus of', name, e)
-      var {source} = e.ability.stats;
-      if(source == 'blessing') {
-        blessingEffect = Math.max(e.power, blessingEffect);
-      } else
-      if(source == 'curse') {
-        curseEffect = Math.max(e.power, curseEffect);
-      }
-    });
-    var total = base + bonus + passive + blessingEffect - curseEffect;
-    console.log(`Total stat of ${name}: base ${base} + bonus ${bonus} + passive ${passive} + blessingEffect ${blessingEffect} - curseEffect ${curseEffect} = ${total}`)
-    return Math.max(1, total);
+    var passive = this.passiveAbilityBonus(name);
+    var activeEffects = this.activeEffectBonus(name);
+    var auras = this.auraBonus(name);
+    var combined = StatBonus.combine(passive, activeEffects, auras);
+    var total = base + bonus + combined.blessing.value - combined.curse.value;
+    console.log(`Total stat of ${name}:
+      base ${base} +
+      bonus ${bonus} +
+      blessing ${combined.blessing.value} (${combined.blessedBy}) -
+      curse ${combined.curse.value} (${combined.cursedBy})
+      = ${total}`);
+    return Math.max(0, total);
   }
 
   canUseAbility(a) {
@@ -148,11 +254,9 @@ class Monster {
     if(a.stats.resourceType == 'health' && this.totalHealth >= a.stats.resourceCost) {
       this.harm(this.stats.resourceCost);
     }
-    console.log('mana left:', this.totalMana);
   }
 
   useMana(n) {
-    console.log('using mana', n)
     this.manaUsed += n;
   }
 
@@ -162,6 +266,7 @@ class Monster {
 
   get activeEffects() {
     return this.effects.filter(e => {
+      console.log(e.ability.bio.name, e.rounds)
       return e.ability.bio.type == 'passive' ||
       e.rounds < e.ability.stats.duration;
     })

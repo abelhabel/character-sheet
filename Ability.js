@@ -1,12 +1,14 @@
 const abilities = require('abilities.js');
 
 class Ability {
-  constructor(t) {
+  constructor(t, owner) {
+    this.owner = owner;
     this.bio = {
       name: t.bio.name,
       sprite: t.bio.sprite,
       type: t.bio.type,
       activation: t.bio.activation,
+      condition: t.bio.condition
     };
     this.stats = {
       shape: t.stats.shape,
@@ -26,6 +28,11 @@ class Ability {
       attribute: t.stats.attribute,
       mode: t.stats.mode,
     }
+  }
+
+  roll() {
+    let am = this.stats.multiplier / 100;
+    return Math.ceil(am * (this.stats.minPower + Math.random() * (this.stats.maxPower-this.stats.minPower)));
   }
 
   get canvas() {
