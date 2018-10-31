@@ -1,0 +1,14 @@
+setup:
+  addons:
+  config:
+build:
+  languages:
+    - nodejs
+  pre:
+  post:
+  packages:
+  config:
+    NODE_ENV: development
+    FOO: bar
+run:
+  web: node server.js
