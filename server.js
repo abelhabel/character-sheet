@@ -1,7 +1,7 @@
 const http = require("http");
 const URL = require('url').URL;
 const fs = require('fs');
-const PORT = process.env.port || 5000;
+const PORT = process.env.PORT || 5000;
 const wrap = {
   pre: () => '(function (module) {\n',
   post: (name) => `\n})(new Module("${name}"))`
