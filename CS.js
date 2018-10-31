@@ -3,6 +3,10 @@ class CS {
     this.name = tpl.name;
     this.categories = tpl.categories;
 
+    this.library = tpl.library;
+    this.folder = tpl.folder;
+    this.queryCommand = tpl.queryCommand;
+
     this.parent = parent;
     this.state = {};
     this.categories.forEach(c => {
@@ -11,6 +15,11 @@ class CS {
     this.pools = pools || {};
     this.drains = {};
     this.initialPools = {};
+
+    this.inputTags = [];
+    this.selectTags = [];
+    this.incrementTags = [];
+    this.spritesheetTags = [];
     Object.keys(this.pools).forEach(k => {
       this.drains[k] = 0;
       this.initialPools[k] = this.pools[k];
@@ -47,7 +56,8 @@ class CS {
     val.addEventListener('click', (e) => {
       console.log(e)
 
-      let inc = e.shiftKey ? 10 : 1;
+      let inc = item.step || 1;
+      if(e.shiftKey) inc *= 10;
       let nextVal = 0;
       if(e.offsetX < 20) {
         inc *= -1;
@@ -80,7 +90,14 @@ class CS {
 
     o.appendChild(name);
     o.appendChild(val);
-
+    this.incrementTags.push({
+      name: item.name,
+      update: (v) => {
+        console.log('updating increment', item.name, v)
+        currentVal = v;
+        val.textContent = v;
+      }
+    });
     return o;
   }
 
@@ -109,7 +126,13 @@ class CS {
 
     o.appendChild(name);
     o.appendChild(val);
-
+    this.inputTags.push({
+      name: item.name,
+      update: (v) => {
+        currentVal = v;
+        val.value = v;
+      }
+    });
     return o;
   }
 
@@ -118,48 +141,75 @@ class CS {
     o.style.userSelect = 'none';
     var name = document.createElement('div');
     var val = document.createElement('select');
+    if(item.multiple) val.size = item.values.length;
+    val.multiple = item.multiple;
     name.style.display = val.style.display = 'inline-block';
-    name.style.height = val.style.height = '40px';
+    name.style.height = val.style.height = item.multiple ? 'auto' : '40px';
+    name.style.verticalAlign = val.style.verticalAlign = 'top';
     name.style.lineHeight = val.style.lineHeight = '40px';
     name.style.width = val.style.width = '200px';
     val.style.textAlign = 'center';
     name.textContent = item.name;
     var currentVal = item.initial || '';
+    var options = [];
     item.values.forEach(v => {
       var o = document.createElement('option');
       o.textContent = o.value = v;
+      options.push(o);
       val.appendChild(o);
     })
     val.value = currentVal;
     this.setState(c, item, currentVal);
     val.addEventListener('change', (e) => {
-      currentVal = val.value;
+      if(item.multiple) {
+        currentVal = Array.from(val.selectedOptions).map(o => o.value);
+      } else {
+        currentVal = val.value;
+      }
       this.setState(c, item, currentVal);
       console.log(currentVal)
     })
 
     o.appendChild(name);
     o.appendChild(val);
-
+    this.selectTags.push({
+      name: item.name,
+      update: (v) => {
+        currentVal = v;
+        val.value = v;
+        if(item.multiple && Array.isArray(v)) {
+          options.forEach(o => {
+            if(~v.indexOf(o.value)) {
+              o.selected = true;
+            }
+          })
+        }
+      }
+    });
     return o;
   }
 
-  openSpriteSheet(item, fn) {
+  openSpriteSheet(item, fn, onload) {
     var image = new Image();
     image.style.position = 'absolute';
     image.style.left = '0px';
     image.style.top = '0px';
-    image.addEventListener('click', (e) => {
-      fn(
-        item.w * Math.floor(e.offsetX / item.w),
-        item.h * Math.floor(e.offsetY / item.h),
-        image
-      );
-      document.body.removeChild(image);
-    })
+    if(typeof fn == 'function') {
+      image.addEventListener('click', (e) => {
+        fn(
+          item.w * Math.floor(e.offsetX / item.w),
+          item.h * Math.floor(e.offsetY / item.h),
+          image
+        );
+        document.body.removeChild(image);
+      })
+      document.body.appendChild(image);
+    }
+    if(typeof onload == 'function') {
+      image.onload = () => onload(image);
+    }
 
     image.src = item.src;
-    document.body.appendChild(image);
   }
 
   renderSpriteSelect(item, c) {
@@ -188,11 +238,22 @@ class CS {
         var ct = canvas.getContext('2d');
         ct.clearRect(0, 0, item.w, item.h);
         ct.drawImage(img, x, y, item.w, item.h, 0, 0, item.w, item.h);
-        this.setState(c, item, {x: x, y: y, spritesheet: item.src})
+        this.setState(c, item, {x: x, y: y, spritesheet: item.src, w: item.w, h: item.h})
       })
     })
     o.appendChild(name);
     o.appendChild(val);
+    this.spritesheetTags.push({
+      name: item.name,
+      update: (v) => {
+        this.openSpriteSheet(item, false, (img) => {
+          var ct = canvas.getContext('2d');
+          ct.clearRect(0, 0, item.w, item.h);
+          ct.drawImage(img, v.x, v.y, item.w, item.h, 0, 0, item.w, item.h);
+          // this.setState(c, item, {x: x, y: y, spritesheet: item.src, w: item.w, h: item.h})
+        }, true)
+      }
+    });
     return o;
   }
 
@@ -222,20 +283,33 @@ class CS {
     return d;
   }
 
+  static get buttonCss() {
+    return {
+      cursor: 'pointer',
+      width: '100px',
+      height: '20px',
+      lineHeight: '20px',
+      padding: '5px 10px',
+      textAlign: 'center',
+      backgroundColor: 'black',
+      color: 'white',
+    }
+  }
+
+  static applyStyle(t, s) {
+    Object.keys(s).forEach(b => t.style[b] = s[b]);
+  }
+
   renderExportButton() {
     var d = document.createElement('div');
-    d.style.cursor = 'pointer';
-    d.style.width = '100px';
-    d.style.height = d.style.lineHeight = '20px';
-    d.style.padding = '5px 10px';
-    d.style.textAlign = 'center';
-    d.style.backgroundColor = 'black';
-    d.style.color = 'white';
+    CS.applyStyle(d, CS.buttonCss);
     d.textContent = 'Export';
 
     d.addEventListener('click', (e) => {
       console.log(this.state);
-      fetch('saveMonster', {
+      var id = this.importingId ? `?id=${this.importingId}` : '';
+      var qc = this.queryCommand || 'saveMonster';
+      fetch(qc + id, {
         method: 'POST',
         body: JSON.stringify(this.state)
       })
@@ -250,11 +324,69 @@ class CS {
     return d;
   }
 
+  renderImportButton() {
+    var monsters = require(this.library);
+    monsters.sort((a, b) => a.bio.name > b.bio.name ? 1 : -1);
+    var d = document.createElement('div');
+    CS.applyStyle(d, CS.buttonCss);
+    d.style.display = 'inline-block';
+    d.textContent = 'Import';
+    var select = document.createElement('select');
+    let o = document.createElement('option');
+    o.textContent = '---';
+    o.value = 'none';
+    select.appendChild(o);
+    monsters.forEach(m => {
+      let o = document.createElement('option');
+      o.textContent = m.bio.name;
+      o.value = m.id;
+      select.appendChild(o);
+    });
+    var label = document.createElement('span');
+    label.style.cursor = 'pointer';
+    label.addEventListener('click', () => {
+      this.importingId = 0;
+      label.textContent = '';
+    })
+    d.addEventListener('click', (e) => {
+      let monster = monsters.find(m => m.id == select.value);
+      label.textContent = `Now editing ${monster.bio.name}. Click here to stop editing. (id = ${monster.id})`;
+      this.import(monster);
+    })
+    var c = document.createElement('div');
+    c.style.padding = '10px';
+    c.style.border = '3px dashed';
+    c.style.marginTop = '3px';
+
+    c.appendChild(select);
+    c.appendChild(d);
+    c.appendChild(label);
+    return c;
+  }
+
+  import(monster) {
+    Object.keys(monster).forEach(cname => {
+      if(typeof monster[cname] !== 'object') return;
+      let category = this.categories.find(c => (c.exportAs || c.name) == cname);
+      Object.keys(monster[cname]).forEach(key => {
+        let item = category.items.find(i => (i.exportAs || i.name) == key);
+        if(!item) return;
+        let value = monster[cname][key];
+        let listName = item.type + 'Tags';
+        let tag = this[item.type + 'Tags'].find(t => t.name == item.name);
+        if(tag && typeof tag.update == 'function') tag.update(value);
+        this.setState(category, item, value);
+      })
+    });
+    this.importingId = monster.id;
+  }
+
   render() {
 
     this.parent.appendChild(this.renderName());
     this.parent.appendChild(this.renderCategories());
     this.parent.appendChild(this.renderExportButton());
+    this.parent.appendChild(this.renderImportButton());
   }
 }
 

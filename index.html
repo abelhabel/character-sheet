@@ -38,7 +38,7 @@
     }
     Module.modules = {};
     Module.loaders = [];
-    Module.onLoad(['seven.js', 'CS.js', 'heroes-like.js'], () => {
+    Module.onLoad(['seven.js', 'CS.js', 'heroes-like.js', 'monsters.js', 'ability-tpl.js', 'abilities.js'], () => {
       console.log('all loaded')
       const CS = require('CS.js');
       function loadSeven() {
@@ -57,15 +57,38 @@
         cs.render();
       }
 
+      function loadAbility() {
+        const ability = require("ability-tpl.js");
+        var cs  = new CS(ability, document.body);
+        cs.render();
+      }
 
-      loadHeroes();
+      var url = new URL(document.location.href);
+      var part = url.searchParams.get('part');
+
+      switch(part) {
+        case 'heroes':
+          loadHeroes();
+          break;
+        case 'seven':
+          loadSeven();
+          break;
+        case 'abilities':
+          loadAbility();
+          break;
+        default:
+          loadHeroes();
+          break;
+      }
+
     })
-
-
   </script>
 </head>
 <body>
+  <script src='monsters.js'></script>
+  <script src='abilities.js'></script>
   <script src='seven.js'></script>
+  <script src='ability-tpl.js'></script>
   <script src='heroes-like.js'></script>
   <script src='CS.js'></script>
 </body>

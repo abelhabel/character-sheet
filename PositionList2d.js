@@ -51,6 +51,55 @@ class PositionList2d {
     }
   }
 
+  inLine(x1, y1, x2, y2, l) {
+    var dx = x2 - x1;
+    var dy = y2 - y1;
+    var a = Math.atan2(dy, dx);
+    var xdir = (x2 - x1);
+    if(xdir) xdir = xdir / Math.abs(xdir);
+    var ydir = (y2 - y1);
+    if(ydir) ydir = ydir / Math.abs(ydir);
+    var targets = [];
+    for(var step = 0; step < l; step++) {
+      let x = Math.round(x2 + step * Math.cos(a));
+      let y = Math.round(y2 + step * Math.sin(a));
+      let t = this.get(x, y);
+      targets.push({item: t, x:x, y: y});
+    }
+    return targets;
+  }
+
+  rotate(v, radians) {
+    var cos = Math.cos(radians);
+    var sin = Math.sin(radians);
+    var nx = cos * v.x + sin * v.y;
+    var ny = cos * v.y - sin * v.x;
+    return {x: nx, y: ny};
+  }
+
+  inCone(x1, y1, x2, y2, l) {
+    var dx = x2 - x1;
+    var dy = y2 - y1;
+    var a = Math.PI/2 - Math.atan2(dy, dx);
+    var targets = [];
+    for(var step = 0; step < l; step++) {
+      let d = step + 1;
+      for(var step2 = 0; step2 < d*2 -1; step2++) {
+        let p = Math.floor((d*2 -1) / 2);
+        let x = (step2 - p);
+        let y = (step);
+        targets.push({item: null, x: x, y: y});
+      }
+    }
+    targets.forEach(t => {
+      let p = this.rotate(t, a);
+      t.x = x2 + Math.round(p.x);
+      t.y = y2 + Math.round(p.y);
+      t.item = this.get(t.x, t.y);
+    })
+    return targets;
+  }
+
   around(cx, cy, r = 1) {
     var out = [];
     for(var y = cy - r; y <= cy + r; y++) {
@@ -106,8 +155,7 @@ class PositionList2d {
   }
 
   path(sx, sy, ex, ey) {
-    let m = this.matrix;
-    return new PF.AStarFinder().findPath(sx, sy, ex, ey, m);
+    return new PF.AStarFinder().findPath(sx, sy, ex, ey, this.matrix);
   }
 
   _list() {

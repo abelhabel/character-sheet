@@ -1,0 +1,1 @@
+{"bio":{"name":"Ice Mage","family":"Humanoids","cost":"22","sprite":{"x":800,"y":288,"w":32,"h":32,"spritesheet":"DungeonCrawl_ProjectUtumnoTileset.png"}},"stats":{"health":14,"attack":10,"defence":1,"minDamage":7,"maxDamage":9,"movement":2,"initiative":10,"range":10}}

@@ -1,1 +1,1 @@
-{"nameAndFamily":{"name":"Viper","family":"Beasts","sprite":{"x":544,"y":96,"spritesheet":"DungeonCrawl_ProjectUtumnoTileset.png"}},"stats":{"health":18,"attack":4,"defence":6,"minDamage":4,"maxDamage":6,"movement":6,"initiative":16,"range":2}}
+{"bio":{"name":"Viper","family":"Beasts","cost":"14","sprite":{"x":544,"y":96,"w":32,"h":32,"spritesheet":"DungeonCrawl_ProjectUtumnoTileset.png"}},"stats":{"health":18,"attack":4,"defence":6,"minDamage":4,"maxDamage":6,"movement":6,"initiative":16,"range":2}}

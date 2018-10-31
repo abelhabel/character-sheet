@@ -1,0 +1,1 @@
+{"bio":{"name":"Berserker","family":"Humanoids","cost":"20","sprite":{"x":1184,"y":288,"w":32,"h":32,"spritesheet":"DungeonCrawl_ProjectUtumnoTileset.png"}},"abilities":{"abilities":["Flaming Strike"]},"stats":{"health":20,"mana":0,"attack":24,"defence":2,"spellPower":1,"minDamage":3,"maxDamage":6,"movement":8,"initiative":20,"range":1}}

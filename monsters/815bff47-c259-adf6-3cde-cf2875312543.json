@@ -1,1 +1,1 @@
-{"nameAndFamily":{"name":"Redback","family":"Beasts","sprite":{"x":928,"y":128,"spritesheet":"DungeonCrawl_ProjectUtumnoTileset.png"}},"stats":{"health":25,"attack":8,"defence":3,"minDamage":3,"maxDamage":6,"movement":8,"initiative":14,"range":1}}
+{"bio":{"name":"Redback","family":"Beasts","cost":"18","sprite":{"x":928,"y":128,"w":32,"h":32,"spritesheet":"DungeonCrawl_ProjectUtumnoTileset.png"}},"abilities":{"abilities":["Acid Breath II"]},"stats":{"health":25,"mana":0,"attack":8,"defence":3,"spellPower":1,"minDamage":3,"maxDamage":6,"movement":8,"initiative":14,"range":1}}

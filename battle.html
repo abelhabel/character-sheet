@@ -38,14 +38,69 @@
     }
     Module.modules = {};
     Module.loaders = [];
-    Module.onLoad(['monsters.js', 'PositionList2d.js', 'Battle.js', 'pathfinding.js'], () => {
+    Module.onLoad(['monsters.js', 'PositionList2d.js', 'Battle.js', 'pathfinding.js', 'Monster.js', 'Ability.js', 'TeamSelect.js', 'abilities.js'], () => {
       const PL = require('PositionList2d.js');
       const monsters = require('monsters.js');
       const Battle = require('Battle.js');
-      var undead = monsters.filter(m => m.nameAndFamily.family == 'Undead');
-      var beasts = monsters.filter(m => m.nameAndFamily.family == 'Beasts');
-      // beasts.forEach(a => a.ai = true)
-      undead.forEach(a => a.ai = true)
+      const TeamSelect = require('TeamSelect.js');
+      const abilities = require('abilities.js');
+      var undead = monsters.filter(m => m.bio.family == 'Undead');
+      var beasts = monsters.filter(m => m.bio.family == 'Beasts');
+      var humans = monsters.filter(m => m.bio.family == 'Humanoids');
+      var skeleton = undead.find(m => m.bio.name == 'Skeleton');
+      var lich = undead.find(m => m.bio.name == 'Lich');
+      var ghost = undead.find(m => m.bio.name == 'Ghost');
+      var gunud = undead.find(m => m.bio.name == 'Gunud');
+      var ghast = undead.find(m => m.bio.name == 'Ghast');
+      var xatrax = undead.find(m => m.bio.name == 'Xatrax');
+      var swister = humans.find(m => m.bio.name == 'Swister');
+      var angel = humans.find(m => m.bio.name == 'Angel');
+      var fireMage = humans.find(m => m.bio.name == 'Fire Mage');
+      var iceMage = humans.find(m => m.bio.name == 'Ice Mage');
+      var breaker = humans.find(m => m.bio.name == 'Breaker');
+      var berserker = humans.find(m => m.bio.name == 'Berserker');
+      var polarBear = beasts.find(m => m.bio.name == 'Polar Bear');
+      var redback = beasts.find(m => m.bio.name == 'Redback');
+      var scorp = beasts.find(m => m.bio.name == 'Scorp');
+      var thornet = beasts.find(m => m.bio.name == 'Thornet');
+      var yoad = beasts.find(m => m.bio.name == 'Yoad');
+      var team1 = [];
+      var team2 = [];
+      var cash = 200;
+      var all = [...undead, ...beasts, ...humans];
+
+      var selectContainer = document.createElement('div');
+      selectContainer.style.position = 'fixed';
+      selectContainer.style.width = '100%';
+      selectContainer.style.height = '100%';
+      selectContainer.style.top = '0px';
+      selectContainer.style.left = '0px';
+      selectContainer.style.backgroundColor = 'cadetblue';
+      selectContainer.style.zIndex = 10;
+      document.body.appendChild(selectContainer);
+
+      var counter = 0;
+      var spent = 0;
+      while(counter < all.length) {
+        let m = all[Math.floor(Math.random() * all.length)];
+        spent += parseInt(m.bio.cost);
+        if(spent < cash) {
+          team1.push(JSON.parse(JSON.stringify(m)));
+        }
+        counter += 1;
+      }
+      counter = 0;
+      spent = 0;
+      while(counter < all.length) {
+        let m = all[Math.floor(Math.random() * all.length)];
+        spent += parseInt(m.bio.cost);
+        if(spent < cash) {
+          team2.push(JSON.parse(JSON.stringify(m)));
+        }
+        counter += 1;
+      }
+      team1.forEach(a => a.ai = true)
+      // team2.forEach(a => a.ai = true);
       var w = h = 8;
       h = 10;
       var tw = th = 32;
@@ -54,28 +109,45 @@
       container.style.height = h * th + "px";
       var grid = document.createElement('canvas');
       var effects = document.createElement('canvas');
-      grid.style.position = effects.style.postition = 'absolute';
+      grid.style.position = effects.style.position = 'absolute';
       grid.style.left = effects.style.left = '0px';
       grid.style.top = effects.style.top = '0px';
-      container.appendChild(grid);
+      grid.style.zIndex = 1;
+      effects.style.zIndex = 2;
       container.appendChild(effects);
+      container.appendChild(grid);
       var initiative = document.createElement('canvas');
-      grid.style.display = initiative.style.display = 'block';
+      grid.style.display = initiative.style.display = effects.style.position = 'block';
       grid.style.border = initiative.style.border = '1px solid green';
       grid.width = grid.height = w * tw;
       initiative.width = (undead.length + beasts.length) * tw;
       initiative.height = th;
       document.body.appendChild(container);
       document.body.appendChild(initiative);
-      var battle = new Battle(undead, beasts, w, h, tw, th, grid, initiative, effects);
-      battle.start();
+      undead.forEach(m => m.ai = true);
+      // beasts.forEach(m => m.ai = true);
+      // var battle = new Battle(undead, humans, w, h, tw, th, grid, initiative, effects);
+      // battle.start();
+
+      var teamSelect = new TeamSelect(all, selectContainer, w, h, tw, th, 200, () => {
+        selectContainer.style.display = 'none';
+        teamSelect.teams[0].forEach(m => m.ai = false);
+        teamSelect.teams[1].forEach(m => m.ai = false);
+        var battle = new Battle(teamSelect.teams[0], teamSelect.teams[1], w, h, tw, th, grid, initiative, effects);
+        battle.start();
+      });
+      teamSelect.render();
     })
   </script>
 </head>
 <body>
   <script src='pathfinding.js'></script>
   <script src='monsters.js'></script>
+  <script src='abilities.js'></script>
+  <script src='Ability.js'></script>
+  <script src='Monster.js'></script>
   <script src='PositionList2d.js'></script>
   <script src='Battle.js'></script>
+  <script src='TeamSelect.js'></script>
 </body>
 </html>

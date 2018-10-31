@@ -1,1 +1,1 @@
-{"nameAndFamily":{"name":"Ghost","family":"Undead","sprite":{"x":480,"y":256,"spritesheet":"DungeonCrawl_ProjectUtumnoTileset.png"}},"stats":{"health":14,"attack":4,"defence":6,"minDamage":3,"maxDamage":6,"movement":9,"initiative":15,"range":1}}
+{"bio":{"name":"Ghost","family":"Undead","cost":"13","sprite":{"x":480,"y":256,"w":32,"h":32,"spritesheet":"DungeonCrawl_ProjectUtumnoTileset.png"}},"abilities":{"abilities":["Acid Breath"]},"stats":{"health":14,"mana":0,"attack":4,"defence":6,"spellPower":1,"minDamage":3,"maxDamage":6,"movement":9,"initiative":15,"range":1}}

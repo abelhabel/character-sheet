@@ -1,0 +1,1 @@
+{"bio":{"name":"Angel","family":"Humanoids","cost":"80","sprite":{"x":448,"y":256,"w":32,"h":32,"spritesheet":"DungeonCrawl_ProjectUtumnoTileset.png"}},"stats":{"health":60,"attack":18,"defence":12,"minDamage":17,"maxDamage":25,"movement":10,"initiative":20,"range":1}}

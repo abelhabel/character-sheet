@@ -1,0 +1,1 @@
+{"bio":{"name":"Golem","family":"Humanoids","cost":10,"sprite":{"x":864,"y":192,"spritesheet":"DungeonCrawl_ProjectUtumnoTileset.png","w":32,"h":32}},"stats":{"health":30,"attack":8,"defence":22,"minDamage":7,"maxDamage":11,"movement":4,"initiative":13,"range":1}}

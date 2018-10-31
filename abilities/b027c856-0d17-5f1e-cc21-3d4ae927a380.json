@@ -1,0 +1,1 @@
+{"bio":{"name":"Break Defence","type":"active","Activation":"when selected","sprite":{"x":640,"y":1504,"spritesheet":"DungeonCrawl_ProjectUtumnoTileset.png","w":32,"h":32}},"stats":{"shape":"area","radius":2,"target":"actor","targetFamily":"enemies","range":6,"source":"sky","duration":4,"resourceCost":6,"resourceType":"mana","effect":"lowerDefence","effectPower":5}}

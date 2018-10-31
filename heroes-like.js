@@ -1,9 +1,13 @@
+var abilities = require('abilities.js');
 var tpl = {
   name: "HEROES LIKE",
+  folder: "monsters",
+  library: 'monsters.js',
+  queryCommand: 'saveMonster',
   categories: [
     {
       name: 'Name and Family',
-      exportAs: 'nameAndFamily',
+      exportAs: 'bio',
       items: [
         {
           name: 'Sprite',
@@ -17,7 +21,7 @@ var tpl = {
           name: 'Name',
           type: 'input',
           minCharacters: 1,
-          maxCharacters: 10,
+          maxCharacters: 20,
           exportAs: 'name',
         },
         {
@@ -26,8 +30,34 @@ var tpl = {
           values: ['Undead', 'Beasts', 'Humanoids'],
           initial: 'Humanoids',
           exportAs: 'family',
+        },
+        {
+          name: 'Cost',
+          type: 'input',
+          initial: 10,
+          exportAs: 'cost',
+        },
+        {
+          name: 'Max Stacks',
+          type: 'increment',
+          initial: 1,
+          range: [1, 10],
+          exportAs: 'maxStacks',
         }
 
+      ]
+    },
+    {
+      name: "Abilities",
+      exportAs: 'abilities',
+      items: [
+        {
+          name: 'Abilities',
+          type: 'select',
+          multiple: true,
+          values: abilities.map(a => a.bio.name).sort((a, b) => a < b ? -1 : 1),
+          exportAs: 'abilities'
+        }
       ]
     },
     {
@@ -43,9 +73,17 @@ var tpl = {
           exportAs: 'health',
         },
         {
+          name: "Mana",
+          type: "increment",
+          description: "Increases mana",
+          initial: 0,
+          range: [0, 10000],
+          exportAs: 'mana',
+        },
+        {
           name: "Attack",
           type: "increment",
-          description: "Increases damage",
+          description: "Increases damage with attacks",
           initial: 1,
           range: [1, 100],
           exportAs: 'attack',
@@ -57,6 +95,23 @@ var tpl = {
           initial: 1,
           range: [1, 100],
           exportAs: 'defence',
+        },
+        {
+          name: "Spell Power",
+          type: "increment",
+          description: "Increases power of spells",
+          initial: 1,
+          range: [1, 10],
+          exportAs: 'spellPower',
+        },
+        {
+          name: "Spell Resistance",
+          type: "increment",
+          description: "Increases chance to resist spells",
+          initial: 0,
+          range: [0, 100],
+          step: 10,
+          exportAs: 'spellResitance',
         },
         {
           name: "Min Damage",
