@@ -1,0 +1,1 @@
+{"bio":{"name":"Blue Dragon","family":"Beasts","cost":"100","maxStacks":1,"sprite":{"x":32,"y":96,"spritesheet":"DungeonCrawl_ProjectUtumnoTileset.png","w":32,"h":32}},"abilities":{"abilities":["Alertness","Blizzard"]},"stats":{"health":120,"mana":20,"attack":18,"defence":12,"spellPower":7,"spellResitance":20,"minDamage":1,"maxDamage":2,"movement":3,"initiative":20,"range":1}}

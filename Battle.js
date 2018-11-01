@@ -248,7 +248,7 @@ class Battle {
 
   setTurnOrder() {
     this.turnOrder = [...this.team1, ...this.team2].sort((a, b) => {
-      return a.stats.initiative > b.stats.initiative ? -1 : 1;
+      return a.totalStat('initiative') > b.totalStat('initiative') ? -1 : 1;
     })
     return this;
   }
@@ -443,11 +443,13 @@ class Battle {
     var container = document.getElementById('monster-effects');
     container.innerHTML = '';
     var title = document.createElement('p');
+    var description = document.createElement('div');
     title.textContent = 'Effects';
     container.appendChild(title);
     this.currentActor.activeEffects.forEach(e => {
       console.log('ACTIVE EFFECTS', e.ability.bio.name)
       var canvas = document.createElement('canvas');
+      canvas.style.cursor = 'pointer';
       let a = e.ability;
       var {w, h} = a.bio.sprite;
       canvas.width = w;
@@ -455,8 +457,28 @@ class Battle {
       var c = canvas.getContext('2d');
       c.drawImage(a.canvas, 0, 0, w, h);
 
+      canvas.addEventListener('click', () => {
+        let {source, attribute, element} = a.stats;
+        let type = source == 'spell' || source == 'attack' ? `${element} damage` : `${source} - ${attribute}`;
+        description.textContent = `${a.bio.name}: ${type} ${e.power}`;
+      })
+
       container.appendChild(canvas);
-    })
+    });
+    container.appendChild(description);
+    // var passives = this.currentActor.passiveAbilityBonus;
+    // passives.blessing.forEach(e => {
+    //   console.log('ACTIVE EFFECTS', e.ability.bio.name)
+    //   var canvas = document.createElement('canvas');
+    //   let a = e.ability;
+    //   var {w, h} = a.bio.sprite;
+    //   canvas.width = w;
+    //   canvas.height = h;
+    //   var c = canvas.getContext('2d');
+    //   c.drawImage(a.canvas, 0, 0, w, h);
+    //
+    //   container.appendChild(canvas);
+    // })
   }
 
   drawAbilities() {
@@ -612,6 +634,7 @@ class Battle {
   }
 
   trigger(event, target, source, power, ability) {
+    if(!target.alive) return;
     console.log('EVENT:', event);
     target.triggers.forEach(a => {
       if(a.bio.activation != event) return;
@@ -650,7 +673,7 @@ class Battle {
         }
       })
       this[a.team].forEach(t => {
-        if(t == b) return;
+        if(t == a) return;
         // enemy triggers
         this.trigger('when enemy is hit', t, b, d, ability);
         let dist = this.grid.distance(b.x, b.y, t.x, t.y);
@@ -662,6 +685,7 @@ class Battle {
         }
       })
     }
+
     if(!b.alive) this.kill(b);
   }
 
@@ -680,6 +704,7 @@ class Battle {
     if(!fromEffect) {
       this.trigger('when attack hits', a, b, d, ability);
     }
+
     return d;
   }
 
@@ -746,6 +771,9 @@ class Battle {
       }
       if(ability.stats.duration && power) {
         t.addEffect(a, ability, power);
+        if(ability.stats.effect) {
+          t.addEffect(a, ability.stats.effect, power);
+        }
       }
       this.playHitAnimation(a, t, ability);
     })

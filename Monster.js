@@ -163,6 +163,7 @@ class Monster {
   }
 
   addEffect(source, ability, power, triggered) {
+    console.log('addeded effect', ability, 'to', this.bio.name)
     this.effects.push({
       triggered: !!triggered,
       power: power,
@@ -223,12 +224,12 @@ class Monster {
     var auras = this.auraBonus(name);
     var combined = StatBonus.combine(passive, activeEffects, auras);
     var total = base + bonus + combined.blessing.value - combined.curse.value;
-    console.log(`Total stat of ${name}:
-      base ${base} +
-      bonus ${bonus} +
-      blessing ${combined.blessing.value} (${combined.blessedBy}) -
-      curse ${combined.curse.value} (${combined.cursedBy})
-      = ${total}`);
+    // console.log(`Total stat of ${name}:
+    //   base ${base} +
+    //   bonus ${bonus} +
+    //   blessing ${combined.blessing.value} (${combined.blessedBy}) -
+    //   curse ${combined.curse.value} (${combined.cursedBy})
+    //   = ${total}`);
     return Math.max(0, total);
   }
 
@@ -266,7 +267,6 @@ class Monster {
 
   get activeEffects() {
     return this.effects.filter(e => {
-      console.log(e.ability.bio.name, e.rounds)
       return e.ability.bio.type == 'passive' ||
       e.rounds < e.ability.stats.duration;
     })

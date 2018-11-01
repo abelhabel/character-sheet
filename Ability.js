@@ -27,6 +27,9 @@ class Ability {
       source: t.stats.source,
       attribute: t.stats.attribute,
       mode: t.stats.mode,
+    };
+    if(this.stats.effect) {
+      this.stats.effect = new Ability(abilities.find(a => a.bio.name == this.stats.effect), this);
     }
   }
 

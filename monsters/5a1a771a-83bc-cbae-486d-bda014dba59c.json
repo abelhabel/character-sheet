@@ -1,0 +1,1 @@
+{"bio":{"name":"Red Dragon","family":"Beasts","cost":"100","maxStacks":1,"sprite":{"x":288,"y":160,"spritesheet":"DungeonCrawl_ProjectUtumnoTileset.png","w":32,"h":32}},"abilities":{"abilities":["Dragon Fire"]},"stats":{"health":90,"mana":20,"attack":21,"defence":21,"spellPower":10,"spellResitance":40,"minDamage":1,"maxDamage":2,"movement":6,"initiative":10,"range":1}}

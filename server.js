@@ -15,8 +15,8 @@ function guid() {
   return s4() + s4() + '-' + s4() + '-' + s4() + '-' + s4() + '-' + s4() + s4() + s4();
 }
 const files = {
-  'monsters.js': wrap.pre() + require('./monsters.js') + wrap.post('monsters.js'),
-  'abilities.js': wrap.pre() + require('./abilities.js') + wrap.post('abilities.js')
+  'monsters.js': () => wrap.pre() + require('./monsters.js')() + wrap.post('monsters.js'),
+  'abilities.js': () => wrap.pre() + require('./abilities.js')() + wrap.post('abilities.js')
 }
 // console.log(files['abilities.js'])
 function loadFile(name) {
@@ -45,6 +45,9 @@ const server = http.createServer(function(req, res) {
   var name = url.pathname.replace('/', '');
   if(!name) name = 'index.html';
   if(files[name]) {
+    if(typeof files[name] == 'function') {
+      return res.end(files[name]());
+    }
     return res.end(files[name]);
   }
   if(name == 'saveMonster') {

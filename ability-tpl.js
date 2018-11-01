@@ -1,3 +1,4 @@
+var abilities = require('abilities.js');
 var tpl = {
   name: "Ability",
   folder: "abilities",
@@ -133,7 +134,7 @@ var tpl = {
         {
           name: 'Effect',
           type: 'select',
-          values: ['', 'lowerDefence'],
+          values: abilities.map(a => a.bio.name).sort((a, b) => a < b ? -1 : 1),
           initial: '',
           exportAs: 'effect'
         },
