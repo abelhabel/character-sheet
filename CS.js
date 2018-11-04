@@ -18,6 +18,7 @@ class CS {
 
     this.inputTags = [];
     this.selectTags = [];
+    this.multiselectTags = [];
     this.incrementTags = [];
     this.spritesheetTags = [];
     Object.keys(this.pools).forEach(k => {
@@ -136,7 +137,80 @@ class CS {
     return o;
   }
 
+  renderMultipleSelect(item, c) {
+    var o = document.createElement('div');
+    o.style.userSelect = 'none';
+    var name = document.createElement('div');
+    var val = document.createElement('div');
+    name.style.display = val.style.display = 'inline-block';
+    name.style.verticalAlign = val.style.verticalAlign = 'top';
+    name.style.lineHeight = '40px';
+    name.style.width = '200px';
+    val.style.textAlign = 'left';
+    val.style.maxWidth = '400px';
+    val.style.backgroundColor = 'darkgray';
+    val.style.padding = '10px';
+    name.textContent = item.name;
+    var currentVal = [];
+    this.setState(c, item, currentVal);
+    var tags = [];
+    item.values.forEach(v => {
+      var d = document.createElement('div');
+      Object.assign(d.style, {
+        display: 'inline-block',
+        backgroundColor: 'gray',
+        color: 'white',
+        padding: '2px 4px',
+        borderRadius: '2px',
+        lineHeight: '1em',
+        marginRight: '4px',
+        marginBottom: '4px',
+        cursor: 'pointer',
+        fontWeight: 'bold',
+        fontFamily: 'monospace'
+      });
+      d.textContent = v;
+      var selected = v == item.initial;
+      if(selected) {
+        d.style.backgroundColor = 'black';
+      };
+      d.addEventListener('click', () => {
+        let index = currentVal.indexOf(v);
+        if(!~index) {
+          d.style.backgroundColor = 'black';
+          currentVal.push(v);
+        } else {
+          d.style.backgroundColor = 'gray';
+          currentVal.splice(index, 1);
+        }
+        this.setState(c, item, currentVal);
+
+      })
+      tags.push(d);
+      val.appendChild(d);
+    })
+    o.appendChild(name);
+    o.appendChild(val);
+    this.multiselectTags.push({
+      name: item.name,
+      update: (v) => {
+        v.filter(n => ~v.indexOf(n))
+        currentVal = Array.from(new Set(v));
+        console.log('updating multiselect', currentVal)
+        tags.forEach(t => {
+          if(~currentVal.indexOf(t.textContent)) {
+            t.style.backgroundColor = 'black';
+          } else {
+            t.style.backgroundColor = 'gray';
+          }
+        })
+      }
+    });
+    return o;
+  }
+
   renderSelect(item, c) {
+    if(item.multiple) return this.renderMultipleSelect(item, c);
     var o = document.createElement('div');
     o.style.userSelect = 'none';
     var name = document.createElement('div');
@@ -194,6 +268,7 @@ class CS {
     image.style.position = 'absolute';
     image.style.left = '0px';
     image.style.top = '0px';
+    image.style.backgroundColor = 'gray';
     if(typeof fn == 'function') {
       image.addEventListener('click', (e) => {
         fn(
@@ -238,7 +313,9 @@ class CS {
         var ct = canvas.getContext('2d');
         ct.clearRect(0, 0, item.w, item.h);
         ct.drawImage(img, x, y, item.w, item.h, 0, 0, item.w, item.h);
-        this.setState(c, item, {x: x, y: y, spritesheet: item.src, w: item.w, h: item.h})
+        var sprite = {x: x, y: y, spritesheet: item.src, w: item.w, h: item.h};
+        console.log(sprite);
+        this.setState(c, item, sprite)
       })
     })
     o.appendChild(name);
@@ -273,6 +350,8 @@ class CS {
             return o.appendChild(this.renderInput(item, c));
           case 'select':
             return o.appendChild(this.renderSelect(item, c));
+          case 'multiselect':
+            return o.appendChild(this.renderMultipleSelect(item, c));
           case 'spritesheet':
             return o.appendChild(this.renderSpriteSelect(item, c));
           default: ''
@@ -309,12 +388,20 @@ class CS {
       console.log(this.state);
       var id = this.importingId ? `?id=${this.importingId}` : '';
       var qc = this.queryCommand || 'saveMonster';
+      var body = JSON.stringify(this.state);
       fetch(qc + id, {
         method: 'POST',
-        body: JSON.stringify(this.state)
+        body: body
       })
-      .then(res => {
-        console.log('saved', res.statusCode);
+      .then(res => res.text())
+      .then(id => {
+        var monsters = require(this.library);
+        var monster = JSON.parse(body);
+        monster.id = id;
+        monsters.push(monster);
+        this.importingId = id;
+        this.importingLabel.textContent = `Now editing ${monster.bio.name}. Click here to stop editing. (id = ${monster.id})`;
+        console.log('saved');
       })
       .catch(e => {
         console.log('error', e)
@@ -344,6 +431,7 @@ class CS {
     });
     var label = document.createElement('span');
     label.style.cursor = 'pointer';
+    this.importingLabel = label;
     label.addEventListener('click', () => {
       this.importingId = 0;
       label.textContent = '';

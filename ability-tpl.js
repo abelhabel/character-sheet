@@ -1,4 +1,11 @@
 var abilities = require('abilities.js');
+var monsters = require('monsters.js');
+function isEffect(a) {
+  return a.bio.type == 'active' && (a.stats.source == 'blessing' || a.stats.source == 'curse');
+}
+function sortAlphabetically(a, b) {
+  return a < b ? -1 : 1;
+}
 var tpl = {
   name: "Ability",
   folder: "abilities",
@@ -28,7 +35,7 @@ var tpl = {
           name: 'Type',
           type: 'select',
           exportAs: 'type',
-          values: ['passive', 'active'],
+          values: ['passive', 'active', 'trigger'],
           initial: 'active'
         },
         {
@@ -134,14 +141,14 @@ var tpl = {
         {
           name: 'Effect',
           type: 'select',
-          values: abilities.map(a => a.bio.name).sort((a, b) => a < b ? -1 : 1),
+          values: abilities.map(a => a.bio.name).sort(sortAlphabetically),
           initial: '',
           exportAs: 'effect'
         },
         {
           name: 'Multiplier',
           type: 'increment',
-          range: [10, 1000],
+          range: [0, 1000],
           step: 10,
           initial: 100,
           exportAs: 'multiplier'
@@ -149,16 +156,23 @@ var tpl = {
         {
           name: 'Min Power',
           type: 'increment',
-          range: [1, 100],
+          range: [0, 100],
           initial: 1,
           exportAs: 'minPower'
         },
         {
           name: 'Max Power',
           type: 'increment',
-          range: [2, 100],
-          initial: 2,
+          range: [0, 100],
+          initial: 1,
           exportAs: 'maxPower'
+        },
+        {
+          name: 'Stacks',
+          type: 'increment',
+          range: [1, 100],
+          initial: 1,
+          exportAs: 'stacks'
         },
         {
           name: 'Source',
@@ -170,17 +184,41 @@ var tpl = {
         {
           name: 'Attribute',
           type: 'select',
-          values: ['attack', 'defence', 'spellPower', 'spellResistance', 'movement', 'initiative'],
-          initial: 'attack',
+          values: ['', 'attack', 'defence', 'spellPower', 'spellResistance', 'movement', 'initiative', 'damage', 'mana'],
+          initial: '',
           exportAs: 'attribute'
         },
         {
-          name: 'Mode',
+          name: 'Summon',
           type: 'select',
-          values: ['recurring', 'static'],
+          values: ['', ...monsters.map(m => m.bio.name).sort(sortAlphabetically)],
+          initial: '',
+          exportAs: 'summon'
+        },
+        {
+          name: 'Ailment',
+          type: 'select',
+          values: ['stunned'],
+          initial: '',
+          exportAs: 'ailment'
+        },
+        {
+          name: 'Special',
+          type: 'select',
+          values: ['', 'hypnotize', 'berzerk', 'reflectDamage',
+            'giveEffectAsAbility', 'phantomImage', 'stealBlessing',
+            'dispel', 'teleport', 'lifeLeech', 'polymorph'
+          ],
           initial: 'false',
-          exportAs: 'mode'
-        }
+          exportAs: 'special'
+        },
+        {
+          name: 'Selections',
+          type: 'increment',
+          range: [1, 2],
+          initial: 1,
+          exportAs: 'selections'
+        },
 
       ]
     }

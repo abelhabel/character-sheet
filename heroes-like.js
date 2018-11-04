@@ -41,7 +41,7 @@ var tpl = {
           name: 'Max Stacks',
           type: 'increment',
           initial: 1,
-          range: [1, 10],
+          range: [1, 100],
           exportAs: 'maxStacks',
         }
 
@@ -53,8 +53,7 @@ var tpl = {
       items: [
         {
           name: 'Abilities',
-          type: 'select',
-          multiple: true,
+          type: 'multiselect',
           values: abilities.map(a => a.bio.name).sort((a, b) => a < b ? -1 : 1),
           exportAs: 'abilities'
         }
@@ -114,24 +113,31 @@ var tpl = {
           exportAs: 'spellResitance',
         },
         {
-          name: "Min Damage",
+          name: "Damage",
           type: "increment",
-          initial: 1,
-          range: [1, 50],
-          exportAs: 'minDamage',
+          initial: 0,
+          range: [0, 50],
+          exportAs: 'damage',
         },
         {
-          name: "Max Damage",
-          type: "increment",
-          initial: 2,
-          range: [2, 100],
-          exportAs: 'maxDamage',
+          name: 'Actions Per Round',
+          type: 'increment',
+          range: [1, 3],
+          initial: 1,
+          exportAs: 'apr'
+        },
+        {
+          name: 'Triggers Per Round',
+          type: 'increment',
+          range: [1, 5],
+          initial: 1,
+          exportAs: 'tpr'
         },
         {
           name: "Movement",
           type: "increment",
-          initial: 1,
-          range: [1, 10],
+          initial: 3,
+          range: [0, 10],
           exportAs: 'movement',
         },
         {

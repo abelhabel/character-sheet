@@ -1,5 +1,7 @@
 const PL = require("PositionList2d.js");
+const Monster = require("Monster.js");
 const abilities = require('abilities.js');
+const monsters = require('monsters.js');
 class Battle {
   constructor(team1, team2, w, h, tw, th, board, order, effects) {
     this.team1 = team1;
@@ -12,6 +14,16 @@ class Battle {
       m.team = 'team2';
       m.battle = this;
     });
+    this.teamColors = {
+      team1: {
+        aura: 'rgba(22, 88, 110, 0.3)',
+        selected: 'blue'
+      },
+      team2: {
+        aura: 'rgba(110, 22, 33, 0.3)',
+        selected: 'red'
+      }
+    };
     this.w = w;
     this.h = h;
     this.tw = tw;
@@ -39,15 +51,16 @@ class Battle {
       team1: [],
       team2: []
     };
-    [...this.team1, ...this.team2].forEach(m => {
-      m.passiveAbilities.forEach(a => {
-        if((a.stats.shape == 'circle' || a.stats.shape == 'square') && a.stats.targetFamily !== 'self') {
-          this.auras[m.team].push(a);
-        }
-      })
-    })
-    console.log('AURAS', this.auras)
+    [...this.team1, ...this.team2].forEach(m => this.addAura(m))
     this.setEvents();
+  }
+
+  addAura(m) {
+    m.passiveAbilities.forEach(a => {
+      if((a.stats.shape == 'circle' || a.stats.shape == 'square') && a.stats.targetFamily !== 'self') {
+        this.auras[m.team].push(a);
+      }
+    })
   }
 
   setEvents() {
@@ -62,28 +75,35 @@ class Battle {
       let x = Math.floor(e.offsetX / this.tw);
       let y = Math.floor(e.offsetY / this.th);
       var t = this.grid.get(x, y);
+      let selectionsRequired = a.selectedAbility && a.selectedAbility.stats.selections || 1;
       if(a.selectedAbility && a.selectedAbility.stats.target == 'ground') {
         t = {x, y};
       }
       var targets = this.abilityTargets(a, a.selectedAbility, x, y);
 
-      console.log('clicked:', a.movesLeft)
-      if(targets.validTargets) {
+      if(a.selectedAbility && selectionsRequired > 1) {
+        if(a.selections[0]) {
+          a.selections[1] = targets;
+        } else {
+          a.selections[0] = targets;
+        }
+      } else {
+        a.selections[0] = targets;
+      }
+
+      if(a.selectedAbility && targets.validTargets && a.selections.length == selectionsRequired) {
         this.attack(a, t);
         mp = 0;
-        this.turnOrder.push(a);
+        this.endTurn();
         this.act();
       } else
       if(a.movesLeft > 0) {
         var path = this.grid.path(a.x, a.y, x, y);
         path.shift();
-        console.log('path', path.length, a.movesLeft, a.tilesMoved);
         if(a.movesLeft < path.length) return;
         var walked = path.length - 1;
-        console.log('walk from click()')
         this.walk(a, path)
         .then(() => {
-          console.log('WALK DONE')
           mp -= walked
         });
       }
@@ -98,8 +118,7 @@ class Battle {
       actor = this.currentActor;
       mp = 0;
       this.defend(this.currentActor);
-      console.log(a.bio.name, 'defends', a.alive)
-      this.turnOrder.push(a);
+      this.endTurn();
       this.act();
     })
     document.body.appendChild(b);
@@ -156,6 +175,7 @@ class Battle {
           this.highlightAbility(t.x, t.y, ability.canvas);
         })
       }
+      this.highlightAuras();
     })
 
   }
@@ -211,6 +231,26 @@ class Battle {
     c.fillStyle = 'green';
     c.fillText(i, 2 + x * this.tw, 12 + y * this.th);
   }
+
+  highlightAuraTile(x, y, team) {
+    var c = this.effects.getContext('2d');
+    c.fillStyle = this.teamColors[team].aura;
+    c.fillRect(x * this.tw, y * this.th, this.tw, this.th);
+  }
+
+  highlightAuras() {
+    [...this.auras.team1, ...this.auras.team2].forEach(a => {
+      if(a.stats.shape == 'square') {
+        this.grid.around(a.owner.x, a.owner.y, a.stats.radius)
+        .forEach(t => this.highlightAuraTile(t.x, t.y, a.owner.team))
+      } else
+      if(a.stats.shape == 'circle') {
+        this.grid.inCircle(a.owner.x, a.owner.y, a.stats.radius)
+        .forEach(t => this.highlightAuraTile(t.x, t.y, a.owner.team))
+      }
+    })
+  }
+
 
   loadSpriteSheets() {
     var sheets = [];
@@ -340,6 +380,7 @@ class Battle {
   }
 
   cacheCanvases() {
+    var summonSprite = {x: 224, y: 1504, spritesheet: "DungeonCrawl_ProjectUtumnoTileset.png", w: 32, h: 32};
     abilities.forEach(item => {
       var canvas = document.createElement('canvas');
       canvas.width = this.tw;
@@ -348,10 +389,15 @@ class Battle {
       var sprite = item.bio.sprite;
       var img = this.images[sprite.spritesheet];
       // c.clearRect(item.x * this.tw, item.y * this.th, this.tw, this.th);
-      c.drawImage(img, sprite.x, sprite.y, sprite.w, sprite.h, 0, 0, this.tw, this.th);
+      if(item.stats.summon) {
+        c.drawImage(img, summonSprite.x, summonSprite.y, summonSprite.w, summonSprite.h, 0, 0, this.tw, this.th);
+        c.drawImage(img, sprite.x, sprite.y, sprite.w, sprite.h, 6, 6, this.tw -12, this.th-12);
+      } else {
+        c.drawImage(img, sprite.x, sprite.y, sprite.w, sprite.h, 0, 0, this.tw, this.th);
+      }
       item.canvas = canvas;
     })
-    this.turnOrder.forEach(item => {
+    monsters.forEach(item => {
       var canvas = document.createElement('canvas');
       canvas.width = this.tw;
       canvas.height = this.th;
@@ -382,7 +428,9 @@ class Battle {
       Object.keys(c.item.stats).forEach((key, i) => {
         let y = this.th + 30 + (i * 10);
         let x = 10;
-        let total = (c.item['bonus' + key] || 0) + c.item.stats[key];
+        let total = c.item.totalStat(key);
+        if(key == 'health') total = c.item.totalHealth;
+        if(key == 'mana') total = c.item.totalMana;
         c.ct.fillText(`${key}: ${total}`, x, y);
       })
     })
@@ -418,7 +466,7 @@ class Battle {
       var img = this.images[sprite.spritesheet];
       if(item == this.currentActor) {
         c.lineWidth = 4;
-        c.strokeStyle = 'red';
+        c.strokeStyle = this.teamColors[item.team].selected;
         c.strokeRect(item.x * this.tw, item.y * this.th, this.tw, this.th);
       }
       c.lineWidth = 1;
@@ -439,7 +487,6 @@ class Battle {
 
   drawActiveEffects() {
     if(!this.currentActor) return;
-    console.log('drawActiveEffects')
     var container = document.getElementById('monster-effects');
     container.innerHTML = '';
     var title = document.createElement('p');
@@ -447,7 +494,6 @@ class Battle {
     title.textContent = 'Effects';
     container.appendChild(title);
     this.currentActor.activeEffects.forEach(e => {
-      console.log('ACTIVE EFFECTS', e.ability.bio.name)
       var canvas = document.createElement('canvas');
       canvas.style.cursor = 'pointer';
       let a = e.ability;
@@ -458,27 +504,54 @@ class Battle {
       c.drawImage(a.canvas, 0, 0, w, h);
 
       canvas.addEventListener('click', () => {
-        let {source, attribute, element} = a.stats;
+        let {source, attribute, element, duration} = a.stats;
         let type = source == 'spell' || source == 'attack' ? `${element} damage` : `${source} - ${attribute}`;
-        description.textContent = `${a.bio.name}: ${type} ${e.power}`;
+        description.textContent = `${a.bio.name}: ${type} ${e.power} - ${e.rounds}/${duration} rounds`;
       })
 
       container.appendChild(canvas);
     });
     container.appendChild(description);
-    // var passives = this.currentActor.passiveAbilityBonus;
-    // passives.blessing.forEach(e => {
-    //   console.log('ACTIVE EFFECTS', e.ability.bio.name)
-    //   var canvas = document.createElement('canvas');
-    //   let a = e.ability;
-    //   var {w, h} = a.bio.sprite;
-    //   canvas.width = w;
-    //   canvas.height = h;
-    //   var c = canvas.getContext('2d');
-    //   c.drawImage(a.canvas, 0, 0, w, h);
-    //
-    //   container.appendChild(canvas);
-    // })
+  }
+
+  drawTriggers() {
+    if(!this.currentActor) return;
+    var container = document.getElementById('monster-triggers');
+    container.innerHTML = '';
+    var title = document.createElement('p');
+    var description = document.createElement('div');
+    title.textContent = 'Triggers';
+    container.appendChild(title);
+    var setDescription = function(a) {
+      let {source, attribute, element, minPower, maxPower, multiplier, resourceCost, resourceType} = a.stats;
+      let {activation, type, name} = a.bio;
+      let stat = source == 'blessing' || source == 'curse' ? attribute : 'health';
+      let parts = [name, type, `${source}/${element}`];
+      if(multiplier) parts.push(`(${minPower}-${maxPower}) * ${multiplier}% to ${stat}`);
+      parts.push(`Use ${activation}`);
+      parts.push(`${resourceCost} ${resourceType}`)
+      description.textContent = parts.join(' | ');
+    };
+    this.currentActor.triggers.forEach(a => {
+
+      var canvas = document.createElement('canvas');
+      var {w, h} = a.bio.sprite;
+      canvas.width = w;
+      canvas.height = h;
+      var c = canvas.getContext('2d');
+      c.drawImage(a.canvas, 0, 0, w, h);
+
+      canvas.addEventListener('click', () => {
+        setDescription(a);
+      })
+
+      if(this.currentActor.selectedAbility && a.bio.name == this.currentActor.selectedAbility.bio.name) {
+        setDescription(a);
+      }
+
+      container.appendChild(canvas);
+    });
+    container.appendChild(description);
   }
 
   drawAbilities() {
@@ -486,8 +559,19 @@ class Battle {
     var container = document.getElementById('monster-abilities');
     container.innerHTML = '';
     var title = document.createElement('p');
+    var description = document.createElement('div');
     title.textContent = 'Abilities';
     container.appendChild(title);
+    var setDescription = function(a) {
+      let {source, attribute, element, minPower, maxPower, multiplier, resourceCost, resourceType} = a.stats;
+      let {activation, type, name} = a.bio;
+      let stat = source == 'blessing' || source == 'curse' ? attribute : 'health';
+      let parts = [name, type, `${source}/${element}`];
+      if(multiplier) parts.push(`(${minPower}-${maxPower}) * ${multiplier}% to ${stat}`);
+      parts.push(`Use ${activation}`);
+      parts.push(`${resourceCost} ${resourceType}`)
+      description.textContent = parts.join(' | ');
+    };
     this.currentActor.activeAbilities.forEach(a => {
 
       var canvas = document.createElement('canvas');
@@ -498,16 +582,22 @@ class Battle {
       c.drawImage(a.canvas, 0, 0, w, h);
 
       canvas.addEventListener('click', () => {
-        this.currentActor.selectAbility(a);
-        this.drawAbilities();
+        if(a.bio.activation == 'when selected') {
+          this.currentActor.selectAbility(a);
+          this.drawAbilities();
+        } else {
+          setDescription(a);
+        }
       })
 
       if(this.currentActor.selectedAbility && a.bio.name == this.currentActor.selectedAbility.bio.name) {
         c.strokeRect(0, 0, w, h);
+        setDescription(a);
       }
 
       container.appendChild(canvas);
-    })
+    });
+    container.appendChild(description);
   }
 
   drawTurnOrder() {
@@ -635,17 +725,24 @@ class Battle {
 
   trigger(event, target, source, power, ability) {
     if(!target.alive) return;
-    console.log('EVENT:', event);
     target.triggers.forEach(a => {
       if(a.bio.activation != event) return;
-      if(a.stats.duration) {
-        var t = a.stats.targetFamily == 'self' ? target : source;
-        t.addEffect(this, a, a.roll());
-        console.log(t.bio.name, 'added effect', a.bio.name)
-      } else {
-        console.log('TRIGGER ability', a.bio.name);
-        this.attack(target, source, a, true);
+      console.log('TRIGGER', event, a.bio.name)
+      var t = a.stats.targetFamily == 'self' ? target : source;
+      if(a.stats.source == 'attack') {
+        t.addEffect(target, a, this.attackRoll(target, source, a), {event, ability}, power);
+
+      } else
+      if(a.stats.source == 'spell') {
+
       }
+      this.attack(target, source, a, true, power);
+      // if(a.stats.duration) {
+      //   console.log(t.bio.name, 'added effect', a.bio.name)
+      // } else {
+      //   console.log('TRIGGER', event, a.bio.name);
+      //   this.attack(target, source, a, true, power);
+      // }
     })
   }
 
@@ -657,10 +754,10 @@ class Battle {
       b.heal(d);
       c = 'healed';
     }
-    console.log(`${a.bio.name} ${c} ${b.bio.name} ${d} (${ability.stats.element}) (${b.totalHealth})`);
+    console.log(`${a.bio.name} ${c} ${b.bio.name} ${d} (${ability.stats.element}) with ${ability.bio.name} (${b.totalHealth})`);
     if(!fromEffect) {
       this.trigger('when self is hit', b, a, d, ability);
-      this[b.team].forEach(t => {
+      this[b.team] && this[b.team].forEach(t => {
         if(t == b) return;
         // allied triggers
         this.trigger('when ally is hit', t, b, d, ability);
@@ -672,7 +769,7 @@ class Battle {
           this.trigger('when adjacent ally is hit', t, b, d, ability);
         }
       })
-      this[a.team].forEach(t => {
+      this[a.team] && this[a.team].forEach(t => {
         if(t == a) return;
         // enemy triggers
         this.trigger('when enemy is hit', t, b, d, ability);
@@ -689,26 +786,33 @@ class Battle {
     if(!b.alive) this.kill(b);
   }
 
-  dealAttackDamage(a, b, ability, fromEffect) {
+  attackRoll(a, b, ability) {
     let df = b.totalStat('defence');
     let at = a.totalStat('attack');
     let stacks = a.stacks;
+    let bonusDamage = a.totalStat('damage');
     let flanks = this.flanks(b) - 1;
     let flankMultiplier = 1 + (flanks / 5);
-    let abilityMultiplier = ability.stats.multiplier / 100;
-    let roll = this.roll(ability.stats.minPower, ability.stats.maxPower);
-    let multiplier = (Math.max(1, at) / Math.max(1, df));
-    console.log('stacks', stacks, 'roll', roll, 'multiplier', multiplier, 'flanks', flankMultiplier, 'ability', abilityMultiplier)
-    let d = Math.ceil(stacks * multiplier * roll * flankMultiplier * abilityMultiplier);
-    this.dealDamage(a, b, d, ability, fromEffect);
-    if(!fromEffect) {
-      this.trigger('when attack hits', a, b, d, ability);
+    let abilityDamage = ability.roll(bonusDamage);
+    let multiplier = (Math.max(1, at) / Math.max(1, 2 + df));
+    console.log('ATTACK ROLL:', 'abilityDamage', abilityDamage, 'stacks', stacks, 'attack vs defence', multiplier, 'flanks', flankMultiplier)
+    let d = Math.ceil(abilityDamage * stacks * multiplier * flankMultiplier);
+    return d;
+  }
+
+  dealAttackDamage(a, b, ability, fromEffect, effectPower) {
+    let d = this.attackRoll(a, b, ability);
+    if(d) {
+      this.dealDamage(a, b, d, ability, fromEffect);
+      if(!fromEffect) {
+        this.trigger('when attack hits', a, b, d, ability);
+      }
     }
 
     return d;
   }
 
-  dealSpellDamage(a, b, ability, fromEffect) {
+  dealSpellDamage(a, b, ability, fromEffect, effectPower) {
     let spellResistance = b.totalStat('spellResistance');
     let resistRoll = this.roll(1, 100);
     console.log('resist', resistRoll, 'against spellResistance', spellResistance);
@@ -717,12 +821,16 @@ class Battle {
       return 0;
     }
     let stacks = a.stacks;
-    let abilityMultiplier = ability.stats.multiplier / 100;
+    let abilityDamage = effectPower || ability.roll();
     let spellPower = 1 + a.totalStat('spellPower') / 10;
-    let roll = this.roll(ability.stats.minPower, ability.stats.maxPower);
-    let d = Math.ceil(roll * stacks * spellPower * abilityMultiplier);
-    console.log('stacks', stacks, 'spellPower', spellPower, 'abilityMultiplier', abilityMultiplier, 'roll', roll);
-    this.dealDamage(a, b, d, ability, fromEffect);
+    let d = Math.ceil(abilityDamage * stacks * spellPower);
+    console.log('abilityDamage', abilityDamage, 'stacks', stacks, 'spellPower', spellPower);
+    if(d) {
+      this.dealDamage(a, b, d, ability, fromEffect);
+      if(!fromEffect) {
+        this.trigger('when attack hits', a, b, d, ability);
+      }
+    }
     return d;
   }
 
@@ -739,23 +847,32 @@ class Battle {
       var {source} = e.ability.stats;
       console.log('applying effect:', e.ability.bio.name, 'to', a.bio.name);
       e.rounds += 1;
-      if(source == 'attack' || source == 'spell') {
+      if(e.ability.stats.source == 'attack' || e.ability.stats.source == 'spell') {
         this.dealDamage(e.source, a, e.power, e.ability, true);
       }
     })
+  }
+
+  endTurn() {
+    let a = this.currentActor;
+    a.effects.forEach(e => {
+      var {source} = e.ability.stats;
+      if(e.rounds == e.ability.stats.duration) {
+        a.removeEffect(e);
+      }
+    })
+    this.turnOrder.push(a);
   }
 
   attack(a, b, ability, fromEffect) {
     ability = ability || a.selectedAbility;
     var targets = this.abilityTargets(a, ability, b.x, b.y);
 
-    console.log(`${a.bio.name} picked ability: ${ability.bio.name}`);
     if(!a.canUseAbility(ability)) {
-      console.log(`${a.bio.name} is out of mana (${a.totalMana}) for ${ability.bio.name} (${ability.stats.resourceCost})`)
       return;
     }
     a.useAbility(ability);
-    targets.actors.forEach((t, i) => {
+    a.selections[0] && a.selections[0].actors.forEach((t, i) => {
       var power = 0;
       if(ability.stats.source == 'attack') {
         power = this.dealAttackDamage(a, t, ability, fromEffect);
@@ -769,14 +886,25 @@ class Battle {
       if(ability.stats.source == 'blessing') {
         power = this.dealAttributeDamage(a, t, ability, fromEffect);
       }
-      if(ability.stats.duration && power) {
-        t.addEffect(a, ability, power);
-        if(ability.stats.effect) {
-          t.addEffect(a, ability.stats.effect, power);
-        }
-      }
+
       this.playHitAnimation(a, t, ability);
-    })
+      !fromEffect && t.addEffect(a, ability, power);
+    });
+    if(ability.stats.summon) {
+      let health = 10 * a.totalStat('spellPower') * ability.roll();
+      let template = monsters.find(m => m.bio.name == ability.stats.summon);
+      let stacks = Math.ceil(health / template.stats.health);
+      let monster = new Monster(template, stacks, true);
+      let tile = a.selections[0].tiles[0];
+      monster.team = a.team;
+      monster.battle = a.battle;
+      monster.ai = a.ai;
+      monster.x = tile.x;
+      monster.y = tile.y;
+      this.grid.setItem(monster);
+      this.turnOrder.push(monster);
+      this.addAura(monster);
+    }
     this.sounds.attack.play();
   }
 
@@ -810,7 +938,6 @@ class Battle {
   walk(a, path) {
     return new Promise((resolve, reject) => {
       var int = setInterval(() => {
-        console.log('path', path)
         let p = path.shift();
         if(!p) {
           clearInterval(int);
@@ -825,6 +952,7 @@ class Battle {
           clearInterval(int);
           resolve();
         }
+        this.highlightAuras();
       }, 100);
 
     })
@@ -836,30 +964,33 @@ class Battle {
 
   act() {
     var a = this.turnOrder.shift();
+    if(!a) return;
+    a.selections = [];
     this.undefend(a);
     a.resetMovement();
     console.log('Turn start for', a.bio.name, a.alive)
-    console.log(a.totalStat('movement'))
     this.currentActor = a;
     if(!a.canUseAbility(a.selectedAbility)) a.selectAbility(a.selectedAbility);
-    this.applyEffects(a);
     this.render();
-    var t = this.findTarget(a);
+    this.applyEffects(a);
     if(!a.alive) return this.act();
+    if(!a.canAct) {
+      this.turnOrder.push(a);
+      return this.act();
+    }
     if(!a.ai) {
       return this.human(a);
     }
+    var t = this.findTarget(a);
     if(!t) {
       this.sounds.victory.play();
       console.log(`${a.team} won the match`);
       return;
     }
-    console.log(a.bio.name, 'attacks', t.bio.name)
     var p = this.findClosestTile(a, t);
     var path = this.grid.path(a.x, a.y, p.x, p.y);
     path.shift();
     path.splice(a.movesLeft);
-    console.log('walk from act()')
     var action = this.inRange(a, t) ? Promise.resolve() : this.walk(a, path);
     action.then(() => {
       setTimeout(() => {
@@ -873,7 +1004,7 @@ class Battle {
             this.defend(a);
           }
         }
-        a.live && this.turnOrder.push(a);
+        a.alive && this.turnOrder.push(a);
         this.render();
         if(this.turnOrder.length) this.act();
 
@@ -905,6 +1036,13 @@ class Battle {
     document.body.appendChild(c);
   }
 
+  createTriggerContainer() {
+    var c = document.createElement('div');
+    c.id = 'monster-triggers';
+
+    document.body.appendChild(c);
+  }
+
   createEffectContainer() {
     var c = document.createElement('div');
     c.id = 'monster-effects';
@@ -917,6 +1055,7 @@ class Battle {
     this.setTurnOrder();
     this.makeMonsterCards();
     this.createAbilityContainer();
+    this.createTriggerContainer();
     this.createEffectContainer();
     this.loadSpriteSheets()
     .then(images => {
@@ -956,7 +1095,9 @@ class Battle {
     this.drawTurnOrder();
     this.drawMonsterCards();
     this.drawAbilities();
+    this.drawTriggers();
     this.drawActiveEffects();
+    this.highlightAuras();
   }
 }
 

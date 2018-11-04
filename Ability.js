@@ -1,7 +1,14 @@
 const abilities = require('abilities.js');
-
+const nextId = (function() {
+  var id = 0;
+  return function() {
+    return ++id;
+  }
+})();
 class Ability {
   constructor(t, owner) {
+    this.template = t;
+    this.id = nextId();
     this.owner = owner;
     this.bio = {
       name: t.bio.name,
@@ -24,18 +31,25 @@ class Ability {
       multiplier: t.stats.multiplier,
       minPower: t.stats.minPower,
       maxPower: t.stats.maxPower,
+      stacks: t.stats.stacks || 1,
       source: t.stats.source,
       attribute: t.stats.attribute,
-      mode: t.stats.mode,
+      ailment: t.stats.ailment,
+      special: t.stats.special,
+      selections: t.stats.selections,
+      summon: t.stats.summon,
+
     };
     if(this.stats.effect) {
       this.stats.effect = new Ability(abilities.find(a => a.bio.name == this.stats.effect), this);
     }
   }
 
-  roll() {
+  roll(d) {
     let am = this.stats.multiplier / 100;
-    return Math.ceil(am * (this.stats.minPower + Math.random() * (this.stats.maxPower-this.stats.minPower)));
+    let min = this.stats.minPower + (d || 0);
+    let max = this.stats.maxPower + (d || 0);
+    return Math.ceil(am * (min + Math.random() * (max-min)));
   }
 
   get canvas() {

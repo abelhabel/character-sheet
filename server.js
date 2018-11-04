@@ -34,6 +34,7 @@ loadFile('Ability.js');
 loadFile('Monster.js');
 loadFile('TeamSelect.js');
 loadFile('seven.js');
+loadFile('special-effects.js');
 loadFile('ability-tpl.js');
 loadFile('heroes-like.js');
 loadFile('pathfinding.js');
@@ -54,11 +55,13 @@ const server = http.createServer(function(req, res) {
     let id = url.searchParams.get('id') ||  guid();
     console.log('saving', 'monsters/' + id + '.json')
     req.pipe(fs.createWriteStream('monsters/' + id + '.json'));
+    res.end(id);
   }
   if(name == 'saveAbility') {
     let id = url.searchParams.get('id') ||  guid();
     console.log('saving', 'abilities/' + id + '.json')
     req.pipe(fs.createWriteStream('abilities/' + id + '.json'));
+    res.end(id);
   }
   if(name.match('.wav')) {
     console.log('loading sound', name)

@@ -38,6 +38,18 @@ class PositionList2d {
     return Math.sqrt(dx * dx + dy * dy);
   }
 
+  closestEmpty(x, y) {
+    let radius = 1;
+    let maxRadius = 5;
+    let tile;
+    for(let i  = 1; i < maxRadius; i++) {
+      let tiles = this.around(x, y);
+      tile = tiles.find(t => !t.item);
+      if(tile) break;
+    }
+    return tile;
+  }
+
   from(cx, cy, r, fn) {
     for(var y = cy - r; y <= cy + r; y++) {
       if(y < 0 || y > this.h-1) continue;
