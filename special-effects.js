@@ -29,9 +29,11 @@ module.exports.giveEffectAsAbility = function (battle, caster, target, ability, 
   var template = ability.stats.effect.template;
   var a = new ability.constructor(template, target);
   target.abilities.push(a);
+  battle.addAura(a);
   return new Special(function() {
     let index = target.abilities.findIndex(b => b.id == a.id);
     target.abilities.splice(index, 1);
+    battle.removeAura(a);
     console.log('removed ability', a.bio.name, a.id)
   });
 };
@@ -97,6 +99,15 @@ module.exports.teleport = function (battle, caster, target, ability, power, trig
   actor.x = tile.x;
   actor.y = tile.y;
   battle.grid.setItem(actor);
+};
+
+module.exports.blink = function (battle, caster, target, ability, power, triggeredPower) {
+  console.log('blink', battle.turn);
+  let tile = battle.turn.actions[0].targets.tiles[0];
+  battle.grid.remove(caster.x, caster.y);
+  caster.x = tile.x;
+  caster.y = tile.y;
+  battle.grid.setItem(caster);
 };
 
 module.exports.lifeLeech = function (battle, caster, target, ability, power, triggeredPower) {

@@ -45,6 +45,10 @@ class Ability {
     }
   }
 
+  get isAura() {
+    return this.bio.type == 'passive' && (this.stats.shape == 'circle' || this.stats.shape == 'square') && this.stats.radius;
+  }
+
   roll(d) {
     let am = this.stats.multiplier / 100;
     let min = this.stats.minPower + (d || 0);

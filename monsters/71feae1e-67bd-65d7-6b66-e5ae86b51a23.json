@@ -1,0 +1,1 @@
+{"bio":{"name":"Griffin","family":"Beasts","cost":"70","maxStacks":4,"sprite":{"x":64,"y":64,"spritesheet":"DungeonCrawl_ProjectUtumnoTileset.png","w":32,"h":32}},"abilities":{"abilities":["Ripping Claws","Bite"]},"stats":{"health":56,"mana":5,"attack":14,"defence":10,"spellPower":4,"spellResitance":30,"damage":1,"apr":1,"tpr":5,"movement":3,"initiative":15,"range":1}}

@@ -1,0 +1,1 @@
+{"bio":{"name":"Bitter Totem","family":"Humanoids","cost":10,"maxStacks":1,"sprite":{"x":1056,"y":384,"spritesheet":"DungeonCrawl_ProjectUtumnoTileset.png","w":32,"h":32}},"abilities":{"abilities":["Bitter Presence"]},"stats":{"health":10,"mana":0,"attack":1,"defence":1,"spellPower":1,"spellResitance":0,"damage":0,"apr":1,"tpr":1,"movement":0,"initiative":10,"range":1}}

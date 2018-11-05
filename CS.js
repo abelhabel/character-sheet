@@ -21,6 +21,8 @@ class CS {
     this.multiselectTags = [];
     this.incrementTags = [];
     this.spritesheetTags = [];
+    this.binaryTags = [];
+    this['spritesheet-paletteTags'] = [];
     Object.keys(this.pools).forEach(k => {
       this.drains[k] = 0;
       this.initialPools[k] = this.pools[k];
@@ -97,6 +99,40 @@ class CS {
         console.log('updating increment', item.name, v)
         currentVal = v;
         val.textContent = v;
+      }
+    });
+    return o;
+  }
+
+  renderBinary(item, c) {
+    var o = document.createElement('div');
+    o.style.userSelect = 'none';
+    var name = document.createElement('div');
+    var val = document.createElement('input');
+    val.type = 'checkbox';
+    name.style.display = val.style.display = 'inline-block';
+    name.style.height = val.style.height = '40px';
+    name.style.lineHeight = val.style.lineHeight = '40px';
+    name.style.width = val.style.width = '200px';
+    name.textContent = item.name;
+    name.style.verticalAlign = 'top';
+    var currentVal = item.initial || false;
+    val.checked = currentVal;
+    this.setState(c, item, currentVal);
+    val.addEventListener('change', (e) => {
+      currentVal = !currentVal;
+
+      console.log('changed binary', currentVal)
+      this.setState(c, item, currentVal);
+    })
+
+    o.appendChild(name);
+    o.appendChild(val);
+    this.binaryTags.push({
+      name: item.name,
+      update: (v) => {
+        currentVal = v;
+        val.checked = v;
       }
     });
     return o;
@@ -269,14 +305,18 @@ class CS {
     image.style.left = '0px';
     image.style.top = '0px';
     image.style.backgroundColor = 'gray';
+    var selected = [];
     if(typeof fn == 'function') {
       image.addEventListener('click', (e) => {
-        fn(
+        selected.push([
           item.w * Math.floor(e.offsetX / item.w),
           item.h * Math.floor(e.offsetY / item.h),
           image
-        );
-        document.body.removeChild(image);
+        ])
+        if(!e.shiftKey) {
+          fn(selected);
+          document.body.removeChild(image);
+        }
       })
       document.body.appendChild(image);
     }
@@ -309,7 +349,8 @@ class CS {
     val.style.border = '1px solid black';
 
     val.addEventListener('click', (e) => {
-      this.openSpriteSheet(item, (x, y, img) => {
+      this.openSpriteSheet(item, (selected) => {
+        var [x, y, img] = selected[0];
         var ct = canvas.getContext('2d');
         ct.clearRect(0, 0, item.w, item.h);
         ct.drawImage(img, x, y, item.w, item.h, 0, 0, item.w, item.h);
@@ -328,6 +369,62 @@ class CS {
           ct.clearRect(0, 0, item.w, item.h);
           ct.drawImage(img, v.x, v.y, item.w, item.h, 0, 0, item.w, item.h);
           // this.setState(c, item, {x: x, y: y, spritesheet: item.src, w: item.w, h: item.h})
+        }, true)
+      }
+    });
+    return o;
+  }
+
+  renderSpritePaletteSelect(item, c) {
+    var o = document.createElement('div');
+    o.style.userSelect = 'none';
+    var name = document.createElement('div');
+    var val = document.createElement('div');
+    var canvas = document.createElement('canvas');
+    val.appendChild(canvas);
+    name.style.display = val.style.display = 'inline-block';
+    name.style.height = val.style.height = '40px';
+    name.style.lineHeight = val.style.lineHeight = '40px';
+    name.style.width = '200px';
+    val.style.width = '40px';
+    val.style.cursor = 'pointer';
+    val.style.textAlign = 'center';
+    val.style.backgroundColor = 'gray';
+    name.textContent = item.name;
+    canvas.width = item.w;
+    canvas.height = item.h;
+    canvas.style.marginTop = '4px';
+    val.style.border = '1px solid black';
+
+    var drawSprites = (selected) => {
+      let w = selected.length * item.w;
+      let h = item.h;
+      val.style.width = w + 'px';
+      canvas.width = w;
+      canvas.height = h;
+      var ct = canvas.getContext('2d');
+      ct.clearRect(0, 0, w, h);
+      var sprites = [];
+      selected.forEach((s, i) => {
+        var [x, y, img] = s;
+        ct.drawImage(img, x, y, item.w, item.h, i * item.w, 0, item.w, item.h);
+        var sprite = {x: x, y: y, spritesheet: item.src, w: item.w, h: item.h};
+        sprites.push(sprite);
+      })
+      this.setState(c, item, sprites)
+    }
+
+    val.addEventListener('click', (e) => {
+      this.openSpriteSheet(item, drawSprites)
+    })
+    o.appendChild(name);
+    o.appendChild(val);
+    this['spritesheet-paletteTags'].push({
+      name: item.name,
+      update: (v) => {
+        this.openSpriteSheet(item, false, (img) => {
+          let selected = v.map(s => [s.x, s.y, img]);
+          drawSprites(selected);
         }, true)
       }
     });
@@ -354,6 +451,10 @@ class CS {
             return o.appendChild(this.renderMultipleSelect(item, c));
           case 'spritesheet':
             return o.appendChild(this.renderSpriteSelect(item, c));
+          case 'spritesheet-palette':
+            return o.appendChild(this.renderSpritePaletteSelect(item, c));
+          case 'binary':
+            return o.appendChild(this.renderBinary(item, c));
           default: ''
         }
 
@@ -412,7 +513,8 @@ class CS {
   }
 
   renderImportButton() {
-    var monsters = require(this.library);
+    var monsters = require(this.library) || [];
+
     monsters.sort((a, b) => a.bio.name > b.bio.name ? 1 : -1);
     var d = document.createElement('div');
     CS.applyStyle(d, CS.buttonCss);
@@ -461,6 +563,7 @@ class CS {
         if(!item) return;
         let value = monster[cname][key];
         let listName = item.type + 'Tags';
+        console.log('item type', item.type)
         let tag = this[item.type + 'Tags'].find(t => t.name == item.name);
         if(tag && typeof tag.update == 'function') tag.update(value);
         this.setState(category, item, value);

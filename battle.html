@@ -15,7 +15,6 @@
   <script src='TeamSelect.js'></script> -->
 </body>
 <script>
-  var order = {};
   class Module {
     constructor(name) {
       this.name = name;
@@ -51,19 +50,6 @@
       }).catch(e => {
         console.log('loading error', e)
       });
-      // var index = -1 + this.loaders.push(
-      //   () => {
-      //     var loaded = files.filter(f => {
-      //       return this.modules[f];
-      //     });
-      //     if(loaded.length == files.length) {
-      //       console.log('done loading', loaded, this.modules)
-      //       // Object.keys(this.modules).forEach(m => m())
-      //       fn();
-      //       this.loaders.splice(index, 1);
-      //     }
-      //   }
-      // )
     }
   }
 
@@ -72,13 +58,14 @@
   }
   Module.modules = {};
   Module.loaders = [];
-  Module.onLoad(['monsters.js', 'abilities.js', 'special-effects.js', 'PositionList2d.js', 'pathfinding.js',
-  'Ability.js', 'Monster.js', 'TeamSelect.js', 'Battle.js'], () => {
+  Module.onLoad(['monsters.js', 'abilities.js', 'terrains.js', 'special-effects.js', 'PositionList2d.js', 'pathfinding.js',
+  'Ability.js', 'Monster.js', 'Terrain.js', 'TeamSelect.js', 'Battle.js', ], () => {
     const PL = require('PositionList2d.js');
     const monsters = require('monsters.js');
     const Battle = require('Battle.js');
     const TeamSelect = require('TeamSelect.js');
     const abilities = require('abilities.js');
+    const terrains = require('terrains.js');
     var undead = monsters.filter(m => m.bio.family == 'Undead');
     var beasts = monsters.filter(m => m.bio.family == 'Beasts');
     var humans = monsters.filter(m => m.bio.family == 'Humanoids');
@@ -138,7 +125,7 @@
     // team2.forEach(a => a.ai = true);
     var w = h = 8;
     h = 10;
-    var tw = th = 32;
+    var tw = th = 48;
     var container = document.createElement('div');
     container.style.position = 'relative';
     container.style.height = h * th + "px";
@@ -170,7 +157,9 @@
       teamSelect.teams[1].forEach(m => m.ai = false);
       var battle = new Battle(teamSelect.teams[0], teamSelect.teams[1], w, h, tw, th, grid, initiative, effects);
       battle.start();
+      window.battle = battle;
     });
+
     teamSelect.render();
   })
 </script>

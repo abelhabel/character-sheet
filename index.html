@@ -1,95 +1,108 @@
 <!DOCTYPE html>
 <html>
 <head>
-  <script>
-    class Module {
-      constructor(name) {
-        this.name = name;
-        this.module = '';
-        Module.modules[name] = this;
-      }
 
-      get exports() {
-        return this.module;
-      }
-
-      set exports(n) {
-        this.module = n;
-        Module.loaders.forEach(l => l());
-      }
-
-      static onLoad(files, fn) {
-        var index = -1 + this.loaders.push(
-          () => {
-            var loaded = files.filter(f => {
-              return this.modules[f];
-            });
-            if(loaded.length == files.length) {
-              fn();
-              this.loaders.splice(index, 1);
-            }
-          }
-        )
-      }
-    }
-
-    function require(name) {
-      return Module.modules[name] && Module.modules[name].module || null;
-    }
-    Module.modules = {};
-    Module.loaders = [];
-    Module.onLoad(['seven.js', 'CS.js', 'heroes-like.js', 'monsters.js', 'ability-tpl.js', 'abilities.js'], () => {
-      console.log('all loaded')
-      const CS = require('CS.js');
-      function loadSeven() {
-        const seven = require("seven.js");
-        var pools = {
-          bodyFaculties: 5,
-          mindFaculties: 5
-        };
-        var cs = new CS(seven, document.body, pools);
-        cs.render();
-      }
-
-      function loadHeroes() {
-        const heroes = require("heroes-like.js")
-        var cs = new CS(heroes, document.body);
-        cs.render();
-      }
-
-      function loadAbility() {
-        const ability = require("ability-tpl.js");
-        var cs  = new CS(ability, document.body);
-        cs.render();
-      }
-
-      var url = new URL(document.location.href);
-      var part = url.searchParams.get('part');
-
-      switch(part) {
-        case 'heroes':
-          loadHeroes();
-          break;
-        case 'seven':
-          loadSeven();
-          break;
-        case 'abilities':
-          loadAbility();
-          break;
-        default:
-          loadHeroes();
-          break;
-      }
-
-    })
-  </script>
 </head>
 <body>
-  <script src='abilities.js'></script>
-  <script src='monsters.js'></script>
-  <script src='seven.js'></script>
-  <script src='ability-tpl.js'></script>
-  <script src='heroes-like.js'></script>
-  <script src='CS.js'></script>
+
 </body>
+<script>
+class Module {
+  constructor(name) {
+    this.name = name;
+    this.module = '';
+    Module.modules[name] = this;
+  }
+
+  get exports() {
+    return this.module;
+  }
+
+  set exports(n) {
+    this.module = n;
+    // Module.loaders.forEach(l => l());
+  }
+
+  static onLoad(files, fn) {
+    var o = Promise.resolve();
+    files.forEach(f => {
+      o = o.then(() => {
+        return new Promise((resolve, reject) => {
+          var script = document.createElement('script');
+          script.onload = function() {
+            resolve();
+          };
+          script.src = f;
+          document.body.appendChild(script);
+        })
+      })
+    })
+    o.then(function() {
+      fn()
+    }).catch(e => {
+      console.log('loading error', e)
+    });
+  }
+}
+
+function require(name) {
+  return Module.modules[name] && Module.modules[name].module || null;
+}
+Module.modules = {};
+Module.loaders = [];
+  Module.onLoad(['abilities.js', 'monsters.js', 'terrains.js', 'seven.js', 'CS.js', 'heroes-like.js',
+  'ability-tpl.js', 'terrain-tpl.js'], () => {
+    console.log('all loaded')
+    const CS = require('CS.js');
+    function loadSeven() {
+      const seven = require("seven.js");
+      var pools = {
+        bodyFaculties: 5,
+        mindFaculties: 5
+      };
+      var cs = new CS(seven, document.body, pools);
+      cs.render();
+    }
+
+    function loadHeroes() {
+      const heroes = require("heroes-like.js")
+      var cs = new CS(heroes, document.body);
+      cs.render();
+    }
+
+    function loadAbility() {
+      const ability = require("ability-tpl.js");
+      var cs  = new CS(ability, document.body);
+      cs.render();
+    }
+
+    function loadTerrain() {
+      const terrain = require("terrain-tpl.js");
+      var cs  = new CS(terrain, document.body);
+      cs.render();
+    }
+
+    var url = new URL(document.location.href);
+    var part = url.searchParams.get('part');
+
+    switch(part) {
+      case 'heroes':
+        loadHeroes();
+        break;
+      case 'seven':
+        loadSeven();
+        break;
+      case 'abilities':
+        loadAbility();
+        break;
+      case 'terrain':
+        loadTerrain();
+        break;
+      default:
+        loadHeroes();
+        break;
+    }
+
+  })
+</script>
 </html>

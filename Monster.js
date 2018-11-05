@@ -72,6 +72,7 @@ class Monster {
     this.x = 0;
     this.y = 0;
     this.selections = [];
+    this.triggerCount = 0;
     this.bio = {
       sprite: t.bio.sprite,
       name: t.bio.name,
@@ -148,6 +149,10 @@ class Monster {
     return this.abilities.filter(a => a.bio.type == 'trigger');
   }
 
+  get passives() {
+    return this.abilities.filter(a => a.bio.type == 'passive');
+  }
+
   get canvas() {
     return this.template.canvas;
   }
@@ -158,6 +163,10 @@ class Monster {
 
   get movesLeft() {
     return this.totalStat('movement') - this.tilesMoved;
+  }
+
+  get hasAura() {
+    return this.abilities.find(a => a.bio.type == 'passive' && (a.stats.shape == 'circle' || a.stats.shape == 'square') && a.stats.radius);
   }
 
   move(x, y) {
@@ -217,8 +226,9 @@ class Monster {
 
   passiveAbilityBonus(name) {
     var out = new StatBonus();
-    this.passiveAbilities.forEach(a => {
+    this.passives.forEach(a => {
       if(a.stats.attribute != name) return;
+      if(a.stats.targetFamily == 'enemies') return;
       let flanks = this.battle.flanks(this);
       if(a.bio.condition == 'flanked' && flanks < 2) {
         return;
@@ -239,19 +249,18 @@ class Monster {
 
   auraBonus(name) {
     var out = new StatBonus();
-    this.battle && this.battle.auras[this.team] && this.battle.auras[this.team].forEach(a => {
+    this.battle.auras.all.forEach(a => {
       if(a.stats.attribute != name) return;
       var {source, targetFamily, multiplier, radius} = a.stats;
-      console.log('adding aura bonus', a.bio.name)
       var d = this.battle.grid.distance(this.x, this.y, a.owner.x, a.owner.y);
       if(a.stats.shape == 'square') {
         d -= radius * 0.415;
       }
       if(d > radius) return;
-      if(a.owner.team == this.team && targetFamily == 'allies' && source == 'blessing') {
+      if(a.owner.team == this.team && targetFamily != 'enemies' && source == 'blessing') {
         out.add(a);
       }
-      if(a.owner.team != this.team && targetFamily == 'enemies' && source == 'curse') {
+      if(a.owner.team != this.team && targetFamily != 'allies' && source == 'curse') {
         out.add(a);
       }
     })
@@ -309,8 +318,7 @@ class Monster {
 
   get activeEffects() {
     return this.effects.filter(e => {
-      return e.ability.bio.type == 'passive' ||
-      e.rounds < e.ability.stats.duration;
+      return e.rounds < e.ability.stats.duration;
     })
   }
 
@@ -318,8 +326,12 @@ class Monster {
     return this.totalHealth > 0;
   }
 
+  get canTrigger() {
+    return this.triggerCount < this.totalStat('tpr');
+  }
+
   get canAct() {
-    return !this.activeEffects.find(e => e.ability.stats.ailment == 'stunned');
+    return this.totalStat('apr') && !this.activeEffects.find(e => e.ability.stats.ailment == 'stunned');
   }
 
   get maxHealth() {

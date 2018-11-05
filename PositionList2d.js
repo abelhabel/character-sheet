@@ -32,6 +32,18 @@ class PositionList2d {
     })
   }
 
+  steps(x1, y1, x2, y2) {
+    var dx = Math.abs(x1 - x2);
+    var dy = Math.abs(y1 - y2);
+    return dx + dy;
+  }
+
+  squareRadius(x1, y1, x2, y2) {
+    var dx = Math.abs(x1 - x2);
+    var dy = Math.abs(y1 - y2);
+    return Math.max(dx, dy);
+  }
+
   distance(x1, y1, x2, y2) {
     var dx = Math.abs(x1 - x2);
     var dy = Math.abs(y1 - y2);

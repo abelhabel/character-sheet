@@ -16,7 +16,8 @@ function guid() {
 }
 const files = {
   'monsters.js': () => wrap.pre() + require('./monsters.js')() + wrap.post('monsters.js'),
-  'abilities.js': () => wrap.pre() + require('./abilities.js')() + wrap.post('abilities.js')
+  'abilities.js': () => wrap.pre() + require('./abilities.js')() + wrap.post('abilities.js'),
+  'terrains.js': () => wrap.pre() + require('./terrains.js')() + wrap.post('terrains.js')
 }
 // console.log(files['abilities.js'])
 function loadFile(name) {
@@ -32,10 +33,12 @@ loadFile('PositionList2d.js');
 loadFile('Battle.js');
 loadFile('Ability.js');
 loadFile('Monster.js');
+loadFile('Terrain.js');
 loadFile('TeamSelect.js');
 loadFile('seven.js');
 loadFile('special-effects.js');
 loadFile('ability-tpl.js');
+loadFile('terrain-tpl.js');
 loadFile('heroes-like.js');
 loadFile('pathfinding.js');
 loadFile('index.html');
@@ -61,6 +64,12 @@ const server = http.createServer(function(req, res) {
     let id = url.searchParams.get('id') ||  guid();
     console.log('saving', 'abilities/' + id + '.json')
     req.pipe(fs.createWriteStream('abilities/' + id + '.json'));
+    res.end(id);
+  }
+  if(name == 'saveTerrain') {
+    let id = url.searchParams.get('id') ||  guid();
+    console.log('saving', 'terrain/' + id + '.json')
+    req.pipe(fs.createWriteStream('terrain/' + id + '.json'));
     res.end(id);
   }
   if(name.match('.wav')) {

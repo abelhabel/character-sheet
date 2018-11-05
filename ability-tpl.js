@@ -184,7 +184,8 @@ var tpl = {
         {
           name: 'Attribute',
           type: 'select',
-          values: ['', 'attack', 'defence', 'spellPower', 'spellResistance', 'movement', 'initiative', 'damage', 'mana'],
+          values: ['', 'attack', 'defence', 'spellPower', 'spellResistance',
+          'movement', 'initiative', 'damage', 'mana', 'apr', 'tpr'],
           initial: '',
           exportAs: 'attribute'
         },
@@ -207,7 +208,7 @@ var tpl = {
           type: 'select',
           values: ['', 'hypnotize', 'berzerk', 'reflectDamage',
             'giveEffectAsAbility', 'phantomImage', 'stealBlessing',
-            'dispel', 'teleport', 'lifeLeech', 'polymorph'
+            'dispel', 'teleport', 'lifeLeech', 'polymorph', 'blink'
           ],
           initial: 'false',
           exportAs: 'special'
