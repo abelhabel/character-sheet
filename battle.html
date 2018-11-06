@@ -1,20 +1,23 @@
 <!DOCTYPE html>
 <html>
 <head>
-
+  <style>
+    * {
+      box-sizing: border-box;
+    }
+  </style>
 </head>
 <body>
-  <!-- <script src='pathfinding.js'></script>
-  <script src='special-effects.js'></script>
-  <script src='monsters.js'></script>
-  <script src='abilities.js'></script>
-  <script src='Ability.js'></script>
-  <script src='Monster.js'></script>
-  <script src='PositionList2d.js'></script>
-  <script src='Battle.js'></script>
-  <script src='TeamSelect.js'></script> -->
+
 </body>
 <script>
+  HTMLCanvasElement.prototype.clone = function() {
+    var c = document.createElement('canvas');
+    c.width = this.width;
+    c.height = this.height;
+    c.getContext('2d').drawImage(this, 0, 0, c.width, c.height);
+    return c;
+  }
   class Module {
     constructor(name) {
       this.name = name;
@@ -88,7 +91,7 @@
     var yoad = beasts.find(m => m.bio.name == 'Yoad');
     var team1 = [];
     var team2 = [];
-    var cash = 200;
+    var cash = 600;
     var all = [...undead, ...beasts, ...humans];
 
     var selectContainer = document.createElement('div');
@@ -151,7 +154,7 @@
     // var battle = new Battle(undead, humans, w, h, tw, th, grid, initiative, effects);
     // battle.start();
 
-    var teamSelect = new TeamSelect(all, selectContainer, w, h, tw, th, 200, () => {
+    var teamSelect = new TeamSelect(all, selectContainer, w, h, tw, th, cash, () => {
       selectContainer.style.display = 'none';
       teamSelect.teams[0].forEach(m => m.ai = false);
       teamSelect.teams[1].forEach(m => m.ai = false);

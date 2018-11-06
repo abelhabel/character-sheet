@@ -199,7 +199,7 @@ var tpl = {
         {
           name: 'Ailment',
           type: 'select',
-          values: ['stunned'],
+          values: ['stunned', 'held'],
           initial: '',
           exportAs: 'ailment'
         },

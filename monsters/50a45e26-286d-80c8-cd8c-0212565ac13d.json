@@ -1,0 +1,1 @@
+{"bio":{"name":"Bryon","family":"Humanoids","cost":"30","maxStacks":5,"sprite":{"x":1088,"y":288,"spritesheet":"DungeonCrawl_ProjectUtumnoTileset.png","w":32,"h":32}},"abilities":{"abilities":["Ranged Attack III"]},"stats":{"health":15,"mana":0,"attack":7,"defence":1,"spellPower":1,"spellResitance":0,"damage":1,"apr":2,"tpr":1,"movement":4,"initiative":9,"range":2}}

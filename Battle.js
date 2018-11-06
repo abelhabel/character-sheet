@@ -56,7 +56,13 @@ class Battle {
     this.turnOrder = [];
     this.grid = new PL(w, h);
     this.terrain = new PL(w, h);
-    var terrain = new Terrain(terrains.find(t => t.bio.name == 'Underground Ruin'));
+    this.terrainCanvas = document.createElement('canvas');
+    this.terrainCanvas.width = this.board.width;
+    this.terrainCanvas.height = this.board.height;
+    Object.assign(this.terrainCanvas.style, this.board.style);
+    this.board.parentNode.insertBefore(this.terrainCanvas, this.board);
+    var terrain = new Terrain(terrains.find(t => t.bio.name == 'Grass'));
+
     this.terrain.loop((x, y) => {
       this.terrain.set(x, y, {sprite: terrain.sprite, x, y});
     })
@@ -125,7 +131,6 @@ class Battle {
       } else {
         a.selections[0] = targets;
       }
-
       if(a.selectedAbility && targets.validTargets && a.selections.length == selectionsRequired) {
         this.attack(a, t);
         mp = 0;
@@ -134,7 +139,7 @@ class Battle {
           this.act();
         }
       } else
-      if(a.movesLeft > 0) {
+      if(a.canMove) {
         var path = this.grid.path(a.x, a.y, x, y);
         path.shift();
         if(a.movesLeft < path.length) return;
@@ -179,7 +184,7 @@ class Battle {
       if(x > this.w -1 || y > this.h -1) return;
       var path = this.grid.path(a.x, a.y, x, y);
       path.shift();
-      var m = a.totalStat('movement');
+      var m = a.movesLeft;
       var targets = {
         actors: [],
         tiles: path.slice(0, m).map((p, i) => ({x: p[0], y: p[1], i}))
@@ -367,11 +372,17 @@ class Battle {
   }
 
   drawTerrain() {
-    var canvas = this.board;
+    var canvas = this.terrainCanvas;
     var c = canvas.getContext('2d');
+    var obstacles = new Terrain(terrains.find(t => t.bio.name == 'Trees'));
     this.terrain.loop((x, y) => {
       let item = this.terrain.get(x, y);
       c.drawImage(item.sprite.canvas, x * this.tw, y * this.th, this.tw, this.th);
+      // if(y > 2 && y < 8 && Math.random() < 0.2) {
+      //   let sprite = obstacles.sprite;
+      //   this.grid.set(x, y, {sprite: sprite, x, y});
+      //   c.drawImage(sprite.canvas, x * this.tw, y * this.th, this.tw, this.th);
+      // }
     })
   }
 
@@ -487,29 +498,230 @@ class Battle {
     })
   }
 
+  makeMonsterCards() {
+    var style = document.createElement('style');
+    style.innerHTML = `
+    .card-outer {
+      display: inline-block;
+      width: 160px;
+      height: 200px;
+      border-radius: 12px;
+      background-color: darkkhaki;
+      padding: 8px;
+      font-family: Tahoma, monospace;
+      font-size: 14px;
+      vertical-align: top;
+      margin: 2px;
+      border: none;
+    }
+    .card-outer.selected {
+      border: 1px solid black;
+    }
+    .card-outer.dead {
+      background-color: brown;
+    }
+    .card-inner {
+      border-radius: 10px;
+      border: 1px solid thistle;
+      width: 100%;
+      height: 100%;
+      padding: 4px;
+      background-color: beige;
+    }
+
+    .card-name {
+      padding: 2px 4px;
+      background-color: darkkhaki;
+      position: relative;
+      top: -5px;
+      left: -5px;
+      border-bottom: 2px solid gray;
+      border-right: 1px solid gray;
+      font-weight: bold;
+      letter-spacing: 0.1em;
+    }
+
+    .card-image {
+      text-align: center;
+    }
+
+    .card-upper, .card-lower {
+      height: 50%;
+      position: relative;
+    }
+
+    .stats-left {
+      position: absolute;
+      left: -10px;
+      width: 24px;
+      bottom: -6px;
+    }
+    .stats-right {
+      position: absolute;
+      right: -10px;
+      width: 24px;
+      bottom: -6px;
+    }
+
+    .card-stat {
+      position: relative;
+      min-width: 24px;
+      height: 24px;
+      border-radius: 8px;
+      text-align: center;
+      line-height: 20px;
+      color: white;
+      margin-bottom: -4px;
+      border: none;
+      cursor: default;
+      display: inline-block;
+      padding: 2px;
+    }
+    .card-stat span {
+      display: none;
+    }
+    .card-stat:hover {
+      outline: 1px solid black;
+    }
+    .stats-left .card-stat:hover span {
+      display: inline-block;
+      position: absolute;
+      top: 0px;
+      left: 24px;
+      background-color: black;
+      font-size: 13px;
+      padding: 0px 4px;
+      border-radius: 4px;
+      width: 106px;
+      text-align: left;
+
+    }
+    .stats-right .card-stat:hover span {
+      display: inline-block;
+      position: absolute;
+      top: 0px;
+      right: 24px;
+      background-color: black;
+      font-size: 13px;
+      padding: 0px 4px;
+      border-radius: 4px;
+      width: 106px;
+      text-align: right;
+
+    }
+    .health {
+      background-color: #c12525;
+    }
+    .mana {
+      background-color: #4039bb;
+    }
+    .defence, .attack {
+      background-color: #8c882c;
+    }
+    .spell-resistance, .spell-power {
+      background-color: #673ab7;
+    }
+    .movement {
+      background-color: #3ba791;
+    }
+    .damage {
+      background-color: #399a2c;
+    }
+
+    .card-abilities {
+      font-family: Tahoma;
+      font-size: 10px;
+      padding-left: 16px;
+    }
+    .card-triggers {
+
+    }
+    .card-effects {
+
+    }
+    `;
+    document.head.appendChild(style);
+    this.monsterCards = this.turnOrder.map(item => {
+      var health = item.totalStat('health');
+      var mana = item.totalStat('mana');
+      var defence = item.totalStat('defence');
+      var spellResistance = item.totalStat('spellResistance');
+      var attack = item.totalStat('attack');
+      var spellPower = item.totalStat('spellPower');
+      var movement = item.totalStat('movement');
+      var damage = item.totalStat('damage');
+      var name = item.bio.name;
+
+      var effects = item.activeEffects.map(e => e.ability.bio.name);
+      var abilities = item.abilities.map(a => a.bio.name);
+      var html = () => `<div
+        class='card-outer ${this.currentActor == item ? 'selected' : ''} ${item.alive ? '' : 'dead'}'>
+        <div class='card-inner'>
+          <div class='card-upper'>
+            <div class='card-name'>
+              ${name}
+            </div>
+            <div class='card-image'>
+            </div>
+          </div>
+          <div class='card-lower'>
+            <div class='card-abilities'>
+              ${abilities.join(', ')}
+            </div>
+            <div class='stats-left'>
+              <div class='card-stat spell-resistance'>
+                ${item.totalStat('spellResistance')}
+                <span>Spell Resistance</span>
+              </div>
+              <div class='card-stat defence'>
+                ${item.totalStat('defence')}
+                <span>Defence</span>
+              </div>
+              <div class='card-stat mana'>
+                ${item.totalMana}/${item.maxMana}
+                <span>Mana</span>
+              </div>
+              <div class='card-stat health'>
+                ${item.totalHealth}/${item.maxHealth}
+                <span>Health</span>
+              </div>
+            </div>
+            <div class='stats-right'>
+              <div class='card-stat spell-power'>
+                ${item.totalStat('spellPower')}
+                <span>Spell Power</span>
+              </div>
+              <div class='card-stat attack'>
+                ${item.totalStat('attack')}
+                <span>Attack</span>
+              </div>
+              <div class='card-stat movement'>
+                ${item.totalStat('movement')}
+                <span>Movement</span>
+              </div>
+              <div class='card-stat damage'>
+                ${item.totalStat('damage')}
+                <span>Damage</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>`;
+
+      return {item, html, canvas: item.canvas.clone()};
+    })
+  }
+
   drawMonsterCards() {
+    var container = document.getElementById('monster-cards');
+    container.innerHTML = '';
     this.monsterCards.forEach(c => {
-      c.ct.clearRect(0, 0, c.w, c.h);
-      if(!c.item.alive) {
-        c.ct.fillStyle = '#aa0000'
-        c.ct.fillRect(0, 0, c.w, c.h);
-      }
-      if(c.item == this.currentActor) {
-        c.ct.fillStyle = '#00aa00'
-        c.ct.fillRect(0, 0, c.w, c.h);
-      }
-      c.ct.fillStyle = 'black';
-      var {sprite, name} = c.item.bio;
-      c.ct.drawImage(c.item.canvas, 10, 10, this.tw, this.th)
-      c.ct.fillText(`name: ${name}`, 10, 20 + this.th);
-      Object.keys(c.item.stats).forEach((key, i) => {
-        let y = this.th + 30 + (i * 10);
-        let x = 10;
-        let total = c.item.totalStat(key);
-        if(key == 'health') total = c.item.totalHealth;
-        if(key == 'mana') total = c.item.totalMana;
-        c.ct.fillText(`${key}: ${total}`, x, y);
-      })
+      let card = document.createElement('div');
+      card.innerHTML = c.html();
+      let canvas = c.canvas;
+      let image = card.querySelector('.card-image');
+      image.appendChild(canvas);
+      container.appendChild(card.firstElementChild);
     })
   }
 
@@ -539,10 +751,11 @@ class Battle {
     var canvas = this.board;
     var c = canvas.getContext('2d');
     this.grid._list().forEach(item => {
+      if(!item.bio || !item.bio.sprite) return
       var sprite = item.bio.sprite;
       var img = this.images[sprite.spritesheet];
       if(item == this.currentActor) {
-        c.lineWidth = 4;
+        c.lineWidth = 1;
         c.strokeStyle = this.teamColors[item.team].selected;
         c.strokeRect(item.x * this.tw, item.y * this.th, this.tw, this.th);
       }
@@ -555,10 +768,6 @@ class Battle {
       c.fillStyle = 'red';
       c.strokeStyle = 'blue';
       c.fillText(item.stacks, item.x * this.tw, item.y * this.th + this.th);
-      c.beginPath();
-      c.moveTo(item.x * this.tw, item.y * this.th + 1);
-      c.lineTo(item.x * this.tw + (this.tw * item.healthRatio), item.y * this.th + 1);
-      c.stroke();
     })
   }
 
@@ -824,7 +1033,7 @@ class Battle {
   }
 
   defend(a) {
-    a.bonusdefence = 10;
+    a.bonusdefence = 2 + (a.canMove ? 1 : 0) * Math.round(8 * (a.movesLeft/a.totalStat('movement')));
   }
 
   undefend(a) {
@@ -974,8 +1183,6 @@ class Battle {
     if(!a.alive) return;
     a.activeEffects.forEach(e => {
       var {source} = e.ability.stats;
-      console.log('applying effect:', e.ability.bio.name, 'to', a.bio.name);
-      e.rounds += 1;
       if(e.ability.stats.source == 'attack' || e.ability.stats.source == 'spell') {
         this.dealDamage(e.source, a, e.power, e.ability, true);
       }
@@ -986,7 +1193,6 @@ class Battle {
   attack(a, b, ability, fromEffect) {
     ability = ability || a.selectedAbility;
     var targets = this.abilityTargets(a, ability, b.x, b.y);
-    console.log(targets, ability)
     this.turn.actions.push({
       targets: targets,
       ability: ability
@@ -1111,6 +1317,7 @@ class Battle {
     this.turn.endMovement.y = a.y;
     a.effects.forEach(e => {
       var {source} = e.ability.stats;
+      e.rounds += 1;
       if(e.rounds == e.ability.stats.duration) {
         a.removeEffect(e);
       }
@@ -1162,22 +1369,6 @@ class Battle {
 
   }
 
-  makeMonsterCards() {
-    this.monsterCards = this.turnOrder.map(item => {
-      var c = document.createElement('canvas');
-      c.width = 200;
-      c.height = 200;
-      document.body.appendChild(c)
-      return {
-        item: item,
-        canvas: c,
-        w: 200,
-        h: 200,
-        ct: c.getContext('2d')
-      }
-    })
-  }
-
   createAbilityContainer() {
     var c = document.createElement('div');
     c.id = 'monster-abilities';
@@ -1185,6 +1376,12 @@ class Battle {
     document.body.appendChild(c);
   }
 
+  createMonsterCardContainer() {
+    var c = document.createElement('div');
+    c.id = 'monster-cards';
+
+    document.body.appendChild(c);
+  }
   createTriggerContainer() {
     var c = document.createElement('div');
     c.id = 'monster-triggers';
@@ -1202,14 +1399,17 @@ class Battle {
   start() {
     this.loadSounds();
     this.setTurnOrder();
-    this.makeMonsterCards();
+
+    this.createMonsterCardContainer();
     this.createAbilityContainer();
     this.createTriggerContainer();
     this.createEffectContainer();
     this.loadSpriteSheets()
     .then(images => {
       this.cacheCanvases();
+      this.makeMonsterCards();
       this.setPositions();
+      this.drawTerrain();
       this.render();
       return this.act();
     })
@@ -1239,8 +1439,7 @@ class Battle {
 
   render() {
     this.clearCanvases();
-    this.drawGrid();
-    this.drawTerrain();
+    // this.drawGrid();
     this.drawMonsters();
     this.drawTurnOrder();
     this.drawMonsterCards();

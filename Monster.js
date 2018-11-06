@@ -53,7 +53,7 @@ class StatBonus {
       this.blessing.ability = ability;
     } else
     if(ability.stats.source == 'curse') {
-      let roll = ability.roll();
+      let roll = power || ability.roll();
       if(roll < this.curse.value) return;
       this.curse.value = roll;
       this.curse.ability = ability;
@@ -208,7 +208,6 @@ class Monster {
     }
     let special;
     if(ability.stats.special && typeof specialEffects[ability.stats.special] == 'function') {
-      console.log('Special', source, ability, power, triggered, triggeredPower)
       special = specialEffects[ability.stats.special](this.battle, source, this, ability, power, triggeredPower);
     }
 
@@ -240,10 +239,19 @@ class Monster {
 
   activeEffectBonus(name) {
     var out = new StatBonus();
+    var stacks = {};
     this.activeEffects.forEach(e => {
       if(e.ability.stats.attribute != name) return;
-      out.add(e.ability, e.power);
+      if(e.ability.stats.stacks > 1) {
+        stacks[e.ability.bio.name] = stacks[e.ability.bio.name] || {power: 0, ability: e.ability};
+        stacks[e.ability.bio.name].power += e.power;
+      } else {
+        out.add(e.ability, e.power);
+      }
     });
+    Object.keys(stacks).forEach(name => {
+      out.add(stacks[name].ability, stacks[name].power);
+    })
     return out;
   }
 
@@ -316,6 +324,10 @@ class Monster {
     return Math.max(0, this.totalStat('mana') - this.manaUsed);
   }
 
+  get maxMana() {
+    return this.totalStat('mana');
+  }
+
   get activeEffects() {
     return this.effects.filter(e => {
       return e.rounds < e.ability.stats.duration;
@@ -328,6 +340,10 @@ class Monster {
 
   get canTrigger() {
     return this.triggerCount < this.totalStat('tpr');
+  }
+
+  get canMove() {
+    return this.movesLeft && !this.activeEffects.find(e => e.ability.stats.ailment == 'held');
   }
 
   get canAct() {
