@@ -1,10 +1,11 @@
 class Logger {
   constructor() {
     this.history = [];
-    this.minimized = false;
+    this.minimized = true;
     var state = 'out';
     var min = document.createElement('div');
-    min.textContent = '---';
+    this.min = min;
+    min.textContent = 'minimize';
     Object.assign(min.style, {
       position: 'absolute',
       right: '10px',
@@ -53,11 +54,14 @@ class Logger {
       backgroundColor: 'beige',
       zIndex: 200,
       cursor: 'grab',
-      overflow: 'hidden'
+      overflow: 'hidden',
+      overflowY: 'scroll',
+      padding: '2px 4px'
     })
 
     this.log('Logger started')
     document.body.appendChild(this.container);
+    this.redraw();
   }
 
   tag() {
@@ -82,8 +86,10 @@ class Logger {
   redraw() {
     if(this.minimized) {
       this.container.style.height = '23px';
+      this.min.textContent = 'maximize';
     } else {
       this.container.style.height = '200px';
+      this.min.textContent = 'minimize';
     }
   }
 }

@@ -61,7 +61,7 @@ class Battle {
     this.terrainCanvas.height = this.board.height;
     Object.assign(this.terrainCanvas.style, this.board.style);
     this.board.parentNode.insertBefore(this.terrainCanvas, this.board);
-    var terrain = new Terrain(terrains.find(t => t.bio.name == 'Underground Ruin'));
+    var terrain = new Terrain(terrains.find(t => t.bio.name == 'Dungeon'));
 
     this.terrain.loop((x, y) => {
       this.terrain.set(x, y, {sprite: terrain.sprite, x, y});
@@ -236,6 +236,7 @@ class Battle {
     } else {
       out.actors = out.tiles.filter(b => b.item).map(m => m.item);
     }
+
     if(ability.stats.target == 'ground' && out.tiles.length && this.grid.squareRadius(a.x, a.y, x, y) <= ability.stats.range) {
       if(!ability.stats.summon || !out.actors.length ) {
         out.validTargets = true;
@@ -921,8 +922,8 @@ class Battle {
     let flanks = this.flanks(b) - 1;
     let flankMultiplier = 1 + (flanks / 5);
     let abilityDamage = ability.roll(bonusDamage);
-    let multiplier = (Math.max(1, at) / Math.max(1, df));
-    // logger.log('ATTACK ROLL:', 'abilityDamage', abilityDamage, 'stacks', stacks, 'attack vs defence', multiplier, 'flanks', flankMultiplier)
+    let multiplier = 1 + Math.max(-0.9, ((Math.max(1, at) - Math.max(1, df)) / 10));
+    logger.log('ATTACK ROLL:', 'abilityDamage', abilityDamage, 'stacks', stacks, 'attack vs defence', multiplier, 'flanks', flankMultiplier)
     let d = Math.ceil(abilityDamage * stacks * multiplier * flankMultiplier);
     return d;
   }
@@ -1189,6 +1190,8 @@ class Battle {
   }
 
   start() {
+    logger.minimized = false;
+    logger.redraw();
     this.loadSounds();
     this.setTurnOrder();
 
