@@ -52,6 +52,14 @@ class MonsterCard {
           </div>
           <div class='stats-right'>
             <div class='card-stat spell-power'>
+              ${item.totalStat('apr')}
+              <span>Actions/Round</span>
+            </div>
+            <div class='card-stat spell-power'>
+              ${item.totalStat('tpr')}
+              <span>Triggers/Round</span>
+            </div>
+            <div class='card-stat spell-power'>
               ${item.totalStat('spellPower')}
               <span>Spell Power</span>
             </div>

@@ -23,7 +23,6 @@ class Logger {
     this.container.appendChild(min);
     this.container.addEventListener('mousedown', (e) => {
       if(e.target == min) return;
-      console.log(e)
       sx = e.screenX;
       sy = e.screenY;
       ox = e.offsetX;
@@ -57,7 +56,7 @@ class Logger {
       overflow: 'hidden'
     })
 
-
+    this.log('Logger started')
     document.body.appendChild(this.container);
   }
 
@@ -74,7 +73,6 @@ class Logger {
     .replace(/(earth)/g, "<span style='color:green'>$1</span>")
     .replace(/(rot)/g, "<span style='color:brown'>$1</span>")
     .replace(/(vitality)/g, "<span style='color:orange'>$1</span>")
-    console.log('add log', text)
     var tag = this.tag();
     tag.innerHTML = html;
     this.history.push({text, tag});

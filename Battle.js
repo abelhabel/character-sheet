@@ -5,7 +5,6 @@ const Terrain = require('Terrain.js');
 const abilities = require('abilities.js');
 const monsters = require('monsters.js');
 const terrains = require('terrains.js');
-console.log(terrains)
 class Turn {
   constructor(actor) {
     this.actor = actor;
@@ -62,12 +61,11 @@ class Battle {
     this.terrainCanvas.height = this.board.height;
     Object.assign(this.terrainCanvas.style, this.board.style);
     this.board.parentNode.insertBefore(this.terrainCanvas, this.board);
-    var terrain = new Terrain(terrains.find(t => t.bio.name == 'Grass'));
+    var terrain = new Terrain(terrains.find(t => t.bio.name == 'Underground Ruin'));
 
     this.terrain.loop((x, y) => {
       this.terrain.set(x, y, {sprite: terrain.sprite, x, y});
     })
-    console.log(this.terrain)
     this.images = {};
     this.sounds = {};
     this.monsterCards = [];
@@ -858,23 +856,19 @@ class Battle {
     target.triggers.forEach(a => {
       if(a.bio.activation != event) return;
       if(!target.canTrigger) return;
-      console.log('TRIGGER', event, a.bio.name)
+      console.log('TRIGGER', event, a.bio.name, ability)
       var t = a.stats.targetFamily == 'self' ? target : source;
       if(a.stats.source == 'attack') {
         t.addEffect(target, a, this.attackRoll(target, source, a), {event, ability}, power);
 
       } else
       if(a.stats.source == 'spell') {
-
+        t.addEffect(target, a, this.spellRoll(target, source, a), {event, ability}, power);
+      } else {
+        t.addEffect(target, a, a.roll(), {event, ability}, power);
       }
       this.attack(target, source, a, true, power);
       target.triggerCount += 1;
-      // if(a.stats.duration) {
-      //   console.log(t.bio.name, 'added effect', a.bio.name)
-      // } else {
-      //   console.log('TRIGGER', event, a.bio.name);
-      //   this.attack(target, source, a, true, power);
-      // }
     })
   }
 
@@ -945,23 +939,26 @@ class Battle {
     return d;
   }
 
-  dealSpellDamage(a, b, ability, fromEffect, effectPower) {
+  spellRoll(a, b, ability, fromEffect, effectPower) {
     let spellResistance = b.totalStat('spellResistance');
     let resistRoll = this.roll(1, 100);
-    console.log('resist', resistRoll, 'against spellResistance', spellResistance);
     if(resistRoll < spellResistance) {
-      console.log(b.bio.name, 'resisted spell', ability.bio.name);
+      logger.log(b.bio.name, 'resisted spell', ability.bio.name);
       return 0;
     }
     let stacks = a.stacks;
     let abilityDamage = effectPower || ability.roll();
     let spellPower = 1 + a.totalStat('spellPower') / 10;
     let d = Math.ceil(abilityDamage * stacks * spellPower);
-    console.log('abilityDamage', abilityDamage, 'stacks', stacks, 'spellPower', spellPower);
+    return d;
+  }
+
+  dealSpellDamage(a, b, ability, fromEffect, effectPower) {
+    let d = this.spellRoll(a, b, ability, fromEffect, effectPower);
     if(d) {
       this.dealDamage(a, b, d, ability, fromEffect);
       if(!fromEffect) {
-        this.trigger('when attack hits', a, b, d, ability);
+        this.trigger('when spell hits', a, b, d, ability);
       }
     }
     return d;
@@ -1042,7 +1039,7 @@ class Battle {
     // this.turnOrder.splice(i, 1);
     this.grid.remove(a.x,a.y);
     this.render();
-    console.log(a.bio.name, 'was killed');
+    logger.log(a.bio.name, 'was killed');
   }
 
   findClosestTile(p, q) {
@@ -1135,7 +1132,7 @@ class Battle {
     var t = this.findTarget(a);
     if(!t) {
       this.sounds.victory.play();
-      console.log(`${a.team} won the match`);
+      logger.log(`${a.team} won the match`);
       return;
     }
     var p = this.findClosestTile(a, t);

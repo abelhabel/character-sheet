@@ -200,7 +200,6 @@ class Monster {
   addEffect(source, ability, power, triggered, triggeredPower) {
     let e = this.effects.filter(e => e.ability.bio.name == ability.bio.name);
     if(e && e.length >= ability.stats.stacks ) {
-      console.log('effect do not stack more', ability.bio.name)
       return;
     }
     if(ability.stats.special != 'giveEffectAsAbility' && ability.stats.effect) {
