@@ -110,7 +110,7 @@ var tpl = {
           initial: 0,
           range: [0, 100],
           step: 10,
-          exportAs: 'spellResitance',
+          exportAs: 'spellResistance',
         },
         {
           name: "Damage",

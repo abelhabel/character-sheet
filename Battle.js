@@ -1,5 +1,6 @@
 const PL = require("PositionList2d.js");
 const Monster = require("Monster.js");
+const MonsterCard = require("MonsterCard.js");
 const Terrain = require('Terrain.js');
 const abilities = require('abilities.js');
 const monsters = require('monsters.js');
@@ -499,216 +500,8 @@ class Battle {
   }
 
   makeMonsterCards() {
-    var style = document.createElement('style');
-    style.innerHTML = `
-    .card-outer {
-      display: inline-block;
-      width: 160px;
-      height: 200px;
-      border-radius: 12px;
-      background-color: darkkhaki;
-      padding: 8px;
-      font-family: Tahoma, monospace;
-      font-size: 14px;
-      vertical-align: top;
-      margin: 2px;
-      border: none;
-    }
-    .card-outer.selected {
-      border: 1px solid black;
-    }
-    .card-outer.dead {
-      background-color: brown;
-    }
-    .card-inner {
-      border-radius: 10px;
-      border: 1px solid thistle;
-      width: 100%;
-      height: 100%;
-      padding: 4px;
-      background-color: beige;
-    }
-
-    .card-name {
-      padding: 2px 4px;
-      background-color: darkkhaki;
-      position: relative;
-      top: -5px;
-      left: -5px;
-      border-bottom: 2px solid gray;
-      border-right: 1px solid gray;
-      font-weight: bold;
-      letter-spacing: 0.1em;
-    }
-
-    .card-image {
-      text-align: center;
-    }
-
-    .card-upper, .card-lower {
-      height: 50%;
-      position: relative;
-    }
-
-    .stats-left {
-      position: absolute;
-      left: -10px;
-      width: 24px;
-      bottom: -6px;
-    }
-    .stats-right {
-      position: absolute;
-      right: -10px;
-      width: 24px;
-      bottom: -6px;
-    }
-
-    .card-stat {
-      position: relative;
-      min-width: 24px;
-      height: 24px;
-      border-radius: 8px;
-      text-align: center;
-      line-height: 20px;
-      color: white;
-      margin-bottom: -4px;
-      border: none;
-      cursor: default;
-      display: inline-block;
-      padding: 2px;
-    }
-    .card-stat span {
-      display: none;
-    }
-    .card-stat:hover {
-      outline: 1px solid black;
-    }
-    .stats-left .card-stat:hover span {
-      display: inline-block;
-      position: absolute;
-      top: 0px;
-      left: 24px;
-      background-color: black;
-      font-size: 13px;
-      padding: 0px 4px;
-      border-radius: 4px;
-      width: 106px;
-      text-align: left;
-
-    }
-    .stats-right .card-stat:hover span {
-      display: inline-block;
-      position: absolute;
-      top: 0px;
-      right: 24px;
-      background-color: black;
-      font-size: 13px;
-      padding: 0px 4px;
-      border-radius: 4px;
-      width: 106px;
-      text-align: right;
-
-    }
-    .health {
-      background-color: #c12525;
-    }
-    .mana {
-      background-color: #4039bb;
-    }
-    .defence, .attack {
-      background-color: #8c882c;
-    }
-    .spell-resistance, .spell-power {
-      background-color: #673ab7;
-    }
-    .movement {
-      background-color: #3ba791;
-    }
-    .damage {
-      background-color: #399a2c;
-    }
-
-    .card-abilities {
-      font-family: Tahoma;
-      font-size: 10px;
-      padding-left: 16px;
-    }
-    .card-triggers {
-
-    }
-    .card-effects {
-
-    }
-    `;
-    document.head.appendChild(style);
     this.monsterCards = this.turnOrder.map(item => {
-      var health = item.totalStat('health');
-      var mana = item.totalStat('mana');
-      var defence = item.totalStat('defence');
-      var spellResistance = item.totalStat('spellResistance');
-      var attack = item.totalStat('attack');
-      var spellPower = item.totalStat('spellPower');
-      var movement = item.totalStat('movement');
-      var damage = item.totalStat('damage');
-      var name = item.bio.name;
-
-      var effects = item.activeEffects.map(e => e.ability.bio.name);
-      var abilities = item.abilities.map(a => a.bio.name);
-      var html = () => `<div
-        class='card-outer ${this.currentActor == item ? 'selected' : ''} ${item.alive ? '' : 'dead'}'>
-        <div class='card-inner'>
-          <div class='card-upper'>
-            <div class='card-name'>
-              ${name}
-            </div>
-            <div class='card-image'>
-            </div>
-          </div>
-          <div class='card-lower'>
-            <div class='card-abilities'>
-              ${abilities.join(', ')}
-            </div>
-            <div class='stats-left'>
-              <div class='card-stat spell-resistance'>
-                ${item.totalStat('spellResistance')}
-                <span>Spell Resistance</span>
-              </div>
-              <div class='card-stat defence'>
-                ${item.totalStat('defence')}
-                <span>Defence</span>
-              </div>
-              <div class='card-stat mana'>
-                ${item.totalMana}/${item.maxMana}
-                <span>Mana</span>
-              </div>
-              <div class='card-stat health'>
-                ${item.totalHealth}/${item.maxHealth}
-                <span>Health</span>
-              </div>
-            </div>
-            <div class='stats-right'>
-              <div class='card-stat spell-power'>
-                ${item.totalStat('spellPower')}
-                <span>Spell Power</span>
-              </div>
-              <div class='card-stat attack'>
-                ${item.totalStat('attack')}
-                <span>Attack</span>
-              </div>
-              <div class='card-stat movement'>
-                ${item.totalStat('movement')}
-                <span>Movement</span>
-              </div>
-              <div class='card-stat damage'>
-                ${item.totalStat('damage')}
-                <span>Damage</span>
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>`;
-
-      return {item, html, canvas: item.canvas.clone()};
+      return new MonsterCard(item);
     })
   }
 
@@ -798,6 +591,7 @@ class Battle {
       container.appendChild(canvas);
     });
     this.auras.all.forEach(a => {
+      if(!a.owner.alive) return;
       var {source, targetFamily, multiplier, radius} = a.stats;
       if(a.owner.team == this.currentActor.team) {
         if(targetFamily == 'enemies') return;
@@ -1092,7 +886,8 @@ class Battle {
       b.heal(d);
       c = 'healed';
     }
-    console.log(`${a.bio.name} ${c} ${b.bio.name} ${d} (${ability.stats.element}) with ${ability.bio.name} (${b.totalHealth})`);
+    logger.log(`${a.bio.name} ${c} ${b.bio.name} ${d} (${ability.stats.element}) with ${ability.bio.name} (${b.totalHealth})`);
+    if(!b.alive) logger.log(b.bio.name, 'died!');
     if(!fromEffect) {
       this.trigger('when self is hit', b, a, d, ability);
       this[b.team] && this[b.team].forEach(t => {
@@ -1132,8 +927,8 @@ class Battle {
     let flanks = this.flanks(b) - 1;
     let flankMultiplier = 1 + (flanks / 5);
     let abilityDamage = ability.roll(bonusDamage);
-    let multiplier = (Math.max(1, at) / Math.max(1, 2 + df));
-    // console.log('ATTACK ROLL:', 'abilityDamage', abilityDamage, 'stacks', stacks, 'attack vs defence', multiplier, 'flanks', flankMultiplier)
+    let multiplier = (Math.max(1, at) / Math.max(1, df));
+    // logger.log('ATTACK ROLL:', 'abilityDamage', abilityDamage, 'stacks', stacks, 'attack vs defence', multiplier, 'flanks', flankMultiplier)
     let d = Math.ceil(abilityDamage * stacks * multiplier * flankMultiplier);
     return d;
   }
@@ -1299,7 +1094,7 @@ class Battle {
     var a = this.turnOrder.shift();
     var turn = new Turn(a);
     this.turns.push(turn);
-    console.log('Turn start for', a.bio.name, a.alive)
+    logger.log('Turn start for', a.bio.name);
     this.currentActor = a;
     this.undefend(a);
     a.selections = [];
@@ -1322,7 +1117,7 @@ class Battle {
         a.removeEffect(e);
       }
     });
-
+    logger.log('Turn end for', a.bio.name);
     this.turnOrder.push(a);
   }
 

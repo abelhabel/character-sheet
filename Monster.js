@@ -89,7 +89,7 @@ class Monster {
       attack: t.stats.attack,
       defence: t.stats.defence,
       spellPower: t.stats.spellPower,
-      spellResitance: t.stats.spellResitance,
+      spellResistance: t.stats.spellResistance,
       damage: t.stats.damage || 0,
       movement: t.stats.movement,
       initiative: t.stats.initiative,
@@ -200,7 +200,7 @@ class Monster {
   addEffect(source, ability, power, triggered, triggeredPower) {
     let e = this.effects.filter(e => e.ability.bio.name == ability.bio.name);
     if(e && e.length >= ability.stats.stacks ) {
-
+      console.log('effect do not stack more', ability.bio.name)
       return;
     }
     if(ability.stats.special != 'giveEffectAsAbility' && ability.stats.effect) {
@@ -228,7 +228,7 @@ class Monster {
     this.passives.forEach(a => {
       if(a.stats.attribute != name) return;
       if(a.stats.targetFamily == 'enemies') return;
-      let flanks = this.battle.flanks(this);
+      let flanks = this.battle ? this.battle.flanks(this) : 0;
       if(a.bio.condition == 'flanked' && flanks < 2) {
         return;
       }
@@ -257,7 +257,8 @@ class Monster {
 
   auraBonus(name) {
     var out = new StatBonus();
-    this.battle.auras.all.forEach(a => {
+    this.battle && this.battle.auras.all.forEach(a => {
+      if(!a.owner.alive) return
       if(a.stats.attribute != name) return;
       var {source, targetFamily, multiplier, radius} = a.stats;
       var d = this.battle.grid.distance(this.x, this.y, a.owner.x, a.owner.y);
