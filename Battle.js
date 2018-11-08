@@ -50,6 +50,10 @@ class Action {
 
 class Battle {
   constructor(team1, team2, w, h, tw, th, board, order, effects) {
+    this.mouse = {
+      x: 0,
+      y: 0
+    }
     this.team1 = team1;
     this.team2 = team2;
     this.team1.forEach(m => {
@@ -95,7 +99,7 @@ class Battle {
     this.terrainCanvas.height = this.board.height;
     Object.assign(this.terrainCanvas.style, this.board.style);
     this.board.parentNode.insertBefore(this.terrainCanvas, this.board);
-    var terrain = new Terrain(terrains.find(t => t.bio.name == 'Dungeon'));
+    var terrain = new Terrain(terrains.find(t => t.bio.name == 'Sand Stone'));
 
     this.terrain.loop((x, y) => {
       this.terrain.set(x, y, {sprite: terrain.sprite, x, y});
@@ -167,18 +171,17 @@ class Battle {
       }
       console.log(targets)
       if(a.selectedAbility && targets.validTargets && a.selections.length == selectionsRequired) {
-        let action = new Action('use ability', t, a.selectedAbility.id);
+        let action = new Action('use ability', {x,y}, a.selectedAbility.id);
         this.addAction(action)
         .catch(e => {
           console.log('action error', e)
         });
       } else
-      if(a.canMove) {
+      if(a.canMove && !this.grid.get(x, y)) {
         let action = new Action('move', {x,y}, a.id);
         this.addAction(action)
         .then(() => {
           console.log('walk successful');
-          this.turn.addAction(action);
         })
         .catch(e => {
           console.log(e)
@@ -215,7 +218,17 @@ class Battle {
       var c = this.effects.getContext('2d');
       hoverx = x;
       hovery = y;
+      this.mouse.x = x;
+      this.mouse.y = y;
+      this.monsterCards.forEach(c => {
+        if(!c.cached) return;
+        if(c.item == this.grid.get(this.mouse.x, this.mouse.y)) {
+          c.cached.classList.add('selected');
+        } else {
+          c.cached.classList.remove('selected');
+        }
 
+      })
       if(x > this.w -1 || y > this.h -1) return;
       var path = this.grid.path(a.x, a.y, x, y);
       path.shift();
@@ -240,6 +253,12 @@ class Battle {
       this.highlight(targets, x, y);
     })
 
+  }
+
+  highlightMonsterCard(x, y) {
+    this.monsterCards.forEach(c => {
+
+    })
   }
 
   abilityTargets(a, ability, x, y) {
@@ -553,6 +572,7 @@ class Battle {
       let canvas = c.canvas;
       let image = card.querySelector('.card-image');
       image.appendChild(canvas);
+      c.cached = card.firstElementChild;
       container.appendChild(card.firstElementChild);
     })
   }
@@ -1037,12 +1057,7 @@ class Battle {
         let path = this.grid.path(actor.x, actor.y, position.x, position.y);
         path.shift();
         if(actor.movesLeft < path.length) return reject("Invalid move");
-        p = this.walk(actor, path)
-        .then(() => {
-          this.turn.addAction(action);
-          resolve();
-        })
-        .catch(reject);
+        p = this.walk(actor, path);
       } else
       if(type == 'use ability') {
         let ability = actor.abilities.find(a => a.id == abilityId);
@@ -1050,12 +1065,7 @@ class Battle {
           console.log(ability, abilityId)
           return reject("Invalid ability")
         }
-        p = this.useAbility(actor, position, ability)
-        .then(() => {
-          this.turn.addAction(action);
-          resolve();
-        })
-        .catch(reject);
+        p = this.useAbility(actor, position, ability);
       } else {
         p = Promise.resolve();
       }

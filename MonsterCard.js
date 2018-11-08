@@ -1,6 +1,7 @@
 class MonsterCard {
   constructor(item) {
     this.item = item;
+    this.cached = null;
     this.canvas = item.canvas.clone();
   }
 
@@ -84,6 +85,9 @@ class MonsterCard {
   static get style() {
     return `
     .card-outer {
+      position: relative;
+      top: 0px;
+      left: 0px;
       display: inline-block;
       width: 160px;
       height: 200px;
@@ -98,7 +102,7 @@ class MonsterCard {
       background: linear-gradient(to bottom, #bdb76b 0%,#713c14 100%);
     }
     .card-outer.selected {
-      border: 1px solid black;
+      border: 3px solid teal;
     }
     .card-outer.dead {
       background-color: brown;
