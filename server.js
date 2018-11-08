@@ -36,6 +36,7 @@ loadFile('Monster.js');
 loadFile('MonsterCard.js');
 loadFile('Terrain.js');
 loadFile('Logger.js');
+loadFile('Lobby.js');
 loadFile('TeamSelect.js');
 loadFile('seven.js');
 loadFile('special-effects.js');
@@ -45,6 +46,7 @@ loadFile('heroes-like.js');
 loadFile('pathfinding.js');
 loadFile('index.html');
 loadFile('battle.html');
+loadFile('lobby.html');
 loadFile('DungeonCrawl_ProjectUtumnoTileset.png');
 const server = http.createServer(function(req, res) {
   var url = new URL('http://home.com' + req.url);

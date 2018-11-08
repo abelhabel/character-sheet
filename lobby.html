@@ -1,0 +1,62 @@
+<html>
+<head>
+  <style>
+    * {
+      box-sizing: border-box;
+    }
+  </style>
+</head>
+<body>
+  <script>
+    class Module {
+      constructor(name) {
+        this.name = name;
+        this.module = '';
+        Module.modules[name] = this;
+      }
+
+      get exports() {
+        return this.module;
+      }
+
+      set exports(n) {
+        this.module = n;
+        // Module.loaders.forEach(l => l());
+      }
+
+      static onLoad(files, fn) {
+        var o = Promise.resolve();
+        files.forEach(f => {
+          o = o.then(() => {
+            return new Promise((resolve, reject) => {
+              var script = document.createElement('script');
+              script.onload = function() {
+                resolve();
+              };
+              script.src = f;
+              document.body.appendChild(script);
+            })
+          })
+        })
+        o.then(function() {
+          fn()
+        }).catch(e => {
+          console.log('loading error', e)
+        });
+      }
+    }
+
+    function require(name) {
+      return Module.modules[name] && Module.modules[name].module || null;
+    }
+    Module.modules = {};
+    Module.loaders = [];
+
+    Module.onLoad(['Lobby.js'], () => {
+      const Lobby = require('Lobby.js');
+      const lobby = new Lobby();
+      lobby.render();
+    })
+  </script>
+</body>
+</html>
