@@ -48,21 +48,8 @@ module.exports.reflectDamage = function (battle, caster, target, ability, power,
 module.exports.phantomImage = function (battle, caster, target, ability, power, triggeredPower) {
   console.log(`${caster.bio.name} casts ${ability.bio.name} on ${target.bio.name}`);
   let template = target.template;
-  let Model = target.constructor;
-  let stacks = target.stacks;
-  var copy = new Model(template, stacks);
-  copy.team = caster.team;
-  copy.canvas = target.canvas;
-  copy.battle = target.battle;
-  copy.ai = caster.ai;
-  copy.stats.mana = 0;
-  copy.stats.defence = Math.ceil(copy.stats.defence * 0.8);
   let tile = battle.grid.closestEmpty(caster.x, caster.y);
-  copy.x = tile.x;
-  copy.y = tile.y;
-  battle.grid.setItem(copy);
-  battle.turnOrder.push(copy);
-  console.log(target, copy);
+  battle.summon(caster, ability, template, tile)
   return new Special();
 };
 
@@ -103,11 +90,12 @@ module.exports.teleport = function (battle, caster, target, ability, power, trig
 
 module.exports.blink = function (battle, caster, target, ability, power, triggeredPower) {
   console.log('blink', battle.turn);
-  let tile = battle.turn.actions[0].targets.tiles[0];
+  let tile = battle.turn.actions[battle.turn.actions.length -1].targets.tiles[0];
   battle.grid.remove(caster.x, caster.y);
   caster.x = tile.x;
   caster.y = tile.y;
   battle.grid.setItem(caster);
+  battle.render();
 };
 
 module.exports.lifeLeech = function (battle, caster, target, ability, power, triggeredPower) {
@@ -133,4 +121,16 @@ module.exports.polymorph = function (battle, caster, target, ability, power, tri
   target.curses = [];
   target.blessings = [];
   target.sortAbilities();
+};
+
+
+module.exports.chain = function (battle, caster, target, ability, power, triggeredPower) {
+  ability.chains.push(target);
+  let nextTarget = battle.grid.inRadius(target.x, target.y, ability.stats.range)
+  .find(p => p.item && !~ability.chains.indexOf(p.item) && p.item.team == target.team);
+  if(!nextTarget || ability.chains.length > 4) {
+    ability.chains = [];
+    return;
+  }
+  battle.useAbility(caster, nextTarget, ability);
 };

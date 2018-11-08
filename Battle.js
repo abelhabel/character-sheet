@@ -12,6 +12,40 @@ class Turn {
     this.endMovement = {x: 0, y: 0};
     this.actions = [];
   };
+
+  addAction(action) {
+    this.actions.push(action);
+    console.log(this)
+  }
+
+  get apts() {
+    return this.actions.filter(a => a.type == 'use ability').length;
+  }
+
+  get action() {
+    return this.actions[this.actions.length -1];
+  }
+
+  get ability() {
+    for(let i = this.actions.length -1; i > 0; i--) {
+      let a = this.actions[i];
+      if(a && a.type == 'use ability') {
+        return this.actor.abilities.find(b => b.id == a.abilityId);
+      }
+    }
+  }
+
+  get isOver() {
+    return this.actor.totalStat('apr') <= this.apts || this.actions.find(b => b.type == 'defend');
+  }
+}
+
+class Action {
+  constructor(type, position, abilityId) {
+    this.type = type || 'move';
+    this.position = position || {x: 0, y: 0};
+    this.abilityId = abilityId || '';
+  }
 }
 
 class Battle {
@@ -114,6 +148,7 @@ class Battle {
       actor = a;
       let x = Math.floor(e.offsetX / this.tw);
       let y = Math.floor(e.offsetY / this.th);
+
       var t = this.grid.get(x, y);
       let selectionsRequired = a.selectedAbility && a.selectedAbility.stats.selections || 1;
       if(a.selectedAbility && a.selectedAbility.stats.target == 'ground') {
@@ -130,22 +165,23 @@ class Battle {
       } else {
         a.selections[0] = targets;
       }
+      console.log(targets)
       if(a.selectedAbility && targets.validTargets && a.selections.length == selectionsRequired) {
-        this.attack(a, t);
-        mp = 0;
-        if(this.turn.actions.filter(a => a.ability && a.ability.bio.type == 'active').length >= a.totalStat('apr')) {
-          this.endTurn();
-          this.act();
-        }
+        let action = new Action('use ability', t, a.selectedAbility.id);
+        this.addAction(action)
+        .catch(e => {
+          console.log('action error', e)
+        });
       } else
       if(a.canMove) {
-        var path = this.grid.path(a.x, a.y, x, y);
-        path.shift();
-        if(a.movesLeft < path.length) return;
-        var walked = path.length - 1;
-        this.walk(a, path)
+        let action = new Action('move', {x,y}, a.id);
+        this.addAction(action)
         .then(() => {
-          mp -= walked
+          console.log('walk successful');
+          this.turn.addAction(action);
+        })
+        .catch(e => {
+          console.log(e)
         });
       }
     })
@@ -209,22 +245,26 @@ class Battle {
   abilityTargets(a, ability, x, y) {
     var out = {actors: [], tiles: [], validTargets: false};
     if(!ability) return out;
-    if(ability.stats.shape == 'point') {
-      out.tiles = [{item: this.grid.get(x, y), x: x, y: y}];
-    } else
-    if(ability.stats.shape == 'line') {
-      out.tiles = this.grid.inLine(a.x, a.y, x, y, ability.stats.radius);
+    if(ability.stats.target == 'actor' && !this.grid.get(x, y)) {
+      return out;
     }
-    if(ability.stats.shape == 'cone') {
-      out.tiles = this.grid.inCone(a.x, a.y, x, y, ability.stats.radius);
+    if(ability.stats.range >= this.grid.distance(a.x, a.y, x, y)) {
+      if(ability.stats.shape == 'point') {
+        out.tiles = [{item: this.grid.get(x, y), x: x, y: y}];
+      } else
+      if(ability.stats.shape == 'line') {
+        out.tiles = this.grid.inLine(a.x, a.y, x, y, ability.stats.radius);
+      }
+      if(ability.stats.shape == 'cone') {
+        out.tiles = this.grid.inCone(a.x, a.y, x, y, ability.stats.radius);
+      }
+      if(ability.stats.shape == 'circle') {
+        out.tiles = this.grid.inRadius(x, y, ability.stats.radius);
+      }
+      if(ability.stats.shape == 'square') {
+        out.tiles = this.grid.around(x, y, ability.stats.radius);
+      }
     }
-    if(ability.stats.shape == 'circle') {
-      out.tiles = this.grid.inRadius(x, y, ability.stats.radius);
-    }
-    if(ability.stats.shape == 'square') {
-      out.tiles = this.grid.around(x, y, ability.stats.radius);
-    }
-
     if(ability.stats.targetFamily == 'self') {
       out.actors = a.x == x && a.y == y ? [a] : out.actors;
     } else
@@ -868,7 +908,7 @@ class Battle {
       } else {
         t.addEffect(target, a, a.roll(), {event, ability}, power);
       }
-      this.attack(target, source, a, true, power);
+      this.useAbility(target, source, a, true, power);
       target.triggerCount += 1;
     })
   }
@@ -948,7 +988,8 @@ class Battle {
       return 0;
     }
     let stacks = a.stacks;
-    let abilityDamage = effectPower || ability.roll();
+    let bonusDamage = a.totalStat("damage");
+    let abilityDamage = effectPower || ability.roll(bonusDamage);
     let spellPower = 1 + a.totalStat('spellPower') / 10;
     let d = Math.ceil(abilityDamage * stacks * spellPower);
     return d;
@@ -983,55 +1024,111 @@ class Battle {
 
   }
 
-  attack(a, b, ability, fromEffect) {
-    ability = ability || a.selectedAbility;
-    var targets = this.abilityTargets(a, ability, b.x, b.y);
-    this.turn.actions.push({
-      targets: targets,
-      ability: ability
-    });
+  addAction(action) {
+    return new Promise((resolve, reject) => {
+      var {position, abilityId, type} = action;
+      let actor = this.currentActor;
+      let p;
+      if(type == 'defend') {
+        this.defend();
+        p = Promise.resolve();
+      } else
+      if(type == 'move') {
+        let path = this.grid.path(actor.x, actor.y, position.x, position.y);
+        path.shift();
+        if(actor.movesLeft < path.length) return reject("Invalid move");
+        p = this.walk(actor, path)
+        .then(() => {
+          this.turn.addAction(action);
+          resolve();
+        })
+        .catch(reject);
+      } else
+      if(type == 'use ability') {
+        let ability = actor.abilities.find(a => a.id == abilityId);
+        if(!ability) {
+          console.log(ability, abilityId)
+          return reject("Invalid ability")
+        }
+        p = this.useAbility(actor, position, ability)
+        .then(() => {
+          this.turn.addAction(action);
+          resolve();
+        })
+        .catch(reject);
+      } else {
+        p = Promise.resolve();
+      }
+      p.then(() => {
+        this.turn.addAction(action);
+        if(this.turn.isOver) {
+          this.endTurn();
+          this.act();
+        }
+        resolve();
+      })
+      .catch(reject);
+    })
+  }
 
-    if(!a.canUseAbility(ability)) {
-      return;
-    }
-    a.useAbility(ability);
-    if(!ability.stats.summon) {
-      targets.actors.forEach((t, i) => {
-        var power = 0;
-        if(ability.stats.source == 'attack') {
-          power = this.dealAttackDamage(a, t, ability, fromEffect);
-        }
-        if(ability.stats.source == 'spell') {
-          power = this.dealSpellDamage(a, t, ability, fromEffect);
-        }
-        if(ability.stats.source == 'curse') {
-          power = this.dealAttributeDamage(a, t, ability, fromEffect);
-        }
-        if(ability.stats.source == 'blessing') {
-          power = this.dealAttributeDamage(a, t, ability, fromEffect);
-        }
+  useAbility(a, b, ability, fromEffect) {
+    return new Promise((resolve, reject) => {
+      ability = ability || a.selectedAbility;
+      var targets = this.abilityTargets(a, ability, b.x, b.y);
 
-        this.playHitAnimation(a, t, ability);
-        !fromEffect && t.addEffect(a, ability, power);
-      });
-      !targets.actors.length && targets.tiles.length &&
-      !fromEffect && a.addEffect(a, ability, ability.roll(a.totalStat('damage')));
-    } else {
-      let health = 10 * a.totalStat('spellPower') * ability.roll();
-      let template = monsters.find(m => m.bio.name == ability.stats.summon);
-      let stacks = Math.min(template.bio.maxStacks, Math.ceil(health / template.stats.health));
-      let monster = new Monster(template, stacks, true);
-      let tile = a.selections[0].tiles[0];
-      monster.team = a.team;
-      monster.battle = a.battle;
-      monster.ai = a.ai;
-      monster.x = tile.x;
-      monster.y = tile.y;
-      this.grid.setItem(monster);
-      this.turnOrder.push(monster);
-      this.addAuras(monster);
-    }
-    this.sounds.attack.play();
+      if(!a.canUseAbility(ability)) {
+        return;
+      }
+      a.useAbility(ability);
+      if(!ability.stats.summon) {
+        targets.actors.forEach((t, i) => {
+          var power = 0;
+          if(ability.stats.source == 'attack') {
+            power = this.dealAttackDamage(a, t, ability, fromEffect);
+          }
+          if(ability.stats.source == 'spell') {
+            power = this.dealSpellDamage(a, t, ability, fromEffect);
+          }
+          if(ability.stats.source == 'curse') {
+            power = this.dealAttributeDamage(a, t, ability, fromEffect);
+          }
+          if(ability.stats.source == 'blessing') {
+            power = this.dealAttributeDamage(a, t, ability, fromEffect);
+          }
+
+          this.playHitAnimation(a, t, ability);
+          !fromEffect && t.addEffect(a, ability, power);
+        });
+        !targets.actors.length && targets.tiles.length &&
+        !fromEffect && a.addEffect(a, ability, ability.roll(a.totalStat('damage')));
+      } else {
+        let tile = a.selections[0].tiles[0];
+        let template = monsters.find(m => m.bio.name == ability.stats.summon);
+        this.summon(a, ability, template, tile);
+      }
+      this.sounds.attack.play();
+      resolve();
+    })
+  }
+
+  summon(a, ability, template, tile) {
+    let health = a.stacks * (10 + 10 * a.totalStat('spellPower'));
+    let stacks = Math.min(template.bio.maxStacks, Math.ceil(health / template.stats.health));
+    console.log('summon health', health, stacks, health % template.stats.health)
+    let monster = new Monster(template, 1, true);
+    monster.addStack(stacks -1);
+    monster.harm(health % template.stats.health);
+    monster.team = a.team;
+    monster.battle = a.battle;
+    monster.ai = a.ai;
+    monster.x = tile.x;
+    monster.y = tile.y;
+    this.grid.setItem(monster);
+    this.turnOrder.push(monster);
+    this.addAuras(monster);
+    this.monsterCards.push(new MonsterCard(monster));
+    logger.log(a.bio.name, 'summoned', monster.bio.name)
+    return monster;
   }
 
   kill(a) {
@@ -1072,7 +1169,6 @@ class Battle {
         this.grid.remove(a.x, a.y);
         a.move(p[0], p[1]);
         this.grid.setItem(a);
-        this.turn.actions.push({movement: {x: a.x, y: a.y}})
         this.render();
         this.sounds.move.play();
         if(!path.length) {
@@ -1144,11 +1240,11 @@ class Battle {
     action.then(() => {
       setTimeout(() => {
         if(this.inRange(a, t)) {
-          this.attack(a, t);
+          this.useAbility(a, t);
         } else {
           var ct = this.findClosestTarget(a);
           if(ct && this.inRange(a, ct)) {
-            this.attack(a, ct);
+            this.useAbility(a, ct);
           } else {
             this.defend(a);
           }

@@ -1,0 +1,9 @@
+Elements and Stats
+Force - damage, attack
+Air - tpr, movement, initiative
+Fire - health, apr
+Water - mana, spellPower,
+Earth - defence, spellResistance
+
+Rot -
+Vitality -

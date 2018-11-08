@@ -208,7 +208,8 @@ var tpl = {
           type: 'select',
           values: ['', 'hypnotize', 'berzerk', 'reflectDamage',
             'giveEffectAsAbility', 'phantomImage', 'stealBlessing',
-            'dispel', 'teleport', 'lifeLeech', 'polymorph', 'blink'
+            'dispel', 'teleport', 'lifeLeech', 'polymorph', 'blink',
+            'chain'
           ],
           initial: 'false',
           exportAs: 'special'

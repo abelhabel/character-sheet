@@ -51,11 +51,11 @@ class MonsterCard {
             </div>
           </div>
           <div class='stats-right'>
-            <div class='card-stat spell-power'>
+            <div class='card-stat apr'>
               ${item.totalStat('apr')}
               <span>Actions/Round</span>
             </div>
-            <div class='card-stat spell-power'>
+            <div class='card-stat tpr'>
               ${item.totalStat('tpr')}
               <span>Triggers/Round</span>
             </div>
@@ -194,23 +194,20 @@ class MonsterCard {
       text-align: right;
 
     }
-    .health {
-      background-color: #c12525;
+    .health, .apr {
+      background-color: red;
     }
-    .mana {
-      background-color: #4039bb;
+    .mana, .spell-power {
+      background-color: blue;
     }
-    .defence, .attack {
-      background-color: #8c882c;
+    .defence, .spell-resistance {
+      background-color: green;
     }
-    .spell-resistance, .spell-power {
-      background-color: #673ab7;
+    .tpr, .movement, .initiative {
+      background-color: cadetblue;
     }
-    .movement {
-      background-color: #3ba791;
-    }
-    .damage {
-      background-color: #399a2c;
+    .attack, .damage {
+      background-color: purple;
     }
 
     .card-abilities {

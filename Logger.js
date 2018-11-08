@@ -72,6 +72,7 @@ class Logger {
   log() {
     var text = Array.from(arguments).join(' ');
     var html = text.replace(/(fire)/g, "<span style='color:red'>$1</span>")
+    .replace(/(air)/g, "<span style='color:cadetblue'>$1</span>")
     .replace(/(water)/g, "<span style='color:blue'>$1</span>")
     .replace(/(force)/g, "<span style='color:purple'>$1</span>")
     .replace(/(earth)/g, "<span style='color:green'>$1</span>")

@@ -1,7 +1,7 @@
 const nextId = (function() {
   var id = 0;
   return function() {
-    return ++id;
+    return Math.random().toString().substr(2);
   }
 })();
 const abilities = require('abilities.js');

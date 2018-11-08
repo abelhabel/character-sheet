@@ -1,6 +1,5 @@
 class Terrain {
   constructor(t) {
-    console.log('terrain template', t)
     this.template = t;
     this.bio = {
       name: t.bio.name,

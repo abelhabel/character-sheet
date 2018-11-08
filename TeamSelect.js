@@ -68,17 +68,22 @@ class TeamSelect  {
         image.appendChild(item.canvas);
         // c.width = 200;
         // c.height = 200;
-        c.addEventListener('click', () => {
+        c.addEventListener('click', (e) => {
+          console.log(e)
           let cost = parseInt(item.bio.cost);
           if(cost + this.spent <= this.cash && this.monsters.length < this.max) {
             let existingMonster = this.hasStackableMonster(item);
+            let stacks = e.shiftKey ? item.bio.maxStacks - (existingMonster ? existingMonster.stacks : 0): 1;
+            if(cost * stacks > this.left) {
+              stacks = (this.left / cost);
+            }
             if(existingMonster) {
-              existingMonster.addStack(1);
+              existingMonster.addStack(stacks);
             } else {
-              this.monsters.push(new Monster(monster.template));
+              this.monsters.push(new Monster(monster.template, stacks));
 
             }
-            this.spent += cost;
+            this.spent += cost * stacks;
             this.render();
           }
         })
@@ -112,6 +117,10 @@ class TeamSelect  {
       this.render();
     });
     this.container.appendChild(this.doneButton);
+  }
+
+  get left() {
+    return this.cash - this.spent;
   }
 
   cacheCanvases() {

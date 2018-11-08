@@ -2,7 +2,7 @@ const abilities = require('abilities.js');
 const nextId = (function() {
   var id = 0;
   return function() {
-    return ++id;
+    return Math.random().toString().substr(2);
   }
 })();
 class Ability {
@@ -40,6 +40,7 @@ class Ability {
       summon: t.stats.summon,
 
     };
+    this.chains = [];
     if(this.stats.effect) {
       this.stats.effect = new Ability(abilities.find(a => a.bio.name == this.stats.effect), this);
     }
