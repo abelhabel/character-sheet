@@ -17,7 +17,9 @@ function guid() {
 const files = {
   'monsters.js': () => wrap.pre() + require('./monsters.js')() + wrap.post('monsters.js'),
   'abilities.js': () => wrap.pre() + require('./abilities.js')() + wrap.post('abilities.js'),
-  'terrains.js': () => wrap.pre() + require('./terrains.js')() + wrap.post('terrains.js')
+  'terrains.js': () => wrap.pre() + require('./terrains.js')() + wrap.post('terrains.js'),
+  'socket-worker.js': fs.readFileSync(__dirname + '/socket-worker.js'),
+  'init-battle.js': fs.readFileSync(__dirname + '/init-battle.js'),
 }
 // console.log(files['abilities.js'])
 function loadFile(name) {
@@ -31,6 +33,7 @@ function loadFile(name) {
 loadFile('CS.js');
 loadFile('PositionList2d.js');
 loadFile('Battle.js');
+loadFile('Rand.js');
 loadFile('Ability.js');
 loadFile('Monster.js');
 loadFile('MonsterCard.js');
@@ -85,5 +88,7 @@ const server = http.createServer(function(req, res) {
   res.end();
 
 });
+
+require('./ws.js')(server);
 
 server.listen(PORT);

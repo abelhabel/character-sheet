@@ -8,6 +8,8 @@
 </head>
 <body>
   <script>
+
+
     class Module {
       constructor(name) {
         this.name = name;
@@ -52,10 +54,75 @@
     Module.modules = {};
     Module.loaders = [];
 
+    class Emitter {
+      constructor() {
+        this.worker = new Worker('socket-worker.js');
+        this.worker.onmessage = (e) => {
+          if(e.data.method == 'on') {
+            this.execOn(e.data.channel, e.data.data);
+          }
+      	};
+        this.channels = {};
+      }
+      on(channel, fn) {
+        this.channels[channel] = fn;
+        // this.worker.postMessage({
+        //   method: 'on',
+        //   channel: channel
+        // })
+      }
+      execOn(channel, data) {
+        if(typeof this.channels[channel] !== 'function') return;
+        this.channels[channel](data);
+      }
+      emit(channel, data) {
+        this.worker.postMessage({
+          method: 'emit',
+          channel: channel,
+          data: data
+        })
+      }
+    }
+    const socket = new Emitter();
+
+
     Module.onLoad(['Lobby.js'], () => {
       const Lobby = require('Lobby.js');
       const lobby = new Lobby();
       lobby.render();
+
+      socket.on('user entered', (user) => {
+        console.log('user enters', user)
+        lobby.didEnter(user);
+      });
+
+      socket.on('user left', (user) => {
+        console.log('user left', user)
+        lobby.didLeave(user);
+      })
+
+      socket.on('user list', users => {
+        lobby.addUsers(users);
+      })
+
+      socket.on('game created', game => {
+        lobby.gameCreated(game);
+      })
+
+      socket.on('game joined', game => {
+        lobby.didJoinGame(game);
+      })
+
+      socket.on('game stopped', game => {
+        lobby.didStopGame(game);
+      })
+
+      socket.on('game list', games => {
+        lobby.addGames(games);
+      })
+      socket.on('game updated', game => {
+        lobby.updateGame(game);
+      })
     })
   </script>
 </body>

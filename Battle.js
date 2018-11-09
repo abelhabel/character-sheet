@@ -171,14 +171,14 @@ class Battle {
       }
       console.log(targets)
       if(a.selectedAbility && targets.validTargets && a.selections.length == selectionsRequired) {
-        let action = new Action('use ability', {x,y}, a.selectedAbility.id);
+        let action = new Action('use ability', {x,y}, a.selectedAbility.template.id);
         this.addAction(action)
         .catch(e => {
           console.log('action error', e)
         });
       } else
       if(a.canMove && !this.grid.get(x, y)) {
-        let action = new Action('move', {x,y}, a.id);
+        let action = new Action('move', {x,y}, a.template.id);
         this.addAction(action)
         .then(() => {
           console.log('walk successful');
@@ -193,6 +193,7 @@ class Battle {
     b.textContent = 'End Turn';
     this.endTurnButton = b;
     b.addEventListener('click', () => {
+      return this.addAction(new Action('defend'));
       let a = this.currentActor;
       if(a.ai) return;
       actor = this.currentActor;
@@ -267,7 +268,7 @@ class Battle {
     if(ability.stats.target == 'actor' && !this.grid.get(x, y)) {
       return out;
     }
-    if(ability.stats.range >= this.grid.distance(a.x, a.y, x, y)) {
+    if(ability.stats.range >= this.grid.squareRadius(a.x, a.y, x, y)) {
       if(ability.stats.shape == 'point') {
         out.tiles = [{item: this.grid.get(x, y), x: x, y: y}];
       } else
@@ -437,7 +438,7 @@ class Battle {
     this.terrain.loop((x, y) => {
       let item = this.terrain.get(x, y);
       c.drawImage(item.sprite.canvas, x * this.tw, y * this.th, this.tw, this.th);
-      // if(y > 2 && y < 8 && Math.random() < 0.2) {
+      // if(y > 2 && y < 8 && _random() < 0.2) {
       //   let sprite = obstacles.sprite;
       //   this.grid.set(x, y, {sprite: sprite, x, y});
       //   c.drawImage(sprite.canvas, x * this.tw, y * this.th, this.tw, this.th);
@@ -874,7 +875,7 @@ class Battle {
   }
 
   roll(a, b) {
-    return Math.ceil(a + Math.random() * (b-a));
+    return Math.ceil(a + _random() * (b-a));
   }
 
   flanks(b) {
@@ -1044,13 +1045,23 @@ class Battle {
 
   }
 
-  addAction(action) {
+  createAction(o) {
+    return new Action(o.type, o.position, o.abilityId);
+  }
+
+  addAction(action, fromOutside) {
+    if(this.onAction && !fromOutside) {
+      this.onAction(action, this.currentActor.team);
+
+      return Promise.resolve();
+    }
     return new Promise((resolve, reject) => {
+
       var {position, abilityId, type} = action;
       let actor = this.currentActor;
       let p;
       if(type == 'defend') {
-        this.defend();
+        this.defend(actor);
         p = Promise.resolve();
       } else
       if(type == 'move') {
@@ -1060,7 +1071,7 @@ class Battle {
         p = this.walk(actor, path);
       } else
       if(type == 'use ability') {
-        let ability = actor.abilities.find(a => a.id == abilityId);
+        let ability = actor.abilities.find(a => a.template.id == abilityId);
         if(!ability) {
           console.log(ability, abilityId)
           return reject("Invalid ability")
@@ -1069,6 +1080,7 @@ class Battle {
       } else {
         p = Promise.resolve();
       }
+
       p.then(() => {
         this.turn.addAction(action);
         if(this.turn.isOver) {

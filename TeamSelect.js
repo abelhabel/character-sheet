@@ -1,7 +1,7 @@
 const Monster = require('Monster.js');
 const MonsterCard = require('MonsterCard.js');
 class TeamSelect  {
-  constructor(items, container, w, h, tw, th, cash, done) {
+  constructor(items, container, w, h, tw, th, cash, maxTeams, done) {
     this.items = items;
     this.w = w;
     this.h = h;
@@ -28,6 +28,7 @@ class TeamSelect  {
     })
     this.container.appendChild(this.picked);
     this.monsters = [];
+    this.maxTeams = maxTeams || 2;
     this.teams = [];
     this.images = {};
     var loading = {};
@@ -109,8 +110,8 @@ class TeamSelect  {
     this.doneButton.addEventListener('click', () => {
       var i = this.teams.push(this.monsters);
       this.teams[i-1].forEach(m => m.ai = true)
-      if(this.teams.length == 2) {
-        return done();
+      if(this.teams.length == this.maxTeams) {
+        return typeof done == 'function' && done(this.teams[i-1]);
       }
       this.monsters = [];
       this.spent = 0;

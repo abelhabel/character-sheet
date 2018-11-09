@@ -54,7 +54,7 @@ class Ability {
     let am = this.stats.multiplier / 100;
     let min = this.stats.minPower + (d || 0);
     let max = this.stats.maxPower + (d || 0);
-    return Math.ceil(am * (min + Math.random() * (max-min)));
+    return Math.ceil(am * (min + _random() * (max-min)));
   }
 
   get canvas() {
