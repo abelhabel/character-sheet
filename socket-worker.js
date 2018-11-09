@@ -1,4 +1,4 @@
-const protocol = self.location.protocol == 'https' ? 'wss:' : 'ws:';
+const protocol = self.location.protocol == 'https:' ? 'wss:' : 'ws:';
 class WS {
   constructor() {
     const socket = new WebSocket(`${protocol}//${self.location.host}`);
