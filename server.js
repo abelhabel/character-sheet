@@ -1,4 +1,5 @@
 const http = require("http");
+const backup = require("./backup");
 const URL = require('url').URL;
 const fs = require('fs');
 const PORT = process.env.PORT || 5000;
@@ -14,8 +15,9 @@ function guid() {
   }
   return s4() + s4() + '-' + s4() + '-' + s4() + '-' + s4() + '-' + s4() + s4() + s4();
 }
+const monsters = require('./monsters.js')();
 const files = {
-  'monsters.js': () => wrap.pre() + require('./monsters.js')() + wrap.post('monsters.js'),
+  'monsters.js': () => wrap.pre() + monsters + wrap.post('monsters.js'),
   'abilities.js': () => wrap.pre() + require('./abilities.js')() + wrap.post('abilities.js'),
   'terrains.js': () => wrap.pre() + require('./terrains.js')() + wrap.post('terrains.js'),
   'socket-worker.js': fs.readFileSync(__dirname + '/socket-worker.js'),
@@ -51,6 +53,23 @@ loadFile('index.html');
 loadFile('battle.html');
 loadFile('lobby.html');
 loadFile('DungeonCrawl_ProjectUtumnoTileset.png');
+
+function saveData(req, res, folder, url) {
+  let id = url.searchParams.get('id') ||  guid();
+  let name = id + '.json';
+  let local = fs.createWriteStream(`${folder}/${name}`);
+  let remote = backup(folder, name);
+  req.on('data', chunk => {
+    local.write(chunk);
+    remote.write(chunk);
+  })
+  local.on('end', () => {
+    local.close();
+  });
+  req.on('end', () => remote.end());
+  res.end(id);
+}
+
 const server = http.createServer(function(req, res) {
   var url = new URL('http://home.com' + req.url);
   var name = url.pathname.replace('/', '');
@@ -62,22 +81,14 @@ const server = http.createServer(function(req, res) {
     return res.end(files[name]);
   }
   if(name == 'saveMonster') {
-    let id = url.searchParams.get('id') ||  guid();
-    console.log('saving', 'monsters/' + id + '.json')
-    req.pipe(fs.createWriteStream('monsters/' + id + '.json'));
-    res.end(id);
+    saveData(req, res, 'monsters', url);
+
   }
   if(name == 'saveAbility') {
-    let id = url.searchParams.get('id') ||  guid();
-    console.log('saving', 'abilities/' + id + '.json')
-    req.pipe(fs.createWriteStream('abilities/' + id + '.json'));
-    res.end(id);
+    saveData(req, res, 'abilities', url);
   }
   if(name == 'saveTerrain') {
-    let id = url.searchParams.get('id') ||  guid();
-    console.log('saving', 'terrain/' + id + '.json')
-    req.pipe(fs.createWriteStream('terrain/' + id + '.json'));
-    res.end(id);
+    saveData(req, res, 'terrain', url);
   }
   if(name.match('.wav')) {
     console.log('loading sound', name)
