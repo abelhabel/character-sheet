@@ -1,6 +1,6 @@
 class WS {
   constructor() {
-    const socket = new WebSocket('ws://localhost:5000');
+    const socket = new WebSocket(`ws://${self.location.host}`);
     this.SPLITTER = '-|-';
     // Connection opened
     socket.addEventListener('open', (event) => {
