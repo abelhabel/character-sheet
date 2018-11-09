@@ -1,6 +1,7 @@
+const protocol = self.location.protocol == 'https' ? 'wss:' : 'ws:';
 class WS {
   constructor() {
-    const socket = new WebSocket(`ws://${self.location.host}`);
+    const socket = new WebSocket(`${protocol}//${self.location.host}`);
     this.SPLITTER = '-|-';
     // Connection opened
     socket.addEventListener('open', (event) => {
