@@ -209,7 +209,7 @@ var tpl = {
           values: ['', 'hypnotize', 'berzerk', 'reflectDamage',
             'giveEffectAsAbility', 'phantomImage', 'stealBlessing',
             'dispel', 'teleport', 'lifeLeech', 'polymorph', 'blink',
-            'chain'
+            'chain', 'manaThief'
           ],
           initial: 'false',
           exportAs: 'special'

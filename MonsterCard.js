@@ -3,28 +3,56 @@ class MonsterCard {
     this.item = item;
     this.cached = null;
     this.canvas = item.canvas.clone();
+    this.small = null;
+    this.state = 'small';
   }
 
-  html() {
+  hightlightCanvas() {
+    if(!this.small) return;
+    this.small.classList.add('selected');
+  }
+
+  unhightlightCanvas() {
+    if(!this.small) return;
+    this.small.classList.remove('selected');
+  }
+
+  render(container) {
+    let card = document.createElement('div');
+    card.innerHTML = this.html();
+    let image = card.querySelector('.card-image');
+    let canvas = this.canvas.clone();
+    this.cached = card.firstElementChild;
+    this.small = canvas;
+    container.appendChild(canvas);
+
+    canvas.addEventListener('click', e => {
+      if(this.state == 'big') return;
+      container.insertBefore(this.cached, canvas);
+      image.appendChild(canvas);
+      this.state = 'big';
+
+    });
+    this.cached.addEventListener('click', e => {
+      container.insertBefore(canvas, this.cached);
+      container.removeChild(this.cached);
+      this.state = 'small';
+    })
+  }
+
+  html(turn) {
     var {item} = this;
-    var health = item.totalStat('health');
-    var mana = item.totalStat('mana');
-    var defence = item.totalStat('defence');
-    var spellResistance = item.totalStat('spellResistance');
-    var attack = item.totalStat('attack');
-    var spellPower = item.totalStat('spellPower');
-    var movement = item.totalStat('movement');
-    var damage = item.totalStat('damage');
+    var currentActor = item.battle && item.battle.currentActor;
     var name = item.bio.name;
 
     var effects = item.activeEffects.map(e => e.ability.bio.name);
     var abilities = item.abilities.map(a => a.bio.name);
     return `<div
-      class='card-outer ${this.currentActor == item ? 'selected' : ''} ${item.alive ? '' : 'dead'}'>
-      <div class='card-inner'>
+      class='card-outer'>
+      <div class='card-inner ${turn ? 'turn' : ''} ${item.alive ? '' : 'dead'}'>
         <div class='card-upper'>
           <div class='card-name'>
-            ${name} (${item.stacks})
+            ${name} (${item.stacks}) ${item.alive ? '' : 'dead'}
           </div>
           <div class='card-image'>
           </div>
@@ -34,6 +62,10 @@ class MonsterCard {
             ${abilities.join(', ')}
           </div>
           <div class='stats-left'>
+            <div class='card-stat spell-resistance'>
+              ${item.totalStat('initiative')}
+              <span>Initiative</span>
+            </div>
             <div class='card-stat spell-resistance'>
               ${item.totalStat('spellResistance')}
               <span>Spell Resistance</span>
@@ -84,6 +116,9 @@ class MonsterCard {
 
   static get style() {
     return `
+    #monster-cards {
+      text-align: center;
+    }
     .card-outer {
       position: relative;
       top: 0px;
@@ -102,9 +137,12 @@ class MonsterCard {
       background: linear-gradient(to bottom, #bdb76b 0%,#713c14 100%);
     }
     .card-outer.selected {
-      border: 3px solid teal;
+      border: 3px solid cornflowerblue;
     }
-    .card-outer.dead {
+    canvas.selected {
+      background-color: cornflowerblue;
+    }
+    .card-inner.dead {
       background-color: brown;
     }
     .card-inner {
@@ -116,6 +154,10 @@ class MonsterCard {
       background-color: beige;
       border: 1px solid gray;
 
+    }
+
+    .card-inner.turn {
+      background-color: cornflowerblue;
     }
 
     .card-name {

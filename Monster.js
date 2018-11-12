@@ -47,13 +47,13 @@ class StatBonus {
 
   add(ability, power) {
     if(ability.stats.source == 'blessing') {
-      let roll = power || ability.roll();
+      let roll = power || ability.power || ability.roll();
       if(roll < this.blessing.value) return;
       this.blessing.value = roll;
       this.blessing.ability = ability;
     } else
     if(ability.stats.source == 'curse') {
-      let roll = power || ability.roll();
+      let roll = power || ability.power || ability.roll();
       if(roll < this.curse.value) return;
       this.curse.value = roll;
       this.curse.ability = ability;
@@ -66,6 +66,9 @@ class Monster {
   constructor(t, stacks, summoned) {
     this.template = t;
     this.summoned = summoned;
+    this.initiativeEntropy = 11;
+    this.initiativeEntropyCounter = 0;
+    this.initialInitiativeEntropy = this.initiativeEntropy;
     this.battle = null;
     this.id = nextId();
     this.ai = false;
@@ -145,6 +148,10 @@ class Monster {
     })
   }
 
+  get actives() {
+    return this.abilities.filter(a => a.bio.type == 'active');
+  }
+
   get triggers() {
     return this.abilities.filter(a => a.bio.type == 'trigger');
   }
@@ -195,15 +202,15 @@ class Monster {
     if(typeof e.onEffectEnd == 'function') {
       e.onEffectEnd();
     }
+    if(e.ability.stats.attribute == 'initiative') {
+      this.battle.initiativeChanged();
+    }
   }
 
   addEffect(source, ability, power, triggered, triggeredPower) {
     let e = this.effects.filter(e => e.ability.bio.name == ability.bio.name);
     if(e && e.length >= ability.stats.stacks ) {
       return;
-    }
-    if(ability.stats.special != 'giveEffectAsAbility' && ability.stats.effect) {
-      this.addEffect(source, ability.stats.effect, ability.stats.effect.roll(), true, power);
     }
     let special;
     if(ability.stats.special && typeof specialEffects[ability.stats.special] == 'function') {
@@ -219,6 +226,7 @@ class Monster {
         ability: new ability.constructor(ability.template, ability.owner),
         onEffectEnd: special && special.onEffectEnd
       });
+
     }
   }
 
@@ -314,6 +322,11 @@ class Monster {
     if(a.stats.resourceType == 'health' && this.totalHealth >= a.stats.resourceCost) {
       this.harm(this.stats.resourceCost);
     }
+  }
+
+  replenishMana(n) {
+    this.manaUsed = Math.max(0, this.manaUsed - n);
+    console.log('replenish mana', n);
   }
 
   useMana(n) {

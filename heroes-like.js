@@ -27,7 +27,7 @@ var tpl = {
         {
           name: 'Family',
           type: 'select',
-          values: ['Undead', 'Beasts', 'Humanoids'],
+          values: ['Undead', 'Beasts', 'Humanoids', 'Mythical', 'Demons', 'Outlaws'],
           initial: 'Humanoids',
           exportAs: 'family',
         },

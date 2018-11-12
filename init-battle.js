@@ -3,6 +3,7 @@ HTMLCanvasElement.prototype.clone = function() {
   c.width = this.width;
   c.height = this.height;
   c.getContext('2d').drawImage(this, 0, 0, c.width, c.height);
+  Object.assign(c.style, this.style);
   return c;
 }
 
@@ -149,30 +150,9 @@ Module.onLoad(['monsters.js', 'abilities.js', 'terrains.js',
   var style = document.createElement('style');
   style.innerHTML = MonsterCard.style;
   document.head.appendChild(style);
-  var undead = monsters.filter(m => m.bio.family == 'Undead');
-  var beasts = monsters.filter(m => m.bio.family == 'Beasts');
-  var humans = monsters.filter(m => m.bio.family == 'Humanoids');
-  var skeleton = undead.find(m => m.bio.name == 'Skeleton');
-  var lich = undead.find(m => m.bio.name == 'Lich');
-  var ghost = undead.find(m => m.bio.name == 'Ghost');
-  var gunud = undead.find(m => m.bio.name == 'Gunud');
-  var ghast = undead.find(m => m.bio.name == 'Ghast');
-  var xatrax = undead.find(m => m.bio.name == 'Xatrax');
-  var swister = humans.find(m => m.bio.name == 'Swister');
-  var angel = humans.find(m => m.bio.name == 'Angel');
-  var fireMage = humans.find(m => m.bio.name == 'Fire Mage');
-  var iceMage = humans.find(m => m.bio.name == 'Ice Mage');
-  var breaker = humans.find(m => m.bio.name == 'Breaker');
-  var berserker = humans.find(m => m.bio.name == 'Berserker');
-  var polarBear = beasts.find(m => m.bio.name == 'Polar Bear');
-  var redback = beasts.find(m => m.bio.name == 'Redback');
-  var scorp = beasts.find(m => m.bio.name == 'Scorp');
-  var thornet = beasts.find(m => m.bio.name == 'Thornet');
-  var yoad = beasts.find(m => m.bio.name == 'Yoad');
   var team1 = [];
   var team2 = [];
   var cash = 600;
-  var all = [...undead, ...beasts, ...humans];
 
   var selectContainer = document.createElement('div');
   selectContainer.style.position = 'absolute';
@@ -185,27 +165,6 @@ Module.onLoad(['monsters.js', 'abilities.js', 'terrains.js',
   selectContainer.style.textAlign = 'center';
   document.body.appendChild(selectContainer);
 
-  var counter = 0;
-  var spent = 0;
-  while(counter < all.length) {
-    let m = all[Math.floor(Math.random() * all.length)];
-    spent += parseInt(m.bio.cost);
-    if(spent < cash) {
-      team1.push(JSON.parse(JSON.stringify(m)));
-    }
-    counter += 1;
-  }
-  counter = 0;
-  spent = 0;
-  while(counter < all.length) {
-    let m = all[Math.floor(Math.random() * all.length)];
-    spent += parseInt(m.bio.cost);
-    if(spent < cash) {
-      team2.push(JSON.parse(JSON.stringify(m)));
-    }
-    counter += 1;
-  }
-  team1.forEach(a => a.ai = true)
   // team2.forEach(a => a.ai = true);
   var w = h = 8;
   h = 10;
@@ -220,29 +179,34 @@ Module.onLoad(['monsters.js', 'abilities.js', 'terrains.js',
   grid.style.top = effects.style.top = '0px';
   grid.style.zIndex = 1;
   effects.style.zIndex = 2;
+  effects.style.position = 'block';
   container.appendChild(effects);
   container.appendChild(grid);
-  var initiative = document.createElement('canvas');
-  grid.style.display = initiative.style.display = effects.style.position = 'block';
-  grid.style.border = initiative.style.border = '1px solid green';
-  grid.width = grid.height = w * tw;
-  initiative.width = (undead.length + beasts.length) * tw;
-  initiative.height = th;
+  Object.assign(grid.style, {
+    display: 'block',
+    border: '1px solid green',
+    width: w * tw,
+    height: h * th,
+    left: '50%',
+    transform: 'translateX(-50%)',
+
+  })
   document.body.appendChild(container);
-  document.body.appendChild(initiative);
-  undead.forEach(m => m.ai = true);
   // beasts.forEach(m => m.ai = true);
   // var battle = new Battle(undead, humans, w, h, tw, th, grid, initiative, effects);
   // battle.start();
   lobby.on('local game', (game) => {
     var generator = new Rand(Date.now()).generator;
     window._random = () => generator.random();
+    window._roll = (a, b) => {
+      return Math.ceil(a + _random() * (b-a));
+    }
     console.log('local game', game);
-    var teamSelect = new TeamSelect(all, selectContainer, w, h, tw, th, cash, 2, () => {
+    var teamSelect = new TeamSelect(monsters, selectContainer, w, h, tw, th, cash, 2, () => {
       selectContainer.style.display = 'none';
       teamSelect.teams[0].forEach(m => m.ai = false);
       teamSelect.teams[1].forEach(m => m.ai = false);
-      var battle = new Battle(teamSelect.teams[0], teamSelect.teams[1], w, h, tw, th, grid, initiative, effects);
+      var battle = new Battle(teamSelect.teams[0], teamSelect.teams[1], w, h, tw, th, grid, effects);
       battle.start();
       window.battle = battle;
     });
@@ -258,11 +222,19 @@ Module.onLoad(['monsters.js', 'abilities.js', 'terrains.js',
     })
   }
   lobby.on('remote game', (game) => {
+    console.log(game)
     var generator = new Rand(game.seed).generator;
-    window._random = () => generator.random();
+    window._random = (t) => {
+      let r = generator.random();
+      // logger.log(r, t);
+      return r;
+    };
+    window._roll = (a, b) => {
+      return Math.ceil(a + _random() * (b-a));
+    }
     console.log('remote game', game);
     lobby.hide();
-    var teamSelect = new TeamSelect(all, selectContainer, w, h, tw, th, cash, 1, (team) => {
+    var teamSelect = new TeamSelect(monsters, selectContainer, w, h, tw, th, cash, 1, (team) => {
       console.log('team selected', team);
       var selected = team.map(m => {
         return {
@@ -287,7 +259,7 @@ Module.onLoad(['monsters.js', 'abilities.js', 'terrains.js',
           secondTeam = localTeam.team;
           localTeam = 'team2';
         }
-        var battle = new Battle(assembleTeam(firstTeam), assembleTeam(secondTeam), w, h, tw, th, grid, initiative, effects);
+        var battle = new Battle(assembleTeam(firstTeam), assembleTeam(secondTeam), w, h, tw, th, grid, effects);
 
         battle.onAction = (action, team) => {
           if(team != localTeam) return;

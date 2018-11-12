@@ -16,7 +16,7 @@ class Terrain {
   }
 
   get sprite() {
-    let i = Math.floor(_random() * this.bio.sprite.length);
+    let i = Math.floor(_random('terrain') * this.bio.sprite.length);
     return this.bio.sprite[i];
   }
 }

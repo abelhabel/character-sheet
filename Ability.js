@@ -40,6 +40,10 @@ class Ability {
       summon: t.stats.summon,
 
     };
+    this.power = 0;
+    if(this.bio.type == 'passive') {
+      this.power = this.roll();
+    }
     this.chains = [];
     if(this.stats.effect) {
       this.stats.effect = new Ability(abilities.find(a => a.bio.name == this.stats.effect), this);

@@ -157,7 +157,7 @@ class Lobby {
   gameCreated(data) {
     console.log('gameCreated', data)
     let user = this.users.find(u => u.id == data.owner.id);
-    let game = new Game(user, data.id, data.max);
+    let game = new Game(user, data.id, data.max, data.seed);
     this.games.push(game);
     this.update();
   }

@@ -19,10 +19,17 @@ module.exports.hypnotize = function (battle, caster, target, ability, power) {
 
 module.exports.berzerk = function (battle, caster, target, ability, power) {
   var originalTeam = target.team;
-  target.team = 'neutral';
-  return new Special(function() {
-    target.team = originalTeam;
+  target.team = caster.team;
+  var t = battle.grid.closest(target.x, target.y, (b) => {
+    console.log('b.team != caster.team', b.team, caster.team, b.bio.name)
+    return b.team != caster.team;
   });
+  console.log('berserk target', t)
+  if(!t) return;
+  var a = target.actives.find(a => a.stats.targetFamily == 'enemies' && battle.grid.squareRadius(target.x, target.y, t.x, t.y) <= a.stats.range);
+  if(!a) return;
+  battle.useAbility(target, t.item, a);
+  target.team = originalTeam;
 };
 
 module.exports.giveEffectAsAbility = function (battle, caster, target, ability, power, triggeredPower) {
@@ -88,9 +95,19 @@ module.exports.teleport = function (battle, caster, target, ability, power, trig
   battle.grid.setItem(actor);
 };
 
+module.exports.manaThief = function (battle, caster, target, ability, power, triggeredPower) {
+  console.log('SPECIAL: teleport', caster.selections)
+  let victim = caster.selections[0].actors[0];
+  let benefactor = caster.selections[1].actors[0];
+  let roll = ability.roll();
+  let mana = victim.totalMana;
+  victim.useMana(roll);
+  let manaTaken = mana - victim.totalMana;
+  benefactor.replenishMana(manaTaken);
+};
+
 module.exports.blink = function (battle, caster, target, ability, power, triggeredPower) {
-  console.log('blink', battle.turn);
-  let tile = battle.turn.actions[battle.turn.actions.length -1].targets.tiles[0];
+  let tile = caster.selections[0].tiles[0];
   battle.grid.remove(caster.x, caster.y);
   caster.x = tile.x;
   caster.y = tile.y;

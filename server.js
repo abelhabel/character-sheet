@@ -15,9 +15,8 @@ function guid() {
   }
   return s4() + s4() + '-' + s4() + '-' + s4() + '-' + s4() + '-' + s4() + s4() + s4();
 }
-const monsters = require('./monsters.js')();
 const files = {
-  'monsters.js': () => wrap.pre() + monsters + wrap.post('monsters.js'),
+  'monsters.js': () => wrap.pre() + require('./monsters.js')() + wrap.post('monsters.js'),
   'abilities.js': () => wrap.pre() + require('./abilities.js')() + wrap.post('abilities.js'),
   'terrains.js': () => wrap.pre() + require('./terrains.js')() + wrap.post('terrains.js'),
   'socket-worker.js': fs.readFileSync(__dirname + '/socket-worker.js'),
@@ -81,14 +80,14 @@ const server = http.createServer(function(req, res) {
     return res.end(files[name]);
   }
   if(name == 'saveMonster') {
-    saveData(req, res, 'monsters', url);
+    return saveData(req, res, 'monsters', url);
 
   }
   if(name == 'saveAbility') {
-    saveData(req, res, 'abilities', url);
+    return saveData(req, res, 'abilities', url);
   }
   if(name == 'saveTerrain') {
-    saveData(req, res, 'terrain', url);
+    return saveData(req, res, 'terrain', url);
   }
   if(name.match('.wav')) {
     console.log('loading sound', name)

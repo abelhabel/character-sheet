@@ -5,6 +5,249 @@ const Terrain = require('Terrain.js');
 const abilities = require('abilities.js');
 const monsters = require('monsters.js');
 const terrains = require('terrains.js');
+
+class TurnOrder extends Array {
+  constructor() {
+    super();
+    this.currentIndex = 0;
+    this.round = 1;
+  }
+
+  get first() {
+    return this[0];
+  }
+
+  get last() {
+    return this[this.length -1];
+  }
+
+  get current() {
+    return this[this.currentIndex];
+  }
+
+  next() {
+    this.currentIndex += 1;
+    if(this.currentIndex > this.length-1) {
+      this.currentIndex = 0;
+      this.round += 1;
+    }
+    return this.current;
+  }
+}
+
+class R extends Array {
+  constructor() {
+    super();
+    this.current = {
+      hasActed: [],
+      willAct: [],
+      waiting: []
+    };
+    this.next = [];
+    this._actor = null;
+    this.currentRound = 0;
+    this.waited = false;
+  }
+
+  get actor() {
+    return this._actor || this.current.willAct[0];
+  }
+
+  add(actors) {
+    var toInsert = [];
+    actors.forEach(a => {
+      this.current.willAct.find((b, i) => {
+        if(a.totalStat('initiative') > b.totalStat('initiative')) {
+          toInsert.push({i, a});
+          return true;
+        }
+      })
+    })
+    toInsert.forEach((a, i) => {
+      this.current.willAct.splice(a.i + i, 0, a.a);
+    })
+    this.push.apply(this, actors);
+  }
+
+  wait(actor) {
+    if(actor.movesLeft < actor.totalStat('movement')) {
+      logger.log(actor.bio.name, 'has already moved');
+      return;
+    }
+    if(~this.current.waiting.indexOf(actor)) {
+      logger.log(actor.bio.name, 'has already waited');
+      return;
+    }
+    this.waited = true;
+    this.current.waiting.push(this.current.willAct.shift());
+    this._actor = this.current.willAct[0];
+    return true;
+  }
+
+  remove(actor) {
+    let index = this.indexOf(actor);
+    this.splice(index, 1);
+    index = this.current.willAct.indexOf(actor);
+    this.current.willAct.splice(index, 1);
+    index = this.current.hasActed.indexOf(actor);
+    this.current.hasActed.splice(index, 1);
+  }
+
+  extraTurn(a, init, turn) {
+    let remainder = init - 20;
+    if(remainder < 1) {
+      a.initiativeEntropyCounter = 0;
+      return false;
+    }
+    if(remainder - a.initiativeEntropyCounter >= a.initiativeEntropy) {
+      a.initiativeEntropyCounter += 20;
+      return true;
+    } else {
+      a.initiativeEntropyCounter -= remainder;
+      return false;
+    }
+  }
+
+  order() {
+    this.sort((a, b) => {
+      return a.totalStat('initiative') > b.totalStat('initiative') ? -1 : 1;
+    });
+
+    this.forEach((a, i) => {
+      let init = a.totalStat('initiative');
+      let tpr = Math.ceil(init / 20);
+      this.current.willAct[i] = a;
+      for(let j = 1; j < tpr; j++) {
+        if(this.extraTurn(a, init, j)) {
+          this.current.willAct[i + j*this.length] = a;
+        }
+      }
+    });
+    this.current.willAct = Object.values(this.current.willAct);
+    this._actor = this.current.willAct[0];
+  }
+
+  initiativeChanged() {
+    // units who had their initiative changed
+    // might lose or gain extra turns this round
+    let actor = this.actor;
+    this.current.willAct.sort((a, b) => {
+      return a != actor && a.totalStat('initiative') > b.totalStat('initiative') ? -1 : 1;
+    });
+
+    let k = [];
+    this.current.willAct.forEach((a, i) => {
+      let init = a.totalStat('initiative');
+      let tpr = Math.ceil(init / 20);
+      k[i] = a;
+      for(let j = 1; j < tpr; j++) {
+        if(this.extraTurn(a, init, j)) {
+          k[i + j*this.current.willAct.length] = a;
+        }
+      }
+    });
+    this.current.willAct = Object.values(k);
+
+  }
+
+  get round() {
+    return [...this.current.willAct, ...Array.from(this.current.waiting).reverse(), ...this.current.hasActed];
+  }
+
+  nextRound() {
+    this.current.willAct = Array.from(this.current.hasActed);
+  }
+
+  nextTurn() {
+    if(!this.waited) {
+      let index = this.current.willAct.indexOf(this.actor);
+      if(~index) {
+        this.current.willAct.splice(index, 1);
+        this.current.hasActed.push(this.actor);
+      } else {
+        index = this.current.waiting.indexOf(this.actor);
+        this.current.waiting.splice(index, 1);
+        this.current.hasActed.push(this.actor);
+      }
+    } else {
+
+    }
+    if(!this.current.willAct.length && !this.current.waiting.length) {
+      this.order();
+      this.current.hasActed = [];
+      this.current.waiting = [];
+      this.currentRound += 1;
+      logger.log("New Round:", this.currentRound);
+    }
+    this.waited = false;
+    this._actor = this.current.willAct[0] || this.current.waiting[this.current.waiting.length -1];
+  }
+}
+
+class Round extends Array {
+  constructor() {
+    super();
+    this.current = null;
+    this.order = [];
+    this.round = 0;
+    this.turn = -1;
+    this.future = [];
+    this.stages = {
+      current: {
+        hasActed: [],
+        willAct: []
+      },
+      next: []
+    }
+  }
+
+  add(actors) {
+    this.push.apply(this, actors);
+    actors.forEach(a => {
+      this.order.push({
+        count: a.totalStat('initiative'),
+        actor: a
+      });
+    });
+
+    this.resetFuture();
+  }
+
+  resetFuture() {
+    this.future = [];
+    for(let i = 0; i < 500; i++) {
+      this.future.push(this._next());
+    }
+    this.turn = -1;
+  }
+
+  next() {
+    this.turn += 1;
+    return this.future[this.turn];
+  }
+
+  _next() {
+    this.order.forEach(a => {
+      a.count += 20 + a.actor.totalStat('initiative');
+    });
+
+    let n;
+    this.order.forEach(a => {
+      if(!n && a.count > 100) {
+        n = a;
+      } else
+      if(a.count > 100 && a.count > n.count) {
+        n = a;
+      }
+    });
+
+    if(!n) return this._next();
+    n.count = 0;
+    return n.actor;
+  }
+
+}
+
 class Turn {
   constructor(actor) {
     this.actor = actor;
@@ -15,7 +258,6 @@ class Turn {
 
   addAction(action) {
     this.actions.push(action);
-    console.log(this)
   }
 
   get apts() {
@@ -36,7 +278,9 @@ class Turn {
   }
 
   get isOver() {
-    return this.actor.totalStat('apr') <= this.apts || this.actions.find(b => b.type == 'defend');
+    return this.actor.totalStat('apr') <= this.apts ||
+    this.actions.find(b => b.type == 'defend') ||
+    this.actions.find(b => b.type == 'wait');
   }
 }
 
@@ -49,7 +293,7 @@ class Action {
 }
 
 class Battle {
-  constructor(team1, team2, w, h, tw, th, board, order, effects) {
+  constructor(team1, team2, w, h, tw, th, board, effects) {
     this.mouse = {
       x: 0,
       y: 0
@@ -66,12 +310,16 @@ class Battle {
     });
     this.teamColors = {
       team1: {
-        aura: 'rgba(22, 88, 110, 0.3)',
-        selected: 'blue'
+        aura: 'rgba(22, 88, 110, 0.5)',
+        selected: 'rgba(22, 88, 110, 0.5)'
       },
       team2: {
-        aura: 'rgba(110, 22, 33, 0.3)',
-        selected: 'red'
+        aura: 'rgba(110, 22, 33, 0.5)',
+        selected: 'rgba(110, 22, 33, 0.5)'
+      },
+      neutral: {
+        aura: 'rgba(110, 110, 22, 0.5)',
+        selected: 'rgba(110, 110, 22, 0.5)'
       }
     };
     this.w = w;
@@ -81,17 +329,20 @@ class Battle {
     this.board = board;
     this.board.width = w * tw;
     this.board.height = h * th;
+    this.board.style.zIndex = 1;
     this.effects = effects;
     this.effects.width = w * tw;
     this.effects.height = h * th;
+    Object.assign(this.effects.style, this.board.style);
+    effects.style.zIndex = this.board.style.zIndex + 1;
     this.inputCanvas = document.createElement('canvas');
     this.inputCanvas.width = this.board.width;
     this.inputCanvas.height = this.board.height;
     Object.assign(this.inputCanvas.style, this.board.style);
     this.inputCanvas.style.zIndex = 100;
     this.board.parentNode.appendChild(this.inputCanvas);
-    this.order = order;
-    this.turnOrder = [];
+
+    this.hasActed = [];
     this.grid = new PL(w, h);
     this.terrain = new PL(w, h);
     this.terrainCanvas = document.createElement('canvas');
@@ -115,6 +366,11 @@ class Battle {
       all: []
     };
     [...this.team1, ...this.team2].forEach(m => this.addAuras(m))
+    this.turnOrder = new Round();
+    this.turnOrder.add([...this.team1, ...this.team2]);
+    this.tr = new R();
+    this.tr.add([...this.team1, ...this.team2]);
+    this.tr.order();
     this.setEvents();
   }
 
@@ -159,17 +415,17 @@ class Battle {
         t = {x, y};
       }
       var targets = this.abilityTargets(a, a.selectedAbility, x, y);
-
-      if(a.selectedAbility && selectionsRequired > 1) {
-        if(a.selections[0]) {
-          a.selections[1] = targets;
+      if(a.selectedAbility) {
+        if(selectionsRequired > 1) {
+          if(a.selections[0]) {
+            a.selections[1] = targets;
+          } else {
+            a.selections[0] = targets;
+          }
         } else {
           a.selections[0] = targets;
         }
-      } else {
-        a.selections[0] = targets;
       }
-      console.log(targets)
       if(a.selectedAbility && targets.validTargets && a.selections.length == selectionsRequired) {
         let action = new Action('use ability', {x,y}, a.selectedAbility.template.id);
         this.addAction(action)
@@ -189,20 +445,34 @@ class Battle {
       }
     })
 
+    var w = document.createElement('button');
+    w.textContent = 'Wait';
+    this.waitButton = w;
+    w.addEventListener('click', () => {
+      return this.addAction(new Action('wait'))
+      .catch(e => {
+        console.log('action error', e)
+      });
+    });
+
     var b = document.createElement('button');
     b.textContent = 'End Turn';
     this.endTurnButton = b;
     b.addEventListener('click', () => {
-      return this.addAction(new Action('defend'));
-      let a = this.currentActor;
-      if(a.ai) return;
-      actor = this.currentActor;
-      mp = 0;
-      this.defend(this.currentActor);
-      this.endTurn();
-      this.act();
+      return this.addAction(new Action('defend'))
+      .catch(e => {
+        console.log('action error', e)
+      });
+    });
+    window.addEventListener('keyup', (e) => {
+      if(e.key != 'e') return;
+      return this.addAction(new Action('defend'))
+      .catch(e => {
+        console.log('action error', e)
+      });
     })
     document.body.appendChild(b);
+    document.body.appendChild(w);
     var hoverx = 0;
     var hovery = 0;
     var currentPath = [];
@@ -224,9 +494,9 @@ class Battle {
       this.monsterCards.forEach(c => {
         if(!c.cached) return;
         if(c.item == this.grid.get(this.mouse.x, this.mouse.y)) {
-          c.cached.classList.add('selected');
+          c.hightlightCanvas();
         } else {
-          c.cached.classList.remove('selected');
+          c.unhightlightCanvas();
         }
 
       })
@@ -438,11 +708,6 @@ class Battle {
     this.terrain.loop((x, y) => {
       let item = this.terrain.get(x, y);
       c.drawImage(item.sprite.canvas, x * this.tw, y * this.th, this.tw, this.th);
-      // if(y > 2 && y < 8 && _random() < 0.2) {
-      //   let sprite = obstacles.sprite;
-      //   this.grid.set(x, y, {sprite: sprite, x, y});
-      //   c.drawImage(sprite.canvas, x * this.tw, y * this.th, this.tw, this.th);
-      // }
     })
   }
 
@@ -559,22 +824,46 @@ class Battle {
   }
 
   makeMonsterCards() {
-    this.monsterCards = this.turnOrder.map(item => {
+    this.monsterCards = this.tr.round.map(item => {
       return new MonsterCard(item);
     })
   }
 
   drawMonsterCards() {
     var container = document.getElementById('monster-cards');
+    Object.assign(container.style, {
+      position: 'relative'
+    })
     container.innerHTML = '';
-    this.monsterCards.forEach(c => {
-      let card = document.createElement('div');
-      card.innerHTML = c.html();
-      let canvas = c.canvas;
-      let image = card.querySelector('.card-image');
-      image.appendChild(canvas);
-      c.cached = card.firstElementChild;
-      container.appendChild(card.firstElementChild);
+    let toggle = document.createElement('div');
+    Object.assign(toggle.style, {
+      position: 'relative',
+      display: 'inline-block',
+      marginLeft: '-45px',
+      top: '0px',
+      width: '45px',
+      height: '45px'
+    });
+    toggle.textContent = this.tr.currentRound + 1;
+    container.appendChild(toggle);
+    let divider = document.createElement('div');
+    Object.assign(divider.style, {
+      height: '45px',
+      width: '4px',
+      display: 'inline-block',
+      backgroundColor: 'yellow'
+    })
+
+    this.monsterCards.forEach(c => c.render(container));
+    return;
+    this.tr.current.willAct.forEach((a, i) => {
+      let c = this.monsterCards.find(c => c.item.id == a.id);
+      c.render(container);
+    });
+    container.appendChild(divider);
+    this.tr.current.hasActed.forEach((a, i) => {
+      let c = this.monsterCards.find(c => c.item.id == a.id);
+      c.render(container);
     })
   }
 
@@ -608,9 +897,10 @@ class Battle {
       var sprite = item.bio.sprite;
       var img = this.images[sprite.spritesheet];
       if(item == this.currentActor) {
-        c.lineWidth = 1;
+        let o = 4;
+        c.lineWidth = o;
         c.strokeStyle = this.teamColors[item.team].selected;
-        c.strokeRect(item.x * this.tw, item.y * this.th, this.tw, this.th);
+        c.strokeRect(item.x * this.tw - o, item.y * this.th - o, this.tw + o*1.5, this.th + o*1.5);
       }
       c.lineWidth = 1;
       c.strokeStyle = 'black';
@@ -643,9 +933,20 @@ class Battle {
       c.drawImage(a.canvas, 0, 0, w, h);
 
       canvas.addEventListener('click', () => {
-        let {source, attribute, element, duration} = a.stats;
-        let type = source == 'spell' || source == 'attack' ? `${element} damage` : `${source} - ${attribute}`;
-        description.textContent = `${a.bio.name}: ${type} ${e.power} - ${e.rounds}/${duration} rounds`;
+        let {source, attribute, element, minPower,
+          maxPower, multiplier, resourceCost, resourceType,
+          range, effect, duration
+        } = a.stats;
+        let {activation, type, name} = a.bio;
+        let stat = source == 'blessing' || source == 'curse' ? attribute : 'health';
+        attribute = source == 'spell' || source == 'attack' ? 'health' : attribute;
+        var text = `Name: ${name}
+        Source: ${source}
+        Element: ${element}
+        Duration: ${e.rounds}/${duration} rounds
+        Effect: ${e.power} to ${attribute}`;
+
+        description.textContent = text;
       })
 
       container.appendChild(canvas);
@@ -671,16 +972,26 @@ class Battle {
       var c = canvas.getContext('2d');
       c.drawImage(a.canvas, 0, 0, w, h);
       canvas.addEventListener('click', () => {
-        let {source, attribute, element, duration} = a.stats;
-        let power = a.roll();
-        let type = source == 'spell' || source == 'attack' ? `${element} damage` : `${source} - ${attribute}`;
-        description.textContent = `${a.bio.name}: ${type} ${power}`;
+        let {source, attribute, element, minPower,
+          maxPower, multiplier, resourceCost, resourceType,
+          range, effect, duration
+        } = a.stats;
+        let {activation, type, name} = a.bio;
+        let stat = source == 'blessing' || source == 'curse' ? attribute : 'health';
+        attribute = source == 'spell' || source == 'attack' ? 'health' : attribute;
+        var text = `Name: ${name}
+        Source: ${source}
+        Element: ${element}
+        Effect: ${a.power} to ${attribute}`;
+
+        description.textContent = text;
       })
 
       container.appendChild(canvas);
     })
     this.currentActor.passives.forEach(a => {
       var {source, targetFamily, multiplier, radius} = a.stats;
+      if(targetFamily != 'self') return;
       var canvas = document.createElement('canvas');
       canvas.style.cursor = 'pointer';
       var {w, h} = a.bio.sprite;
@@ -690,7 +1001,7 @@ class Battle {
       c.drawImage(a.canvas, 0, 0, w, h);
       canvas.addEventListener('click', () => {
         let {source, attribute, element, duration} = a.stats;
-        let power = a.roll();
+        let power = a.power;
         let type = source == 'spell' || source == 'attack' ? `${element} damage` : `${source} - ${attribute}`;
         description.textContent = `${a.bio.type} | ${source} - ${a.bio.name}: ${type} ${power} | targets ${targetFamily}`;
       })
@@ -709,14 +1020,30 @@ class Battle {
     title.textContent = 'Triggers';
     container.appendChild(title);
     var setDescription = function(a) {
-      let {source, attribute, element, minPower, maxPower, multiplier, resourceCost, resourceType} = a.stats;
+      let {source, attribute, element, minPower,
+        maxPower, multiplier, resourceCost, resourceType,
+        range, effect, duration, target, targetFamily
+      } = a.stats;
       let {activation, type, name} = a.bio;
       let stat = source == 'blessing' || source == 'curse' ? attribute : 'health';
-      let parts = [name, type, `${source}/${element}`];
-      if(multiplier) parts.push(`(${minPower}-${maxPower}) * ${multiplier}% to ${stat}`);
-      parts.push(`Use ${activation}`);
-      parts.push(`${resourceCost} ${resourceType}`)
-      description.textContent = parts.join(' | ');
+      var text = `Name: ${name}
+      Targets: ${targetFamily}
+      Source: ${source}
+      Element: ${element}
+      Trigger: ${activation}
+      Cost: ${resourceCost} ${resourceType}
+      Range: ${range}`;
+      let time = duration ? ` for ${duration} rounds` : '';
+      if(multiplier) {
+        text += `\nEffects: (${minPower}-${maxPower}) * ${multiplier}% to ${stat}${time}`;
+        if(effect) {
+          let {source, attribute, minPower, maxPower, multiplier, duration} = effect.stats;
+          let stat = source == 'blessing' || source == 'curse' ? attribute : 'health';
+          let time = duration ? ` for ${duration} rounds` : '';
+          text += `, (${minPower}-${maxPower}) * ${multiplier}% to ${stat}${time}`;
+        }
+      }
+      description.textContent = text;
     };
     this.currentActor.triggers.forEach(a => {
 
@@ -751,16 +1078,28 @@ class Battle {
     var setDescription = function(a) {
       let {source, attribute, element, minPower,
         maxPower, multiplier, resourceCost, resourceType,
-        range
+        range, effect, duration, target, targetFamily, stacks
       } = a.stats;
       let {activation, type, name} = a.bio;
       let stat = source == 'blessing' || source == 'curse' ? attribute : 'health';
-      let parts = [name, type, `${source}/${element}`];
-      if(multiplier) parts.push(`(${minPower}-${maxPower}) * ${multiplier}% to ${stat}`);
-      parts.push(`Use ${activation}`);
-      parts.push(`${resourceCost} ${resourceType}`)
-      parts.push(`range ${range}`)
-      description.textContent = parts.join(' | ');
+      var text = `Name: ${name}
+      Targets: ${target}/${targetFamily}
+      Source: ${source}
+      Element: ${element}
+      Cost: ${resourceCost} ${resourceType}
+      Range: ${range}`;
+      let time = duration ? ` for ${duration} rounds` : '';
+      if(multiplier) {
+        text += `\nEffects: (${minPower}-${maxPower}) * ${multiplier}% to ${stat}${time} (max stacks: ${stacks})`;
+        if(effect) {
+          let {source, attribute, minPower, maxPower, multiplier, duration, stacks} = effect.stats;
+          let stat = source == 'blessing' || source == 'curse' ? attribute : 'health';
+          let time = duration ? ` for ${duration} rounds` : '';
+          text += `, (${minPower}-${maxPower}) * ${multiplier}% to ${stat}${time} (max stacks: ${stacks})`;
+        }
+
+      }
+      description.textContent = text;
     };
     this.currentActor.activeAbilities.forEach(a => {
 
@@ -788,18 +1127,6 @@ class Battle {
       container.appendChild(canvas);
     });
     container.appendChild(description);
-  }
-
-  drawTurnOrder() {
-    var canvas = this.order;
-    var c = canvas.getContext('2d');
-    this.turnOrder.forEach((item, i) => {
-      var sprite = item.bio.sprite;
-      var img = this.images[sprite.spritesheet];
-      // c.clearRect(item.x * this.tw, item.y * this.th, this.tw, this.th);
-      c.drawImage(item.canvas, i * this.tw, 0, this.tw, this.th);
-
-    })
   }
 
   findClosestTarget(p, exclude = []) {
@@ -875,7 +1202,7 @@ class Battle {
   }
 
   roll(a, b) {
-    return Math.ceil(a + _random() * (b-a));
+    return Math.ceil(a + _random('battle roll') * (b-a));
   }
 
   flanks(b) {
@@ -884,6 +1211,12 @@ class Battle {
       return m.item && m.item.team != b.team
     }).length;
 
+  }
+
+  wait(a) {
+    let canWait = this.tr.wait(a);
+    this.makeMonsterCards();
+    return canWait;
   }
 
   defend(a) {
@@ -920,15 +1253,6 @@ class Battle {
       if(!target.canTrigger) return;
       console.log('TRIGGER', event, a.bio.name, ability)
       var t = a.stats.targetFamily == 'self' ? target : source;
-      if(a.stats.source == 'attack') {
-        t.addEffect(target, a, this.attackRoll(target, source, a), {event, ability}, power);
-
-      } else
-      if(a.stats.source == 'spell') {
-        t.addEffect(target, a, this.spellRoll(target, source, a), {event, ability}, power);
-      } else {
-        t.addEffect(target, a, a.roll(), {event, ability}, power);
-      }
       this.useAbility(target, source, a, true, power);
       target.triggerCount += 1;
     })
@@ -984,7 +1308,7 @@ class Battle {
     let flankMultiplier = 1 + (flanks / 5);
     let abilityDamage = ability.roll(bonusDamage);
     let multiplier = 1 + Math.max(-0.9, ((Math.max(1, at) - Math.max(1, df)) / 10));
-    logger.log('ATTACK ROLL:', 'abilityDamage', abilityDamage, 'stacks', stacks, 'attack vs defence', multiplier, 'flanks', flankMultiplier)
+    // logger.log('ATTACK ROLL:', 'abilityDamage', abilityDamage, 'stacks', stacks, 'attack vs defence', multiplier, 'flanks', flankMultiplier)
     let d = Math.ceil(abilityDamage * stacks * multiplier * flankMultiplier);
     return d;
   }
@@ -1043,6 +1367,22 @@ class Battle {
       }
     })
 
+    a.passives.forEach(ab => {
+      if(!(ab.stats.source == 'attack' || ab.stats.source == 'spell')) return;
+      if(ab.stats.targetFamily == 'self') {
+        this.dealDamage(a, a, ab.power, ab, true);
+      } else
+      if(ab.stats.targetFamily == 'enemies') {
+        this.useAbility(a, a, ab, true);
+      }
+    })
+
+  }
+
+  initiativeChanged(where) {
+    this.tr.initiativeChanged();
+    this.makeMonsterCards();
+    logger.log('Initiative changed', where);
   }
 
   createAction(o) {
@@ -1060,6 +1400,16 @@ class Battle {
       var {position, abilityId, type} = action;
       let actor = this.currentActor;
       let p;
+      if(type == 'wait') {
+        let canWait = this.wait(actor)
+        if(canWait) {
+          p = Promise.resolve();
+
+        } else {
+          reject("Cannot wait");
+        }
+
+      } else
       if(type == 'defend') {
         this.defend(actor);
         p = Promise.resolve();
@@ -1073,7 +1423,6 @@ class Battle {
       if(type == 'use ability') {
         let ability = actor.abilities.find(a => a.template.id == abilityId);
         if(!ability) {
-          console.log(ability, abilityId)
           return reject("Invalid ability")
         }
         p = this.useAbility(actor, position, ability);
@@ -1120,9 +1469,15 @@ class Battle {
 
           this.playHitAnimation(a, t, ability);
           !fromEffect && t.addEffect(a, ability, power);
+          if(ability.stats.special != 'giveEffectAsAbility' && ability.stats.effect) {
+            this.useAbility(a, t, ability.stats.effect, false);
+          }
         });
         !targets.actors.length && targets.tiles.length &&
         !fromEffect && a.addEffect(a, ability, ability.roll(a.totalStat('damage')));
+        if(ability.stats.attribute == 'initiative') {
+          this.initiativeChanged('useAbility');
+        }
       } else {
         let tile = a.selections[0].tiles[0];
         let template = monsters.find(m => m.bio.name == ability.stats.summon);
@@ -1136,7 +1491,6 @@ class Battle {
   summon(a, ability, template, tile) {
     let health = a.stacks * (10 + 10 * a.totalStat('spellPower'));
     let stacks = Math.min(template.bio.maxStacks, Math.ceil(health / template.stats.health));
-    console.log('summon health', health, stacks, health % template.stats.health)
     let monster = new Monster(template, 1, true);
     monster.addStack(stacks -1);
     monster.harm(health % template.stats.health);
@@ -1146,17 +1500,17 @@ class Battle {
     monster.x = tile.x;
     monster.y = tile.y;
     this.grid.setItem(monster);
-    this.turnOrder.push(monster);
+    this.tr.add([monster]);
     this.addAuras(monster);
-    this.monsterCards.push(new MonsterCard(monster));
     logger.log(a.bio.name, 'summoned', monster.bio.name)
     return monster;
   }
 
   kill(a) {
     this.sounds.death.play();
-    var i = this.turnOrder.findIndex(item => item == a);
+    // var i = this.turnOrder.findIndex(item => item == a);
     // this.turnOrder.splice(i, 1);
+    this.tr.remove(a);
     this.grid.remove(a.x,a.y);
     this.render();
     logger.log(a.bio.name, 'was killed');
@@ -1207,19 +1561,19 @@ class Battle {
   }
 
   startTurn() {
-    var a = this.turnOrder.shift();
+    var a = this.tr.actor;
+    this.currentActor = a;
     var turn = new Turn(a);
     this.turns.push(turn);
     logger.log('Turn start for', a.bio.name);
-    this.currentActor = a;
     this.undefend(a);
     a.selections = [];
     a.triggerCount = 0;
     this.undefend(a);
     a.resetMovement();
     if(!a.canUseAbility(a.selectedAbility)) a.selectAbility(a.selectedAbility);
-    this.render();
     this.applyEffects(a);
+    this.render();
   }
 
   endTurn() {
@@ -1234,7 +1588,12 @@ class Battle {
       }
     });
     logger.log('Turn end for', a.bio.name);
-    this.turnOrder.push(a);
+    let currentRound = this.tr.currentRound;
+    this.tr.nextTurn();
+    this.makeMonsterCards();
+    let nextRound = this.tr.currentRound;
+    if(currentRound != nextRound) {
+    }
   }
 
   act() {
@@ -1280,11 +1639,27 @@ class Battle {
 
   }
 
+  createOuterAbilitiesContainer() {
+    var c = document.createElement('div');
+    c.id = 'outer-abilities';
+    Object.assign(c.style, {
+      width: (window.innerWidth - parseInt(this.board.width))/2 + 'px',
+      height: this.board.height + 'px',
+      position: 'fixed',
+      top: '0px',
+      left: '0px',
+      whiteSpace: 'pre-line',
+      overflowY: 'auto'
+    })
+    document.body.appendChild(c);
+  }
+
   createAbilityContainer() {
+    var o = document.getElementById('outer-abilities');
     var c = document.createElement('div');
     c.id = 'monster-abilities';
 
-    document.body.appendChild(c);
+    o.appendChild(c);
   }
 
   createMonsterCardContainer() {
@@ -1294,29 +1669,33 @@ class Battle {
     document.body.appendChild(c);
   }
   createTriggerContainer() {
+    var o = document.getElementById('outer-abilities');
     var c = document.createElement('div');
     c.id = 'monster-triggers';
 
-    document.body.appendChild(c);
+    o.appendChild(c);
   }
 
   createEffectContainer() {
+    var o = document.getElementById('outer-abilities');
     var c = document.createElement('div');
     c.id = 'monster-effects';
 
-    document.body.appendChild(c);
+    o.appendChild(c);
   }
 
   start() {
     logger.minimized = false;
     logger.redraw();
     this.loadSounds();
-    this.setTurnOrder();
+    // this.setTurnOrder();
 
     this.createMonsterCardContainer();
+    this.createOuterAbilitiesContainer();
     this.createAbilityContainer();
     this.createTriggerContainer();
     this.createEffectContainer();
+
     this.loadSpriteSheets()
     .then(images => {
       this.cacheCanvases();
@@ -1334,8 +1713,6 @@ class Battle {
   clearCanvases() {
     let b = this.board.getContext('2d');
     b.clearRect(0, 0, this.board.width, this.board.height);
-    let o = this.order.getContext('2d');
-    o.clearRect(0, 0, this.order.width, this.order.height);
   }
 
   loadSounds() {
@@ -1354,7 +1731,6 @@ class Battle {
     this.clearCanvases();
     // this.drawGrid();
     this.drawMonsters();
-    this.drawTurnOrder();
     this.drawMonsterCards();
     this.drawAbilities();
     this.drawTriggers();

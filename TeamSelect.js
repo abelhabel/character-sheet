@@ -70,7 +70,6 @@ class TeamSelect  {
         // c.width = 200;
         // c.height = 200;
         c.addEventListener('click', (e) => {
-          console.log(e)
           let cost = parseInt(item.bio.cost);
           if(cost + this.spent <= this.cash && this.monsters.length < this.max) {
             let existingMonster = this.hasStackableMonster(item);
@@ -107,6 +106,9 @@ class TeamSelect  {
     this.doneButton = document.createElement('button');
     this.doneButton.textContent = 'Done';
     this.doneButton.style.display = 'block';
+    this.doneButton.style.position = 'fixed';
+    this.doneButton.style.left = '10px';
+    this.doneButton.style.top = '100px';
     this.doneButton.addEventListener('click', () => {
       var i = this.teams.push(this.monsters);
       this.teams[i-1].forEach(m => m.ai = true)

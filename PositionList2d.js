@@ -50,6 +50,19 @@ class PositionList2d {
     return Math.sqrt(dx * dx + dy * dy);
   }
 
+  closest(x, y, test) {
+    let radius = 1;
+    let maxRadius = 5;
+    let tile;
+    let a = this.get(x, y);
+    for(let i  = 1; i < maxRadius; i++) {
+      let tiles = this.around(x, y, i);
+      tile = tiles.find(t => t.item && (test ? test(t.item) : true));
+      if(tile && tile.item != a) break;
+    }
+    return tile;
+  }
+
   closestEmpty(x, y) {
     let radius = 1;
     let maxRadius = 5;
