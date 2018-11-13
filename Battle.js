@@ -333,12 +333,13 @@ class Battle {
     this.effects = effects;
     this.effects.width = w * tw;
     this.effects.height = h * th;
-    Object.assign(this.effects.style, this.board.style);
+    this.board.style.copyTo(this.effects.style);
+    // Object.assign(this.effects.style, this.board.style);
     effects.style.zIndex = this.board.style.zIndex + 1;
     this.inputCanvas = document.createElement('canvas');
     this.inputCanvas.width = this.board.width;
     this.inputCanvas.height = this.board.height;
-    Object.assign(this.inputCanvas.style, this.board.style);
+    this.board.style.copyTo(this.inputCanvas.style);
     this.inputCanvas.style.zIndex = 100;
     this.board.parentNode.appendChild(this.inputCanvas);
 
@@ -348,7 +349,7 @@ class Battle {
     this.terrainCanvas = document.createElement('canvas');
     this.terrainCanvas.width = this.board.width;
     this.terrainCanvas.height = this.board.height;
-    Object.assign(this.terrainCanvas.style, this.board.style);
+    this.board.style.copyTo(this.terrainCanvas.style);
     this.board.parentNode.insertBefore(this.terrainCanvas, this.board);
     var terrain = new Terrain(terrains.find(t => t.bio.name == 'Sand Stone'));
 
@@ -717,40 +718,40 @@ class Battle {
     w = Math.ceil(this.team1.length / h);
     var rangePositions = [
       0,
-      this.w -1,
-      Math.floor(this.w/2),
-      Math.floor(this.w/2) + 1,
-      Math.floor(this.w/2) - 1,
-      Math.floor(this.w/2) + 2,
-      Math.floor(this.w/2) - 2,
-      Math.floor(this.w/2) - 3
+      this.h -1,
+      Math.floor(this.h/2),
+      Math.floor(this.h/2) + 1,
+      Math.floor(this.h/2) - 1,
+      Math.floor(this.h/2) + 2,
+      Math.floor(this.h/2) - 2,
+      Math.floor(this.h/2) - 3
     ];
     var meleePositions = [
-      -1 + Math.floor(this.w/2),
-      -1 + Math.floor(this.w/2) + 1,
-      -1 + Math.floor(this.w/2) - 1,
-      -1 + Math.floor(this.w/2) + 2,
-      -1 + Math.floor(this.w/2) - 2,
-      -1 + Math.floor(this.w/2) + 3,
-      -1 + Math.floor(this.w/2) - 3,
-      -1 + Math.floor(this.w/2) + 4,
-      -1 + Math.floor(this.w/2) - 4,
-      -1 + Math.floor(this.w/2) + 5
+      -1 + Math.floor(this.h/2),
+      -1 + Math.floor(this.h/2) + 1,
+      -1 + Math.floor(this.h/2) - 1,
+      -1 + Math.floor(this.h/2) + 2,
+      -1 + Math.floor(this.h/2) - 2,
+      -1 + Math.floor(this.h/2) + 3,
+      -1 + Math.floor(this.h/2) - 3,
+      -1 + Math.floor(this.h/2) + 4,
+      -1 + Math.floor(this.h/2) - 4,
+      -1 + Math.floor(this.h/2) + 5
     ];
     var rangeCounter = 0;
     var meleeCounter = 0;
     this.team1.forEach((item, i) => {
       if(item.stats.range < 2) {
-        let y = 1;
-        let x = meleePositions[meleeCounter];
+        let x = 1;
+        let y = meleePositions[meleeCounter];
         meleeCounter += 1;
         item.x = x;
         item.y = y;
         this.grid.setItem(item);
 
       } else {
-        let y = 0;
-        let x = rangePositions[rangeCounter];
+        let x = 0;
+        let y = rangePositions[rangeCounter];
         rangeCounter += 1;
         item.x = x;
         item.y = y;
@@ -761,16 +762,16 @@ class Battle {
     meleeCounter = 0;
     this.team2.forEach((item, i) => {
       if(item.stats.range < 2) {
-        let y = this.h -2;
-        let x = meleePositions[meleeCounter];
+        let x = this.w -2;
+        let y = meleePositions[meleeCounter];
         meleeCounter += 1;
         item.x = x;
         item.y = y;
         this.grid.setItem(item);
 
       } else {
-        let y = this.h - 1;
-        let x = rangePositions[rangeCounter];
+        let x = this.h - 1;
+        let y = rangePositions[rangeCounter];
         rangeCounter += 1;
         item.x = x;
         item.y = y;
@@ -798,15 +799,21 @@ class Battle {
       item.canvas = canvas;
     })
     monsters.forEach(item => {
-      var canvas = document.createElement('canvas');
-      canvas.width = this.tw;
-      canvas.height = this.th;
-      var c = canvas.getContext('2d');
       var sprite = item.bio.sprite;
       var img = this.images[sprite.spritesheet];
-      // c.clearRect(item.x * this.tw, item.y * this.th, this.tw, this.th);
-      c.drawImage(img, sprite.x, sprite.y, sprite.w, sprite.h, 0, 0, this.tw, this.th);
-      item.canvas = canvas;
+      var left = document.createElement('canvas');
+      var right = document.createElement('canvas');
+      left.width = right.width = this.tw;
+      left.height = right.height = this.th;
+      var leftc = left.getContext('2d');
+      var rightc = right.getContext('2d');
+      leftc.drawImage(img, sprite.x, sprite.y, sprite.w, sprite.h, 0, 0, this.tw, this.th);
+      rightc.translate(this.tw, 0)
+      rightc.scale(-1, 1);
+      rightc.drawImage(left, 0, 0, this.tw, this.th);
+      rightc.setTransform(1, 0, 0, 1, 0, 0);
+      item.canvas = left;
+      item.canvases = [left, right];
     })
     terrains.forEach(terrain => {
       terrain.bio.sprite.forEach(sprite => {
@@ -855,16 +862,6 @@ class Battle {
     })
 
     this.monsterCards.forEach(c => c.render(container));
-    return;
-    this.tr.current.willAct.forEach((a, i) => {
-      let c = this.monsterCards.find(c => c.item.id == a.id);
-      c.render(container);
-    });
-    container.appendChild(divider);
-    this.tr.current.hasActed.forEach((a, i) => {
-      let c = this.monsterCards.find(c => c.item.id == a.id);
-      c.render(container);
-    })
   }
 
   playHitAnimation(a, b, ability) {
@@ -1444,6 +1441,7 @@ class Battle {
   }
 
   useAbility(a, b, ability, fromEffect) {
+    a.setOrientation(b.x);
     return new Promise((resolve, reject) => {
       ability = ability || a.selectedAbility;
       var targets = this.abilityTargets(a, ability, b.x, b.y);

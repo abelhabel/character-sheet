@@ -7,6 +7,12 @@ HTMLCanvasElement.prototype.clone = function() {
   return c;
 }
 
+CSSStyleDeclaration.prototype.copyTo = function(o) {
+  for(p of this) {
+    o[p] = this[p];
+  }
+}
+
 class Module {
   constructor(name) {
     this.name = name;
@@ -166,7 +172,7 @@ Module.onLoad(['monsters.js', 'abilities.js', 'terrains.js',
   document.body.appendChild(selectContainer);
 
   // team2.forEach(a => a.ai = true);
-  var w = h = 8;
+  var w = h = 12;
   h = 10;
   var tw = th = 42;
   var container = document.createElement('div');

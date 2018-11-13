@@ -16,7 +16,7 @@ var tpl = {
           src: 'DungeonCrawl_ProjectUtumnoTileset.png',
           w: 32,
           h: 32
-        },
+        }
         {
           name: 'Name',
           type: 'input',

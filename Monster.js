@@ -66,6 +66,7 @@ class Monster {
   constructor(t, stacks, summoned) {
     this.template = t;
     this.summoned = summoned;
+    this.orientation = 0; // 0 = left, 1 = right
     this.initiativeEntropy = 11;
     this.initiativeEntropyCounter = 0;
     this.initialInitiativeEntropy = this.initiativeEntropy;
@@ -161,7 +162,7 @@ class Monster {
   }
 
   get canvas() {
-    return this.template.canvas;
+    return this.template.canvases ? this.template.canvases[this.orientation] : this.template.canvas;
   }
 
   resetMovement() {
@@ -176,7 +177,12 @@ class Monster {
     return this.abilities.find(a => a.bio.type == 'passive' && (a.stats.shape == 'circle' || a.stats.shape == 'square') && a.stats.radius);
   }
 
+  setOrientation(x) {
+    this.orientation = x - this.x > 0 ? 1 : 0;
+  }
+
   move(x, y) {
+    this.setOrientation(x);
     this.x = x;
     this.y = y;
     this.tilesMoved += 1;
