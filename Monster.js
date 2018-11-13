@@ -188,6 +188,7 @@ class Monster {
   }
 
   harm(d) {
+    if(isNaN(d)) return;
     this.damageTaken += d;
   }
 

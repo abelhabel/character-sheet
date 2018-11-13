@@ -1266,7 +1266,7 @@ class Battle {
       b.heal(d);
       c = 'healed';
     }
-    logger.log(`${a.bio.name} ${c} ${b.bio.name} ${d} (${ability.stats.element}) with ${ability.bio.name} (${b.totalHealth})`);
+    logger.log(`${a.bio.name} ${c} ${b.bio.name} ${d} (${ability.stats.element}) with ${ability.bio.name} (${b.totalHealth})`, a.totalStat('attack'), 'vs', b.totalStat('defence'));
     if(!b.alive) logger.log(b.bio.name, 'died!');
     if(!fromEffect) {
       this.trigger('when self is hit', b, a, d, ability);
@@ -1363,6 +1363,7 @@ class Battle {
     a.activeEffects.forEach(e => {
       var {source} = e.ability.stats;
       if(e.ability.stats.source == 'attack' || e.ability.stats.source == 'spell') {
+        console.log('apply effect', e)
         this.dealDamage(e.source, a, e.power, e.ability, true);
       }
     })
@@ -1470,7 +1471,7 @@ class Battle {
           this.playHitAnimation(a, t, ability);
           !fromEffect && t.addEffect(a, ability, power);
           if(ability.stats.special != 'giveEffectAsAbility' && ability.stats.effect) {
-            this.useAbility(a, t, ability.stats.effect, false);
+            this.useAbility(a, t, ability.stats.effect, true);
           }
         });
         !targets.actors.length && targets.tiles.length &&
@@ -1591,15 +1592,17 @@ class Battle {
     let currentRound = this.tr.currentRound;
     this.tr.nextTurn();
     this.makeMonsterCards();
-    let nextRound = this.tr.currentRound;
-    if(currentRound != nextRound) {
-    }
   }
 
   act() {
     this.startTurn();
     var a = this.currentActor;
-    if(!a.alive) return this.act();
+    if(!a.alive) {
+      console.log(a.bio.name, 'is not alive');
+      this.kill(a);
+      this.endTurn();
+      return this.act();
+    }
     if(!a.canAct) {
       this.endTurn();
       return this.act();

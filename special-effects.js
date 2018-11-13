@@ -116,9 +116,13 @@ module.exports.blink = function (battle, caster, target, ability, power, trigger
 };
 
 module.exports.lifeLeech = function (battle, caster, target, ability, power, triggeredPower) {
-  if(!triggeredPower) return;
+  // if(!triggeredPower) return;
   console.log('lifeleech', caster.bio.name, target.bio.name, ability.bio.name, power, triggeredPower)
-  caster.heal(Math.ceil(triggeredPower/2))
+  if(triggeredPower) {
+    caster.heal(Math.ceil(triggeredPower/2))
+  } else {
+    caster.heal(Math.ceil(power/2))
+  }
 };
 
 module.exports.polymorph = function (battle, caster, target, ability, power, triggeredPower) {

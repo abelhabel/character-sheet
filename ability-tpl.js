@@ -105,7 +105,7 @@ var tpl = {
           type: 'increment',
           description: 'Range of ability',
           initial: 1,
-          range: [1, 10],
+          range: [0, 10],
           exportAs: 'range'
         },
         {
