@@ -16,7 +16,14 @@ var tpl = {
           src: 'DungeonCrawl_ProjectUtumnoTileset.png',
           w: 32,
           h: 32
-        }
+        },
+        {
+          name: 'Orientation',
+          type: 'select',
+          values: ['left', 'right'],
+          initial: 'left',
+          exportAs: 'orientation',
+        },
         {
           name: 'Name',
           type: 'input',

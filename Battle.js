@@ -86,6 +86,7 @@ class R extends Array {
 
   remove(actor) {
     let index = this.indexOf(actor);
+    if(!~index) return;
     this.splice(index, 1);
     index = this.current.willAct.indexOf(actor);
     this.current.willAct.splice(index, 1);
@@ -812,8 +813,13 @@ class Battle {
       rightc.scale(-1, 1);
       rightc.drawImage(left, 0, 0, this.tw, this.th);
       rightc.setTransform(1, 0, 0, 1, 0, 0);
-      item.canvas = left;
-      item.canvases = [left, right];
+      if(item.bio.orientation == 'right') {
+        item.canvas = right;
+        item.canvases = [right, left];
+      } else {
+        item.canvas = left;
+        item.canvases = [left, right];
+      }
     })
     terrains.forEach(terrain => {
       terrain.bio.sprite.forEach(sprite => {
@@ -919,6 +925,7 @@ class Battle {
     var description = document.createElement('div');
     title.textContent = 'Effects';
     container.appendChild(title);
+    console.log(this.currentActor.effects);
     this.currentActor.activeEffects.forEach(e => {
       var canvas = document.createElement('canvas');
       canvas.style.cursor = 'pointer';
@@ -1019,7 +1026,7 @@ class Battle {
     var setDescription = function(a) {
       let {source, attribute, element, minPower,
         maxPower, multiplier, resourceCost, resourceType,
-        range, effect, duration, target, targetFamily
+        range, effect, duration, target, targetFamily, stacks
       } = a.stats;
       let {activation, type, name} = a.bio;
       let stat = source == 'blessing' || source == 'curse' ? attribute : 'health';
@@ -1032,12 +1039,12 @@ class Battle {
       Range: ${range}`;
       let time = duration ? ` for ${duration} rounds` : '';
       if(multiplier) {
-        text += `\nEffects: (${minPower}-${maxPower}) * ${multiplier}% to ${stat}${time}`;
+        text += `\nEffects: (${minPower}-${maxPower}) * ${multiplier}% to ${stat}${time} (max stacks: ${stacks})`;
         if(effect) {
-          let {source, attribute, minPower, maxPower, multiplier, duration} = effect.stats;
+          let {source, attribute, minPower, maxPower, multiplier, duration, stacks} = effect.stats;
           let stat = source == 'blessing' || source == 'curse' ? attribute : 'health';
           let time = duration ? ` for ${duration} rounds` : '';
-          text += `, (${minPower}-${maxPower}) * ${multiplier}% to ${stat}${time}`;
+          text += `, (${minPower}-${maxPower}) * ${multiplier}% to ${stat}${time} (max stacks: ${stacks})`;
         }
       }
       description.textContent = text;
@@ -1250,7 +1257,7 @@ class Battle {
       if(!target.canTrigger) return;
       console.log('TRIGGER', event, a.bio.name, ability)
       var t = a.stats.targetFamily == 'self' ? target : source;
-      this.useAbility(target, source, a, true, power);
+      this.useAbility(target, t, a, true, power);
       target.triggerCount += 1;
     })
   }
@@ -1467,7 +1474,7 @@ class Battle {
           }
 
           this.playHitAnimation(a, t, ability);
-          !fromEffect && t.addEffect(a, ability, power);
+          t.addEffect(a, ability, power);
           if(ability.stats.special != 'giveEffectAsAbility' && ability.stats.effect) {
             this.useAbility(a, t, ability.stats.effect, true);
           }

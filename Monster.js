@@ -79,11 +79,13 @@ class Monster {
     this.triggerCount = 0;
     this.bio = {
       sprite: t.bio.sprite,
+      orientation: t.bio.orientation || 'left',
       name: t.bio.name,
       family: t.bio.family,
       cost: t.bio.cost,
       maxStacks: t.bio.maxStacks || 1
     };
+    console.log(this.bio.name, this.bio.orientation)
     this.abilities = {
       abilities: t.abilities.abilities
     };
