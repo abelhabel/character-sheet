@@ -10,6 +10,12 @@ class PositionList2d {
     }
   }
 
+  static create(pl) {
+    let n = new PositionList2d(pl.w, pl.h);
+    n.items = Array.from(pl.items);
+    return n;
+  }
+
   purge() {
     for(var y = 0; y < this.h; y++) {
       for(var x = 0; x < this.w; x++) {

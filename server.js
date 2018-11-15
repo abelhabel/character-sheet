@@ -43,6 +43,7 @@ loadFile('MonsterCard.js');
 loadFile('Terrain.js');
 loadFile('Logger.js');
 loadFile('Lobby.js');
+loadFile('Arena.js');
 loadFile('TeamSelect.js');
 loadFile('seven.js');
 loadFile('special-effects.js');

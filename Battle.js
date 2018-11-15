@@ -2,6 +2,7 @@ const PL = require("PositionList2d.js");
 const Monster = require("Monster.js");
 const MonsterCard = require("MonsterCard.js");
 const Terrain = require('Terrain.js');
+const Arena = require('Arena.js');
 const abilities = require('abilities.js');
 const monsters = require('monsters.js');
 const terrains = require('terrains.js');
@@ -354,12 +355,8 @@ class Battle {
     this.board.parentNode.insertBefore(this.terrainCanvas, this.board);
     var terrain = new Terrain(terrains.find(t => t.bio.name == 'Sand Stone'));
     var arena = arenas[0];
-    arena.ground.items.forEach((sprite, i) => {
-      let xy = this.terrain.xy(i);
-      let x = xy.x;
-      let y = xy.y;
-      this.terrain.set(x, y, {sprite: sprite, x, y});
-    })
+    this.arena = new Arena(arena, this.tw, this.th);
+    this.grid = this.arena.obstacles;
     // this.terrain.loop((x, y) => {
     //   this.terrain.set(x, y, {sprite: terrain.sprite, x, y});
     // })
@@ -567,12 +564,12 @@ class Battle {
       out.actors = a.x == x && a.y == y ? [a] : out.actors;
     } else
     if(ability.stats.targetFamily == 'allies') {
-      out.actors = out.tiles.filter(b => b.item && b.item.team == a.team).map(m => m.item);
+      out.actors = out.tiles.filter(b => b.item instanceof Monster && b.item.team == a.team).map(m => m.item);
     } else
     if(ability.stats.targetFamily == 'enemies') {
-      out.actors = out.tiles.filter(b => b.item && b.item.team != a.team).map(m => m.item);
+      out.actors = out.tiles.filter(b => b.item instanceof Monster && b.item.team != a.team).map(m => m.item);
     } else {
-      out.actors = out.tiles.filter(b => b.item).map(m => m.item);
+      out.actors = out.tiles.filter(b => b.item instanceof Monster).map(m => m.item);
     }
 
     if(ability.stats.target == 'ground' && out.tiles.length && this.grid.squareRadius(a.x, a.y, x, y) <= ability.stats.range) {
@@ -712,6 +709,9 @@ class Battle {
   drawTerrain() {
     var canvas = this.terrainCanvas;
     var c = canvas.getContext('2d');
+    var img = this.arena.canvas.composite || this.arena.render();
+    c.drawImage(img, 0,0, this.tw*this.w, this.th*this.h);
+    return;
     var obstacles = new Terrain(terrains.find(t => t.bio.name == 'Trees'));
     this.terrain.loop((x, y) => {
       let item = this.terrain.get(x, y);
@@ -843,6 +843,17 @@ class Battle {
     })
     arenas.forEach(arena => {
       arena.ground.items.forEach(sprite => {
+        var canvas = document.createElement('canvas');
+        canvas.width = this.tw;
+        canvas.height = this.th;
+        var c = canvas.getContext('2d');
+        var img = this.images[sprite.spritesheet];
+        // c.clearRect(item.x * this.tw, item.y * this.th, this.tw, this.th);
+        c.drawImage(img, sprite.x, sprite.y, sprite.w, sprite.h, 0, 0, this.tw, this.th);
+        sprite.canvas = canvas;
+      });
+      arena.obstacles.items.forEach(sprite => {
+        if(!sprite) return;
         var canvas = document.createElement('canvas');
         canvas.width = this.tw;
         canvas.height = this.th;

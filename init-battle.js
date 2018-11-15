@@ -91,7 +91,7 @@ const socket = new Emitter();
 Module.onLoad(['monsters.js', 'abilities.js', 'terrains.js', 'arenas.js',
 'special-effects.js', 'Logger.js', 'Rand.js',
 'PositionList2d.js', 'pathfinding.js',  'Ability.js', 'Monster.js', 'Terrain.js',
-'MonsterCard.js', 'Lobby.js', 'TeamSelect.js', 'Battle.js'], () => {
+'Arena.js', 'MonsterCard.js', 'Lobby.js', 'TeamSelect.js', 'Battle.js'], () => {
   const Lobby = require('Lobby.js');
   const lobby = new Lobby();
   lobby.render();

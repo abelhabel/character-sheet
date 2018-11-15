@@ -58,7 +58,7 @@ Module.modules = {};
 Module.loaders = [];
 
 
-Module.onLoad(['Rand.js', 'terrains.js', 'PositionList2d.js', 'Terrain.js'], () => {
+Module.onLoad(['Rand.js', 'terrains.js', 'arenas.js', 'PositionList2d.js', 'Terrain.js'], () => {
   const images = {};
   function openSpriteSheet(sh) {
     if(images[sh]) {
@@ -91,7 +91,6 @@ Module.onLoad(['Rand.js', 'terrains.js', 'PositionList2d.js', 'Terrain.js'], () 
     items.forEach(item => {
       return loads.push(openSpriteSheet(item));
     });
-    console.log(loads.length)
     return Promise.all(loads)
   }
   const Rand = require('Rand.js');
@@ -124,7 +123,8 @@ Module.onLoad(['Rand.js', 'terrains.js', 'PositionList2d.js', 'Terrain.js'], () 
     obstaclesCanvas: document.createElement('canvas'),
     width: document.createElement('input'),
     height: document.createElement('input'),
-    export: document.createElement('button')
+    export: document.createElement('button'),
+    editing: document.createElement('span')
   };
   tags.export.textContent = 'Export';
   tags.width.type = tags.height.type = 'number';
@@ -137,6 +137,7 @@ Module.onLoad(['Rand.js', 'terrains.js', 'PositionList2d.js', 'Terrain.js'], () 
   document.body.appendChild(tags.width);
   document.body.appendChild(tags.height);
   document.body.appendChild(tags.export);
+  document.body.appendChild(tags.editing);
   document.body.appendChild(tags.ground);
   document.body.appendChild(tags.obstacles);
   document.body.appendChild(tags.arena);
@@ -163,7 +164,6 @@ Module.onLoad(['Rand.js', 'terrains.js', 'PositionList2d.js', 'Terrain.js'], () 
   };
 
   function setGround() {
-    console.log('set ground')
     pl.ground.loop((x, y) => {
       pl.ground.set(x, y, selected.ground.sprite);
     })
@@ -173,6 +173,7 @@ Module.onLoad(['Rand.js', 'terrains.js', 'PositionList2d.js', 'Terrain.js'], () 
   function renderArena() {
     let c = tags.groundCanvas.getContext('2d');
     c.clearRect(0, 0, w*tw, h*th);
+    console.log(0, 0, w*tw, h*th)
     pl.ground.filled(({item, x, y}) => {
       let img = images[item.spritesheet];
       c.drawImage(img, item.x, item.y, item.w, item.h, x*tw, y*th, tw, th);
@@ -267,6 +268,7 @@ Module.onLoad(['Rand.js', 'terrains.js', 'PositionList2d.js', 'Terrain.js'], () 
   tags.obstaclesCanvas.addEventListener('click', e => {
     let x = Math.floor(e.offsetX / tw);
     let y = Math.floor(e.offsetY / th);
+    console.log(x, y, pl)
     if(e.ctrlKey) {
       pl.obstacles.remove(x, y);
     } else {
@@ -287,22 +289,45 @@ Module.onLoad(['Rand.js', 'terrains.js', 'PositionList2d.js', 'Terrain.js'], () 
     let c = preview.getContext('2d');
     c.drawImage(tags.groundCanvas, 0, 0, w * s, h * s);
     c.drawImage(tags.obstaclesCanvas, 0, 0, w * s, h * s);
-    document.body.appendChild(preview);
     let o = {
       ground: pl.ground,
       obstacles: pl.obstacles,
       png: preview.toDataURL('image/png')
     };
-    console.log(o, JSON.stringify(o).length)
 
-
-    fetch('/saveArena', {
+    let id = tags.editing.textContent;
+    let url = 'saveArena';
+    if(id) {
+      url += '?id=' + id;
+    }
+    fetch(url, {
       method: 'POST',
       body: JSON.stringify(o)
     })
     .then(res => res.text())
     .then(id => {
       console.log('saved arena', id)
+    })
+  }
+
+  function renderPreview(a) {
+    let img = new Image();
+    img.src = a.png;
+
+    img.addEventListener('click', e => {
+      tags.editing.textContent = a.id;
+      pl.ground = PL.create(a.ground);
+      pl.obstacles = PL.create(a.obstacles);
+      console.log(a)
+      renderArena();
+    })
+    document.body.appendChild(img);
+  }
+
+  function renderImportButton() {
+    var arenas = require('arenas.js') || [];
+    arenas.forEach(a => {
+      renderPreview(a);
     })
   }
 
@@ -313,5 +338,6 @@ Module.onLoad(['Rand.js', 'terrains.js', 'PositionList2d.js', 'Terrain.js'], () 
     changeSize();
     setGround();
     renderArena();
+    renderImportButton();
   })
 })
