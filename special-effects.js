@@ -89,6 +89,10 @@ module.exports.teleport = function (battle, caster, target, ability, power, trig
   console.log('SPECIAL: teleport', caster.selections)
   let actor = caster.selections[0].actors[0];
   let tile = caster.selections[1].tiles[0];
+  if(battle.grid.get(tile.x, tile.y)) {
+    logger.log("Teleport failed beacuse a monster occupied the destination")
+    return;
+  }
   battle.grid.remove(actor.x, actor.y);
   actor.x = tile.x;
   actor.y = tile.y;

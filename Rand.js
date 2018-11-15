@@ -200,7 +200,6 @@ class Rand {
       value: seed
     });
     this.generator = new MersenneTwister(this.seed);
-    console.log(this.seed);
     this.number = 0;
     this.n = 0;
     this.next();

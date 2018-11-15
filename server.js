@@ -19,8 +19,10 @@ const files = {
   'monsters.js': () => wrap.pre() + require('./monsters.js')() + wrap.post('monsters.js'),
   'abilities.js': () => wrap.pre() + require('./abilities.js')() + wrap.post('abilities.js'),
   'terrains.js': () => wrap.pre() + require('./terrains.js')() + wrap.post('terrains.js'),
+  'arenas.js': () => wrap.pre() + require('./arenas.js')() + wrap.post('arenas.js'),
   'socket-worker.js': fs.readFileSync(__dirname + '/socket-worker.js'),
   'init-battle.js': fs.readFileSync(__dirname + '/init-battle.js'),
+  'init-arena.js': fs.readFileSync(__dirname + '/init-arena.js'),
 }
 // console.log(files['abilities.js'])
 function loadFile(name) {
@@ -50,6 +52,7 @@ loadFile('heroes-like.js');
 loadFile('pathfinding.js');
 loadFile('index.html');
 loadFile('battle.html');
+loadFile('arena.html');
 loadFile('lobby.html');
 loadFile('DungeonCrawl_ProjectUtumnoTileset.png');
 
@@ -88,6 +91,9 @@ const server = http.createServer(function(req, res) {
   }
   if(name == 'saveTerrain') {
     return saveData(req, res, 'terrain', url);
+  }
+  if(name == 'saveArena') {
+    return saveData(req, res, 'arenas', url);
   }
   if(name.match('.wav')) {
     console.log('loading sound', name)

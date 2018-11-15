@@ -163,6 +163,8 @@ class PositionList2d {
   }
 
   set(x, y, item) {
+    if(x > this.w - 1) return;
+    if(y > this.h - 1) return;
     return this.items[this.w * y + x] = item;
   }
 
@@ -175,6 +177,12 @@ class PositionList2d {
     this.items[this.w * y + x] = null;
   }
 
+  xy(index) {
+    // this.w * y + x = index
+    // this.w * y + index % this.w = index
+    return {x: index % this.w, y: (index - index % this.w) / this.w};
+  }
+
   forEach(fn) {
     this.items.forEach((item, i) => {
       fn(item, i, i % this.w, i % this.h)
@@ -185,6 +193,15 @@ class PositionList2d {
     for(var y = 0; y < this.h; y++) {
       for(var x = 0; x < this.w; x++) {
         fn(x, y);
+      }
+    }
+  }
+
+  filled(fn) {
+    for(var y = 0; y < this.h; y++) {
+      for(var x = 0; x < this.w; x++) {
+        let item = this.get(x, y);
+        item && fn({item, x, y});
       }
     }
   }

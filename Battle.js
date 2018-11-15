@@ -5,7 +5,7 @@ const Terrain = require('Terrain.js');
 const abilities = require('abilities.js');
 const monsters = require('monsters.js');
 const terrains = require('terrains.js');
-
+const arenas = require('arenas.js');
 class TurnOrder extends Array {
   constructor() {
     super();
@@ -353,10 +353,16 @@ class Battle {
     this.board.style.copyTo(this.terrainCanvas.style);
     this.board.parentNode.insertBefore(this.terrainCanvas, this.board);
     var terrain = new Terrain(terrains.find(t => t.bio.name == 'Sand Stone'));
-
-    this.terrain.loop((x, y) => {
-      this.terrain.set(x, y, {sprite: terrain.sprite, x, y});
+    var arena = arenas[0];
+    arena.ground.items.forEach((sprite, i) => {
+      let xy = this.terrain.xy(i);
+      let x = xy.x;
+      let y = xy.y;
+      this.terrain.set(x, y, {sprite: sprite, x, y});
     })
+    // this.terrain.loop((x, y) => {
+    //   this.terrain.set(x, y, {sprite: terrain.sprite, x, y});
+    // })
     this.images = {};
     this.sounds = {};
     this.monsterCards = [];
@@ -709,6 +715,7 @@ class Battle {
     var obstacles = new Terrain(terrains.find(t => t.bio.name == 'Trees'));
     this.terrain.loop((x, y) => {
       let item = this.terrain.get(x, y);
+      if(!item) return;
       c.drawImage(item.sprite.canvas, x * this.tw, y * this.th, this.tw, this.th);
     })
   }
@@ -833,6 +840,18 @@ class Battle {
         sprite.canvas = canvas;
 
       })
+    })
+    arenas.forEach(arena => {
+      arena.ground.items.forEach(sprite => {
+        var canvas = document.createElement('canvas');
+        canvas.width = this.tw;
+        canvas.height = this.th;
+        var c = canvas.getContext('2d');
+        var img = this.images[sprite.spritesheet];
+        // c.clearRect(item.x * this.tw, item.y * this.th, this.tw, this.th);
+        c.drawImage(img, sprite.x, sprite.y, sprite.w, sprite.h, 0, 0, this.tw, this.th);
+        sprite.canvas = canvas;
+      });
     })
   }
 

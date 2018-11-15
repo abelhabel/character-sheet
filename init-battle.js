@@ -88,7 +88,7 @@ class Emitter {
 }
 const socket = new Emitter();
 
-Module.onLoad(['monsters.js', 'abilities.js', 'terrains.js',
+Module.onLoad(['monsters.js', 'abilities.js', 'terrains.js', 'arenas.js',
 'special-effects.js', 'Logger.js', 'Rand.js',
 'PositionList2d.js', 'pathfinding.js',  'Ability.js', 'Monster.js', 'Terrain.js',
 'MonsterCard.js', 'Lobby.js', 'TeamSelect.js', 'Battle.js'], () => {
@@ -173,7 +173,7 @@ Module.onLoad(['monsters.js', 'abilities.js', 'terrains.js',
 
   // team2.forEach(a => a.ai = true);
   var w = h = 12;
-  h = 10;
+  h = 12;
   var tw = th = 42;
   var container = document.createElement('div');
   container.style.position = 'relative';
