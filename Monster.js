@@ -238,15 +238,22 @@ class Monster {
     }
   }
 
+  abilityConditionMet(a) {
+    if(!a.bio.condition) return true;
+    if(a.bio.condition == 'flanked') {
+      let flanks = this.battle ? this.battle.flanks(this) : 0;
+      console.log(flanks)
+      if(flanks < 2) return false;
+      return true;
+    }
+  }
+
   passiveAbilityBonus(name) {
     var out = new StatBonus();
     this.passives.forEach(a => {
       if(a.stats.attribute != name) return;
       if(a.stats.targetFamily == 'enemies') return;
-      let flanks = this.battle ? this.battle.flanks(this) : 0;
-      if(a.bio.condition == 'flanked' && flanks < 2) {
-        return;
-      }
+      if(!this.abilityConditionMet(a)) return;
       out.add(a);
     })
     return out;
@@ -314,6 +321,10 @@ class Monster {
   }
 
   selectAbility(a) {
+    if(!a) {
+      this.selectedAbility = null;
+      return;
+    }
     if(this.selectedAbility == a) {
       this.selectedAbility = null;
       return;

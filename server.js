@@ -56,6 +56,7 @@ loadFile('battle.html');
 loadFile('arena.html');
 loadFile('lobby.html');
 loadFile('DungeonCrawl_ProjectUtumnoTileset.png');
+loadFile('spellbookForFlare.png');
 
 function saveData(req, res, folder, url) {
   let id = url.searchParams.get('id') ||  guid();

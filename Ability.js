@@ -15,7 +15,8 @@ class Ability {
       sprite: t.bio.sprite,
       type: t.bio.type,
       activation: t.bio.activation,
-      condition: t.bio.condition
+      condition: t.bio.condition,
+      description: t.bio.description || "No description has been added to this ability."
     };
     this.stats = {
       shape: t.stats.shape,

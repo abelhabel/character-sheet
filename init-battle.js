@@ -1,9 +1,14 @@
-HTMLCanvasElement.prototype.clone = function() {
+HTMLCanvasElement.prototype.clone = function(w, h, style) {
+  w = w || this.width;
+  h = h || this.height;
   var c = document.createElement('canvas');
   c.width = this.width;
   c.height = this.height;
-  c.getContext('2d').drawImage(this, 0, 0, c.width, c.height);
-  Object.assign(c.style, this.style);
+  c.getContext('2d').drawImage(this, 0, 0, w, h);
+  this.style.copyTo(c.style);
+  if(typeof style == 'object') {
+    Object.assign(c.style, style);
+  }
   return c;
 }
 
