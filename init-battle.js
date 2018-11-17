@@ -208,7 +208,11 @@ Module.onLoad(['monsters.js', 'abilities.js', 'terrains.js', 'arenas.js',
   // battle.start();
   lobby.on('local game', (game) => {
     var generator = new Rand(Date.now()).generator;
-    window._random = () => generator.random();
+    window._random = (t) => {
+      let r = generator.random();
+      // logger.log(r);
+      return r;
+    };
     window._roll = (a, b) => {
       return Math.ceil(a + _random() * (b-a));
     }
@@ -237,7 +241,7 @@ Module.onLoad(['monsters.js', 'abilities.js', 'terrains.js', 'arenas.js',
     var generator = new Rand(game.seed).generator;
     window._random = (t) => {
       let r = generator.random();
-      // logger.log(r, t);
+      // logger.log(r);
       return r;
     };
     window._roll = (a, b) => {

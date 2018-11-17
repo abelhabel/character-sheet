@@ -1642,12 +1642,39 @@ class Battle {
 
   }
 
+  dragndrop(container) {
+    var sx = 0;
+    var sy = 0;
+    var ox = 0;
+    var oy = 0;
+    var state = 'up';
+    container.addEventListener('mousedown', (e) => {
+      sx = e.screenX;
+      sy = e.screenY;
+      ox = e.offsetX;
+      oy = e.offsetY;
+      state = 'down';
+    });
+    window.addEventListener('mousemove', (e) => {
+      if(e.target != container) return;
+      if(state != 'down') return;
+      var x = e.x;
+      var y = e.y;
+      container.style.left = x - ox + 'px';
+      container.style.top = y - oy + 'px';
+    });
+    container.addEventListener('mouseup', (e) => {
+      state = 'up';
+    });
+  }
+
   createOuterAbilitiesContainer() {
     var c = document.createElement('div');
+    this.dragndrop(c);
     c.id = 'outer-abilities';
     Object.assign(c.style, {
-      width: (window.innerWidth - parseInt(this.board.width))/2 + 'px',
-      height: this.board.height + 'px',
+      width: '700px',
+      height: '400px',
       position: 'fixed',
       top: '0px',
       left: '0px',
@@ -1657,6 +1684,7 @@ class Battle {
       backgroundSize: 'contain',
       backgroundRepeat: 'no-repeat',
       padding: '20px 100px',
+      zIndex: 100
     })
     var left = document.createElement('div');
     left.id = 'ability-book-left';

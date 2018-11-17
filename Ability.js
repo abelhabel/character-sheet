@@ -43,7 +43,7 @@ class Ability {
     };
     this.power = 0;
     if(this.bio.type == 'passive') {
-      this.power = this.roll();
+      this.power = this.stats.minPower;
     }
     this.chains = [];
     if(this.stats.effect) {
