@@ -1,0 +1,1 @@
+{"bio":{"orientation":"left","name":"Hiisi","family":"Demons","cost":"35","maxStacks":12,"sprite":{"x":256,"y":160,"spritesheet":"DungeonCrawl_ProjectUtumnoTileset.png","w":32,"h":32}},"abilities":{"abilities":["Charge"]},"stats":{"health":35,"mana":0,"attack":8,"defence":7,"spellPower":1,"spellResistance":0,"damage":1,"apr":1,"tpr":1,"movement":7,"initiative":14,"range":1}}

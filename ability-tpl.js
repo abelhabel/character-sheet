@@ -50,7 +50,9 @@ var tpl = {
             'when ally is hit',
             'when adjacent enemy is hit',
             'when nearyby enemy is hit',
-            'when enemy is hit'
+            'when enemy is hit',
+            'when adjacent enemy is slain',
+            'when enemy is slain by self'
           ],
           initial: 'when selected',
           exportAs: 'activation'
@@ -64,6 +66,12 @@ var tpl = {
           ],
           initial: '',
           exportAs: 'condition'
+        },
+        {
+          name: 'Description',
+          exportAs: 'description',
+          type: 'text',
+          initial: 'No description added yet.'
         }
       ]
     },
@@ -209,7 +217,7 @@ var tpl = {
           values: ['', 'hypnotize', 'berzerk', 'reflectDamage',
             'giveEffectAsAbility', 'phantomImage', 'stealBlessing',
             'dispel', 'teleport', 'lifeLeech', 'polymorph', 'blink',
-            'chain', 'manaThief'
+            'chain', 'manaThief', 'suicide', 'charge'
           ],
           initial: 'false',
           exportAs: 'special'

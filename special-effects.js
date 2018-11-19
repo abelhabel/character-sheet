@@ -1,12 +1,34 @@
 module.exports = {};
 const monsters = require('monsters.js');
-console.log('special effects run')
 class Special {
   constructor(onEffectEnd = null, requiresAdditionalTarget = null) {
     this.onEffectEnd = onEffectEnd;
     this.requiresAdditionalTarget = requiresAdditionalTarget;
   }
 }
+
+module.exports.suicide = function (battle, caster, target, ability, power) {
+  caster.harm(power);
+  let adjacent = battle.grid.around(caster.x, caster.y, 1);
+  adjacent.filter(t => t.item instanceof caster.constructor)
+  .forEach(t => {
+    battle.dealDamage(caster, t.item, power, ability, true);
+  })
+  return new Special();
+};
+
+module.exports.charge = function (battle, caster, target, ability, power) {
+  let tiles = caster.selections[0].tiles;
+  console.log(tiles)
+  let tile = tiles[tiles.length -1];
+  if(battle.grid.get(tile.x, tile.y)) {
+    tile = battle.grid.closestEmpty(tile.x, tile.y);
+  }
+  battle.grid.remove(caster.x, caster.y);
+  caster.move(tile.x, tile.y);
+  battle.grid.setItem(caster);
+  return new Special();
+};
 
 module.exports.hypnotize = function (battle, caster, target, ability, power) {
   var originalTeam = target.team;
@@ -21,8 +43,7 @@ module.exports.berzerk = function (battle, caster, target, ability, power) {
   var originalTeam = target.team;
   target.team = caster.team;
   var t = battle.grid.closest(target.x, target.y, (b) => {
-    console.log('b.team != caster.team', b.team, caster.team, b.bio.name)
-    return b.team != caster.team;
+    return b instanceof target.constructor && b.team != caster.team;
   });
   console.log('berserk target', t)
   if(!t) return;
@@ -103,6 +124,7 @@ module.exports.manaThief = function (battle, caster, target, ability, power, tri
   console.log('SPECIAL: teleport', caster.selections)
   let victim = caster.selections[0].actors[0];
   let benefactor = caster.selections[1].actors[0];
+  if(!victim || !benefactor) return;
   let roll = ability.roll();
   let mana = victim.totalMana;
   victim.useMana(roll);

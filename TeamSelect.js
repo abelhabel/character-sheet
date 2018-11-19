@@ -64,7 +64,8 @@ class TeamSelect  {
         };
         var c = document.createElement('div');
         c.style.display = 'inline-block';
-        c.innerHTML = out.card.html();
+        out.card.state = 'big';
+        out.card.render(c, true);
         let image = c.querySelector('.card-image');
         image.appendChild(item.canvas);
         // c.width = 200;
@@ -103,6 +104,27 @@ class TeamSelect  {
     this.sumSpent.style.color = 'white';
     this.sumSpent.style.fontSize = '24px';
     this.container.appendChild(this.sumSpent);
+    this.selectedFamily = 'all';
+    var familySelect = document.createElement('select');
+    var families = [];
+    items.forEach(item => {
+      if(~families.indexOf(item.bio.family)) return;
+      families.push(item.bio.family);
+      let o = document.createElement('option');
+      o.value = item.bio.family;
+      o.textContent = item.bio.family;
+      familySelect.appendChild(o);
+    })
+
+    familySelect.addEventListener('change', e => {
+      this.selectedFamily = familySelect.value;
+      this.monsterCards.forEach(c => {
+        c.card.cached.style.display = 'inline-block';
+        if(c.monster.bio.family != this.selectedFamily) {
+          c.card.cached.style.display = 'none';
+        }
+      })
+    })
     this.doneButton = document.createElement('button');
     this.doneButton.textContent = 'Done';
     this.doneButton.style.display = 'block';
@@ -120,6 +142,7 @@ class TeamSelect  {
       this.render();
     });
     this.container.appendChild(this.doneButton);
+    this.container.appendChild(familySelect);
   }
 
   get left() {

@@ -4,7 +4,7 @@ class MonsterCard {
     this.cached = null;
     this.canvas = item.canvas.clone();
     this.small = null;
-    this.state = 'small';
+    this.state = 'big';
   }
 
   hightlightCanvas() {
@@ -17,15 +17,20 @@ class MonsterCard {
     this.small.classList.remove('selected');
   }
 
-  render(container) {
+  render(container, noEvents = false) {
     let card = document.createElement('div');
     card.innerHTML = this.html();
     let image = card.querySelector('.card-image');
     let canvas = this.canvas.clone();
     this.cached = card.firstElementChild;
     this.small = canvas;
-    container.appendChild(canvas);
+    if(this.state == 'small') {
+      container.appendChild(canvas);
+    } else {
+      container.appendChild(this.cached);
+    }
 
+    if(noEvents) return;
     canvas.addEventListener('click', e => {
       if(this.state == 'big') return;
       container.insertBefore(this.cached, canvas);
@@ -120,6 +125,7 @@ class MonsterCard {
       text-align: center;
     }
     .card-outer {
+      user-select: none;
       position: relative;
       top: 0px;
       left: 0px;

@@ -102,6 +102,8 @@ class PositionList2d {
     for(var step = 0; step < l; step++) {
       let x = Math.round(x2 + step * Math.cos(a));
       let y = Math.round(y2 + step * Math.sin(a));
+      if(x < 0 || y < 0) continue;
+      if(x >= this.w || y >= this.h) continue;
       let t = this.get(x, y);
       targets.push({item: t, x:x, y: y});
     }

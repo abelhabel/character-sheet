@@ -324,17 +324,21 @@ class Battle {
         selected: 'rgba(110, 110, 22, 0.5)'
       }
     };
-    this.w = w;
-    this.h = h;
+    var arena = arenas[1];
+    console.log(arena)
+    this.arena = new Arena(arena, tw, th);
+    this.grid = this.arena.obstacles;
+    this.w = this.arena.w;
+    this.h = this.arena.h;
     this.tw = tw;
     this.th = th;
     this.board = board;
-    this.board.width = w * tw;
-    this.board.height = h * th;
+    this.board.width = this.w * this.tw;
+    this.board.height = this.h * this.th;
     this.board.style.zIndex = 1;
     this.effects = effects;
-    this.effects.width = w * tw;
-    this.effects.height = h * th;
+    this.effects.width = this.w * this.tw;
+    this.effects.height = this.h * this.th;
     this.board.style.copyTo(this.effects.style);
     // Object.assign(this.effects.style, this.board.style);
     effects.style.zIndex = this.board.style.zIndex + 1;
@@ -346,17 +350,15 @@ class Battle {
     this.board.parentNode.appendChild(this.inputCanvas);
 
     this.hasActed = [];
-    this.grid = new PL(w, h);
-    this.terrain = new PL(w, h);
+    // this.grid = new PL(w, h);
+    this.terrain = new PL(this.w, this.h);
     this.terrainCanvas = document.createElement('canvas');
     this.terrainCanvas.width = this.board.width;
     this.terrainCanvas.height = this.board.height;
     this.board.style.copyTo(this.terrainCanvas.style);
     this.board.parentNode.insertBefore(this.terrainCanvas, this.board);
     var terrain = new Terrain(terrains.find(t => t.bio.name == 'Sand Stone'));
-    var arena = arenas[0];
-    this.arena = new Arena(arena, this.tw, this.th);
-    this.grid = this.arena.obstacles;
+
     // this.terrain.loop((x, y) => {
     //   this.terrain.set(x, y, {sprite: terrain.sprite, x, y});
     // })
@@ -1206,7 +1208,6 @@ class Battle {
     console.log(b.team)
     return this.grid.around(b.x, b.y, 1)
     .filter(m => {
-      console.log(m.item && m.item.team)
       return m.item instanceof Monster && m.item.team != b.team
     }).length;
 
@@ -1250,7 +1251,7 @@ class Battle {
     target.triggers.forEach(a => {
       if(a.bio.activation != event) return;
       if(!target.canTrigger) return;
-      console.log('TRIGGER', event, a.bio.name, ability)
+      logger.log('TRIGGER', event, a.bio.name, ability.bio.name)
       var t = a.stats.targetFamily == 'self' ? target : source;
       this.useAbility(target, t, a, true, power);
       target.triggerCount += 1;
@@ -1269,6 +1270,9 @@ class Battle {
     if(!b.alive) logger.log(b.bio.name, 'died!');
     if(!fromEffect) {
       this.trigger('when self is hit', b, a, d, ability);
+      if(!b.alive) {
+        this.trigger('when enemy is slain by self', a, b, d, ability);
+      }
       this[b.team] && this[b.team].forEach(t => {
         if(t == b) return;
         // allied triggers
@@ -1291,6 +1295,9 @@ class Battle {
         }
         if(dist < 2) {
           this.trigger('when adjacent enemy is hit', t, b, d, ability);
+          if(!b.alive) {
+            this.trigger('when adjacent enemy is slain', t, b, d, ability);
+          }
         }
       })
     }
@@ -1306,8 +1313,12 @@ class Battle {
     let flanks = this.flanks(b) - 1;
     let flankMultiplier = 1 + (flanks / 5);
     let abilityDamage = ability.roll(bonusDamage);
-    let multiplier = 1 + Math.max(-0.9, ((Math.max(1, at) - Math.max(1, df)) / 10));
-    // logger.log('ATTACK ROLL:', 'abilityDamage', abilityDamage, 'stacks', stacks, 'attack vs defence', multiplier, 'flanks', flankMultiplier)
+    let multiplier = 1;
+    if(at > df) {
+      multiplier = 1 + (at - df)/10;
+    } else if(df > at) {
+      multiplier = Math.max(0.1, 1 + (at - df)/20);
+    }
     let d = Math.ceil(abilityDamage * stacks * multiplier * flankMultiplier);
     return d;
   }
@@ -1362,7 +1373,6 @@ class Battle {
     a.activeEffects.forEach(e => {
       var {source} = e.ability.stats;
       if(e.ability.stats.source == 'attack' || e.ability.stats.source == 'spell') {
-        console.log('apply effect', e)
         this.dealDamage(e.source, a, e.power, e.ability, true);
       }
     })
@@ -1433,6 +1443,7 @@ class Battle {
       p.then(() => {
         this.turn.addAction(action);
         if(this.turn.isOver) {
+          logger.log('no more actions')
           this.endTurn();
           this.act();
         }
@@ -1563,10 +1574,10 @@ class Battle {
 
   startTurn() {
     var a = this.tr.actor;
+    logger.log('Turn start for', a.bio.name);
     this.currentActor = a;
     var turn = new Turn(a);
     this.turns.push(turn);
-    logger.log('Turn start for', a.bio.name);
     this.undefend(a);
     a.selections = [];
     a.triggerCount = 0;
@@ -1579,16 +1590,18 @@ class Battle {
 
   endTurn() {
     let a = this.currentActor;
+    logger.log('Turn end for', a.bio.name);
     this.turn.endMovement.x = a.x;
     this.turn.endMovement.y = a.y;
+    let effectsToRemove = [];
     a.effects.forEach(e => {
       var {source} = e.ability.stats;
       e.rounds += 1;
       if(e.rounds == e.ability.stats.duration) {
-        a.removeEffect(e);
+        effectsToRemove.push(e);
       }
     });
-    logger.log('Turn end for', a.bio.name);
+    effectsToRemove.forEach(e => a.removeEffect(e));
     let currentRound = this.tr.currentRound;
     this.tr.nextTurn();
     this.makeMonsterCards();

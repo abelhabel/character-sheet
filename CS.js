@@ -22,6 +22,7 @@ class CS {
     this.incrementTags = [];
     this.spritesheetTags = [];
     this.binaryTags = [];
+    this.textTags = [];
     this['spritesheet-paletteTags'] = [];
     Object.keys(this.pools).forEach(k => {
       this.drains[k] = 0;
@@ -104,23 +105,56 @@ class CS {
     return o;
   }
 
+  renderText(item, c) {
+    var o = document.createElement('div');
+    o.style.userSelect = 'none';
+    var name = document.createElement('div');
+    var val = document.createElement('textarea');
+    name.style.display = val.style.display = 'inline-block';
+    name.style.height = val.style.height = '40px';
+    name.style.lineHeight = val.style.lineHeight = '40px';
+    name.style.width = val.style.width = '200px';
+    val.style.textAlign = 'center';
+    name.textContent = item.name;
+    var currentVal = item.initial || '';
+    val.value = currentVal;
+    this.setState(c, item, currentVal);
+    val.addEventListener('keyup', (e) => {
+      if(item.maxCharacters && val.value.length > item.maxCharacters) {
+        val.value = currentVal;
+      } else {
+        currentVal = val.value;
+      }
+      this.setState(c, item, currentVal);
+    })
+
+    o.appendChild(name);
+    o.appendChild(val);
+    this.textTags.push({
+      name: item.name,
+      update: (v) => {
+        currentVal = v;
+        val.value = v;
+      }
+    });
+    return o;
+  }
+
   renderBinary(item, c) {
     var o = document.createElement('div');
     o.style.userSelect = 'none';
     var name = document.createElement('div');
     var val = document.createElement('input');
-    val.type = 'checkbox';
     name.style.display = val.style.display = 'inline-block';
     name.style.height = val.style.height = '40px';
     name.style.lineHeight = val.style.lineHeight = '40px';
     name.style.width = val.style.width = '200px';
     name.textContent = item.name;
-    name.style.verticalAlign = 'top';
+    val.type = 'checkbox';
     var currentVal = item.initial || false;
-    val.checked = currentVal;
     this.setState(c, item, currentVal);
-    val.addEventListener('change', (e) => {
-      currentVal = !currentVal;
+    val.addEventListener('keyup', (e) => {
+      currentVal = val.checked;
 
       console.log('changed binary', currentVal)
       this.setState(c, item, currentVal);
@@ -132,7 +166,7 @@ class CS {
       name: item.name,
       update: (v) => {
         currentVal = v;
-        val.checked = v;
+        val.value = v;
       }
     });
     return o;
@@ -445,6 +479,8 @@ class CS {
             return o.appendChild(this.renderIncrement(item, c));
           case 'input':
             return o.appendChild(this.renderInput(item, c));
+          case 'text':
+            return o.appendChild(this.renderText(item, c));
           case 'select':
             return o.appendChild(this.renderSelect(item, c));
           case 'multiselect':
