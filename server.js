@@ -20,6 +20,7 @@ const files = {
   'abilities.js': () => wrap.pre() + require('./abilities.js')() + wrap.post('abilities.js'),
   'terrains.js': () => wrap.pre() + require('./terrains.js')() + wrap.post('terrains.js'),
   'arenas.js': () => wrap.pre() + require('./arenas.js')() + wrap.post('arenas.js'),
+  'icons.js': () => wrap.pre() + require('./icons.js')() + wrap.post('icons.js'),
   'socket-worker.js': fs.readFileSync(__dirname + '/socket-worker.js'),
   'init-battle.js': fs.readFileSync(__dirname + '/init-battle.js'),
   'init-arena.js': fs.readFileSync(__dirname + '/init-arena.js'),
@@ -50,6 +51,7 @@ loadFile('special-effects.js');
 loadFile('ability-tpl.js');
 loadFile('terrain-tpl.js');
 loadFile('heroes-like.js');
+loadFile('icon-tpl.js');
 loadFile('pathfinding.js');
 loadFile('index.html');
 loadFile('battle.html');
@@ -96,6 +98,9 @@ const server = http.createServer(function(req, res) {
   }
   if(name == 'saveArena') {
     return saveData(req, res, 'arenas', url);
+  }
+  if(name == 'saveIcon') {
+    return saveData(req, res, 'icons', url);
   }
   if(name.match('.wav')) {
     console.log('loading sound', name)

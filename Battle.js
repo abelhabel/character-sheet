@@ -7,6 +7,7 @@ const abilities = require('abilities.js');
 const monsters = require('monsters.js');
 const terrains = require('terrains.js');
 const arenas = require('arenas.js');
+const icons = require('icons.js');
 class TurnOrder extends Array {
   constructor() {
     super();
@@ -487,6 +488,52 @@ class Battle {
       var c = this.effects.getContext('2d');
       c.clearRect(0, 0, this.w * this.tw, this.h * this.th);
     });
+
+    this.inputCanvas.addEventListener('contextmenu', e => {
+      e.preventDefault();
+      console.log('context');
+      this.monsterCards.forEach(c => {
+        if(!c.cached) return;
+        if(c.item == this.grid.get(this.mouse.x, this.mouse.y)) {
+        } else {
+        }
+
+      })
+    })
+
+    var monsterCSPreview = null;
+
+    this.inputCanvas.addEventListener('mousedown', e => {
+      if(e.button != 2) return;
+      let c = this.monsterCards.find(c => {
+        if(!c.cached) return;
+        if(c.item == this.grid.get(this.mouse.x, this.mouse.y)) {
+          return true;
+        }
+
+      })
+      if(!c) return;
+      monsterCSPreview = document.createElement('div');
+      Object.assign(monsterCSPreview.style, {
+        position: 'fixed',
+        width: '400px',
+        height: '400px',
+        backgroundColor: 'white',
+        zIndex: 30
+      });
+      monsterCSPreview.style.left = e.pageX + 'px';
+      monsterCSPreview.style.top = e.pageY + 'px';
+      monsterCSPreview.innerHTML = c.item.renderCS();
+      document.body.appendChild(monsterCSPreview);
+    })
+
+    this.inputCanvas.addEventListener('mouseup', e => {
+      if(e.button != 2) return;
+      if(!monsterCSPreview) return;
+      document.body.removeChild(monsterCSPreview);
+      monsterCSPreview = null;
+    })
+
     this.inputCanvas.addEventListener('mousemove', (e) => {
       let a = this.currentActor;
       if(!a || a.ai) return;
@@ -531,6 +578,68 @@ class Battle {
       this.highlight(targets, x, y);
     })
 
+  }
+
+  drawBattleMenu() {
+    let container = document.createElement('div');
+    this.board.parentNode.appendChild(container);
+    this.board.style.copyTo(container.style);
+    Object.assign(container.style, {
+      width: this.w * this.tw + 'px',
+      height: this.h * this.th + 'px'
+    });
+
+    let ability = icons.find(ic => ic.bio.name == 'Ability Book');
+    let cursor = icons.find(ic => ic.bio.name == 'Ability Cursor');
+    container.style.cursor = `url(${cursor.canvas.clone(24, 24).toPNG()}), auto`;
+    let canvas = ability.canvas.clone();
+    Object.assign(canvas.style, {
+      position: 'absolute',
+      right: '-46px'
+    })
+    container.appendChild(canvas);
+
+    canvas.addEventListener('click', e => {
+      let c = document.getElementById('outer-abilities');
+      if(c.style.display == 'none')
+        c.style.display = 'block';
+      else
+        c.style.display = 'none';
+    });
+    let context = document.createElement('div');
+    Object.assign(context.style, {
+      position: 'absolute',
+      right: '-46px',
+      top: '46px',
+      width: '46px'
+    })
+    container.appendChild(context);
+    let selected = null;
+    function drawAbilities(abilities) {
+      abilities.forEach((a, i) => {
+        let canvas = a.canvas.clone();
+        context.appendChild(canvas);
+        canvas.addEventListener('click', e => {
+          if(selected) {
+            selected.style.border = 'none'
+          }
+          if(selected == canvas) {
+            selected = null;
+            a.owner.selectAbility(null);
+            return;
+          }
+          a.owner.selectAbility(a);
+          selected = canvas;
+          selected.style.border = '1px solid black'
+        })
+      })
+    }
+    this.battleMenu = {
+      setActor(actor) {
+        context.innerHTML = '';
+        drawAbilities(actor.activeAbilities);
+      }
+    };
   }
 
   highlightMonsterCard(x, y) {
@@ -837,11 +946,21 @@ class Battle {
         canvas.height = this.th;
         var c = canvas.getContext('2d');
         var img = this.images[sprite.spritesheet];
-        // c.clearRect(item.x * this.tw, item.y * this.th, this.tw, this.th);
         c.drawImage(img, sprite.x, sprite.y, sprite.w, sprite.h, 0, 0, this.tw, this.th);
         sprite.canvas = canvas;
 
       })
+    })
+    icons.forEach(icon => {
+      let sprite = icon.bio.sprite;
+      var canvas = document.createElement('canvas');
+      canvas.width = this.tw;
+      canvas.height = this.th;
+      var c = canvas.getContext('2d');
+      var img = this.images[sprite.spritesheet];
+      c.drawImage(img, sprite.x, sprite.y, sprite.w, sprite.h, 0, 0, this.tw, this.th);
+      icon.canvas = canvas;
+
     })
     arenas.forEach(arena => {
       arena.ground.items.forEach(sprite => {
@@ -1586,6 +1705,7 @@ class Battle {
     a.selectAbility(null);
     this.applyEffects(a);
     this.render();
+    this.battleMenu.setActor(a);
   }
 
   endTurn() {
@@ -1679,6 +1799,9 @@ class Battle {
     container.addEventListener('mouseup', (e) => {
       state = 'up';
     });
+    window.addEventListener('mouseup', (e) => {
+      state = 'up';
+    });
   }
 
   createOuterAbilitiesContainer() {
@@ -1689,6 +1812,7 @@ class Battle {
       width: '700px',
       height: '400px',
       position: 'fixed',
+      display: 'none',
       top: '0px',
       left: '0px',
       whiteSpace: 'pre-line',
@@ -1767,6 +1891,7 @@ class Battle {
       this.makeMonsterCards();
       this.setPositions();
       this.drawTerrain();
+      this.drawBattleMenu();
       this.render();
       return this.act();
     })

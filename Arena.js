@@ -28,7 +28,6 @@ class Arena {
   }
 
   fillObstacles() {
-    console.log(this.template.obstacles.items)
     this.template.obstacles.items.forEach((sprite, i) => {
       if(!sprite) return;
       let xy = this.obstacles.xy(i);

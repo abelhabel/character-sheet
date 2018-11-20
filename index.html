@@ -50,8 +50,8 @@ function require(name) {
 }
 Module.modules = {};
 Module.loaders = [];
-  Module.onLoad(['abilities.js', 'monsters.js', 'terrains.js', 'seven.js', 'CS.js', 'heroes-like.js',
-  'ability-tpl.js', 'terrain-tpl.js'], () => {
+  Module.onLoad(['abilities.js', 'monsters.js', 'terrains.js', 'icons.js', 'seven.js', 'CS.js', 'heroes-like.js',
+  'ability-tpl.js', 'terrain-tpl.js', 'icon-tpl.js'], () => {
     console.log('all loaded')
     const CS = require('CS.js');
     function loadSeven() {
@@ -82,6 +82,12 @@ Module.loaders = [];
       cs.render();
     }
 
+    function loadIcons() {
+      const terrain = require("icon-tpl.js");
+      var cs  = new CS(terrain, document.body);
+      cs.render();
+    }
+
     var url = new URL(document.location.href);
     var part = url.searchParams.get('part');
 
@@ -97,6 +103,9 @@ Module.loaders = [];
         break;
       case 'terrain':
         loadTerrain();
+        break;
+      case 'icons':
+        loadIcons();
         break;
       default:
         loadHeroes();

@@ -28,6 +28,8 @@ class MonsterCard {
       container.appendChild(canvas);
     } else {
       container.appendChild(this.cached);
+      image.appendChild(canvas);
+      this.state = 'big';
     }
 
     if(noEvents) return;

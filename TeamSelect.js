@@ -66,8 +66,8 @@ class TeamSelect  {
         c.style.display = 'inline-block';
         out.card.state = 'big';
         out.card.render(c, true);
-        let image = c.querySelector('.card-image');
-        image.appendChild(item.canvas);
+        // let image = c.querySelector('.card-image');
+        // image.appendChild(item.canvas);
         // c.width = 200;
         // c.height = 200;
         c.addEventListener('click', (e) => {

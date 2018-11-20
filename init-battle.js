@@ -12,6 +12,10 @@ HTMLCanvasElement.prototype.clone = function(w, h, style) {
   return c;
 }
 
+HTMLCanvasElement.prototype.toPNG =  function() {
+  return this.toDataURL('image/png');
+}
+
 CSSStyleDeclaration.prototype.copyTo = function(o) {
   for(p of this) {
     o[p] = this[p];
@@ -93,7 +97,7 @@ class Emitter {
 }
 const socket = new Emitter();
 
-Module.onLoad(['monsters.js', 'abilities.js', 'terrains.js', 'arenas.js',
+Module.onLoad(['monsters.js', 'abilities.js', 'terrains.js', 'arenas.js', 'icons.js',
 'special-effects.js', 'Logger.js', 'Rand.js',
 'PositionList2d.js', 'pathfinding.js',  'Ability.js', 'Monster.js', 'Terrain.js',
 'Arena.js', 'MonsterCard.js', 'Lobby.js', 'TeamSelect.js', 'Battle.js'], () => {

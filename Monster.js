@@ -402,6 +402,16 @@ class Monster {
   get stacks() {
     return Math.ceil(this.totalHealth / this.stats.health);
   }
+
+  renderCS() {
+    let html = `<div class='monster-cs'>
+      <div>
+        <img src='${this.canvas.toPNG()}'>
+        <p>${this.bio.name}</p>
+      </div>
+    </div>`;
+    return html;
+  }
 }
 
 module.exports = Monster;
