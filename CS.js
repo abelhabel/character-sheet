@@ -153,7 +153,7 @@ class CS {
     val.type = 'checkbox';
     var currentVal = item.initial || false;
     this.setState(c, item, currentVal);
-    val.addEventListener('keyup', (e) => {
+    val.addEventListener('change', (e) => {
       currentVal = val.checked;
 
       console.log('changed binary', currentVal)
@@ -166,7 +166,7 @@ class CS {
       name: item.name,
       update: (v) => {
         currentVal = v;
-        val.value = v;
+        val.checked = v;
       }
     });
     return o;

@@ -453,34 +453,70 @@ class Battle {
       }
     })
 
-    var w = document.createElement('button');
-    w.textContent = 'Wait';
-    this.waitButton = w;
-    w.addEventListener('click', () => {
-      return this.addAction(new Action('wait'))
-      .catch(e => {
-        console.log('action error', e)
-      });
-    });
-
-    var b = document.createElement('button');
-    b.textContent = 'End Turn';
-    this.endTurnButton = b;
-    b.addEventListener('click', () => {
-      return this.addAction(new Action('defend'))
-      .catch(e => {
-        console.log('action error', e)
-      });
-    });
+    // var w = document.createElement('button');
+    // w.textContent = 'Wait';
+    // this.waitButton = w;
+    // w.addEventListener('click', () => {
+    //   return this.addAction(new Action('wait'))
+    //   .catch(e => {
+    //     console.log('action error', e)
+    //   });
+    // });
+    //
+    // var b = document.createElement('button');
+    // b.textContent = 'End Turn';
+    // this.endTurnButton = b;
+    // b.addEventListener('click', () => {
+    //   return this.addAction(new Action('defend'))
+    //   .catch(e => {
+    //     console.log('action error', e)
+    //   });
+    // });
+    // document.body.appendChild(b);
+    // document.body.appendChild(w);
     window.addEventListener('keyup', (e) => {
-      if(e.key != 'e') return;
-      return this.addAction(new Action('defend'))
-      .catch(e => {
-        console.log('action error', e)
-      });
+      switch(e.key) {
+        case 'd':
+          return this.addAction(new Action('defend'))
+          .catch(e => {
+            console.log('action error', e)
+          });
+        case 'w':
+          return this.addAction(new Action('wait'))
+          .catch(e => {
+            console.log('action error', e)
+          });
+        case '1':
+          this.battleMenu.selectAbility(this.currentActor.activeAbilities[0]);
+          return
+        case '2':
+          this.battleMenu.selectAbility(this.currentActor.activeAbilities[1]);
+          return
+        case '3':
+          this.battleMenu.selectAbility(this.currentActor.activeAbilities[2]);
+          return
+        case '4':
+          this.battleMenu.selectAbility(this.currentActor.activeAbilities[3]);
+          return
+        case '5':
+          this.battleMenu.selectAbility(this.currentActor.activeAbilities[4]);
+          return
+        case '6':
+          this.battleMenu.selectAbility(this.currentActor.activeAbilities[5]);
+          return
+        case '7':
+          this.battleMenu.selectAbility(this.currentActor.activeAbilities[6]);
+          return
+        case '8':
+          this.battleMenu.selectAbility(this.currentActor.activeAbilities[7]);
+          return
+        case '9':
+          this.battleMenu.selectAbility(this.currentActor.activeAbilities[8]);
+          return
+        default:
+          return;
+      }
     })
-    document.body.appendChild(b);
-    document.body.appendChild(w);
     var hoverx = 0;
     var hovery = 0;
     var currentPath = [];
@@ -580,6 +616,14 @@ class Battle {
 
   }
 
+  toggleAbilityBook() {
+    let c = document.getElementById('outer-abilities');
+    if(c.style.display == 'none')
+      c.style.display = 'block';
+    else
+      c.style.display = 'none';
+  }
+
   drawBattleMenu() {
     let container = document.createElement('div');
     this.board.parentNode.appendChild(container);
@@ -590,22 +634,35 @@ class Battle {
     });
 
     let ability = icons.find(ic => ic.bio.name == 'Ability Book');
+    let defend = icons.find(ic => ic.bio.name == 'Defend');
+    let wait = icons.find(ic => ic.bio.name == 'Wait');
     let cursor = icons.find(ic => ic.bio.name == 'Ability Cursor');
     container.style.cursor = `url(${cursor.canvas.clone(24, 24).toPNG()}), auto`;
-    let canvas = ability.canvas.clone();
-    Object.assign(canvas.style, {
+    Object.assign(ability.canvas.style, {
       position: 'absolute',
       right: '-46px'
     })
-    container.appendChild(canvas);
+    container.appendChild(ability.canvas);
 
-    canvas.addEventListener('click', e => {
-      let c = document.getElementById('outer-abilities');
-      if(c.style.display == 'none')
-        c.style.display = 'block';
-      else
-        c.style.display = 'none';
-    });
+    Object.assign(defend.canvas.style, {
+      position: 'absolute',
+      right: '-92px'
+    })
+    defend.canvas.addEventListener('click', e => {
+      this.addAction(new Action('defend'));
+    })
+    container.appendChild(defend.canvas);
+
+    Object.assign(wait.canvas.style, {
+      position: 'absolute',
+      right: '-138px'
+    })
+    wait.canvas.addEventListener('click', e => {
+      this.addAction(new Action('wait'));
+    })
+    container.appendChild(wait.canvas);
+
+    ability.canvas.addEventListener('click', this.toggleAbilityBook);
     let context = document.createElement('div');
     Object.assign(context.style, {
       position: 'absolute',
@@ -614,30 +671,37 @@ class Battle {
       width: '46px'
     })
     container.appendChild(context);
+    let canvases = {};
     let selected = null;
+    let selectAbility = (a) => {
+      if(selected) {
+        canvases[selected.bio.name].style.border = 'none'
+      }
+      if(selected == a) {
+        selected = null;
+        a.owner.selectAbility(null);
+        return;
+      }
+      a.owner.selectAbility(a);
+      selected = a;
+      canvases[selected.bio.name].style.border = '1px solid black'
+    }
     function drawAbilities(abilities) {
       abilities.forEach((a, i) => {
         let canvas = a.canvas.clone();
+        canvases[a.bio.name] = canvas;
         context.appendChild(canvas);
-        canvas.addEventListener('click', e => {
-          if(selected) {
-            selected.style.border = 'none'
-          }
-          if(selected == canvas) {
-            selected = null;
-            a.owner.selectAbility(null);
-            return;
-          }
-          a.owner.selectAbility(a);
-          selected = canvas;
-          selected.style.border = '1px solid black'
-        })
+        canvas.addEventListener('click', e => selectAbility(a));
       })
     }
     this.battleMenu = {
       setActor(actor) {
         context.innerHTML = '';
         drawAbilities(actor.activeAbilities);
+      },
+      selectAbility(a) {
+        if(!a) return;
+        selectAbility(a);
       }
     };
   }
@@ -1333,12 +1397,14 @@ class Battle {
   }
 
   wait(a) {
+    logger.log(a.bio.name, 'waits');
     let canWait = this.tr.wait(a);
     this.makeMonsterCards();
     return canWait;
   }
 
   defend(a) {
+    logger.log(a.bio.name, 'defends');
     a.bonusdefence = 2 + (a.canMove ? 1 : 0) * Math.round(8 * (a.movesLeft/a.totalStat('movement')));
   }
 
@@ -1370,7 +1436,6 @@ class Battle {
     target.triggers.forEach(a => {
       if(a.bio.activation != event) return;
       if(!target.canTrigger) return;
-      logger.log('TRIGGER', event, a.bio.name, ability.bio.name)
       var t = a.stats.targetFamily == 'self' ? target : source;
       this.useAbility(target, t, a, true, power);
       target.triggerCount += 1;
@@ -1562,7 +1627,6 @@ class Battle {
       p.then(() => {
         this.turn.addAction(action);
         if(this.turn.isOver) {
-          logger.log('no more actions')
           this.endTurn();
           this.act();
         }
