@@ -70,8 +70,12 @@ function saveData(req, res, folder, url) {
     remote.write(chunk);
   })
   local.on('end', () => {
+    console.log('write local end')
     local.close();
   });
+  local.on('error', (e) => {
+    console.log('error writing to local', e)
+  })
   req.on('end', () => remote.end());
   res.end(id);
 }
