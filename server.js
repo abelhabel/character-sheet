@@ -64,11 +64,11 @@ function saveData(req, res, folder, url) {
   let id = url.searchParams.get('id') ||  guid();
   let name = id + '.json';
   let local = fs.createWriteStream(`${folder}/${name}`);
-  let remote = backup(folder, name);
+  // let remote = backup(folder, name);
   req.on('data', chunk => {
     console.log('writing data to local and remote')
     local.write(chunk);
-    remote.write(chunk);
+    // remote.write(chunk);
   })
   local.on('end', () => {
     console.log('write local end')
@@ -77,7 +77,7 @@ function saveData(req, res, folder, url) {
   local.on('error', (e) => {
     console.log('error writing to local', e)
   })
-  req.on('end', () => remote.end());
+  // req.on('end', () => remote.end());
   res.end(id);
 }
 
