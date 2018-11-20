@@ -1,0 +1,1 @@
+{"bio":{"orientation":"left","name":"Burrower","family":"Beasts","cost":10,"maxStacks":1,"sprite":{"x":768,"y":96,"spritesheet":"DungeonCrawl_ProjectUtumnoTileset.png","w":32,"h":32}},"abilities":{"abilities":[]},"stats":{"health":10,"mana":0,"attack":1,"defence":1,"spellPower":1,"spellResistance":0,"damage":0,"apr":1,"tpr":1,"movement":3,"initiative":10,"range":1}}

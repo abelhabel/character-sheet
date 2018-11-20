@@ -63,21 +63,26 @@ loadFile('spellbookForFlare.png');
 function saveData(req, res, folder, url) {
   let id = url.searchParams.get('id') ||  guid();
   let name = id + '.json';
-  let local = fs.createWriteStream(`${folder}/${name}`);
+  console.log('saving', name, id)
+  let local = fs.createWriteStream(__dirname + `/${folder}/${name}`);
   // let remote = backup(folder, name);
   req.on('data', chunk => {
     console.log('writing data to local and remote')
     local.write(chunk);
     // remote.write(chunk);
   })
-  local.on('end', () => {
-    console.log('write local end')
-    local.close();
+  local.on('finish', () => {
+    console.log('write to local finished')
+
   });
   local.on('error', (e) => {
     console.log('error writing to local', e)
   })
-  // req.on('end', () => remote.end());
+  req.on('end', () => {
+    console.log('reading request data is done');
+    local.end();
+    // remote.end()
+  });
   res.end(id);
 }
 
