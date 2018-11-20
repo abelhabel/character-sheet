@@ -77,7 +77,10 @@ function saveData(req, res, folder, url) {
   });
   local.on('error', (e) => {
     console.log('error writing to local', e)
-  })
+  });
+  remote.on('error', (e) => {
+    console.log('error writing to remote', e, e.stack)
+  });
   req.on('end', () => {
     console.log('reading request data is done');
     local.end();

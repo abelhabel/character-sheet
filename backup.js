@@ -17,7 +17,6 @@ function backup(folder, name) {
     })
   });
 
-  req.on('error', e => console.log('req error', e));
   return req;
 
 }
