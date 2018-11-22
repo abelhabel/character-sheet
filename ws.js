@@ -1,3 +1,6 @@
+const File = require('./File.js');
+const fs = require('fs');
+const guid = require('./guid');
 module.exports = function(server) {
   var WebSocket = require('ws');
   var wss = new WebSocket.Server({server: server});
@@ -10,12 +13,7 @@ module.exports = function(server) {
     return Math.random().toString().substr(2);
   }
 
-  class User {
-    constructor(name) {
-      this.id = uniqueId();
-      this.name = name;
-    }
-  }
+  const User = require('./User');
 
   class Team {
     constructor(user, team) {
@@ -25,18 +23,44 @@ module.exports = function(server) {
   }
 
   class Game {
-    constructor(user) {
+    constructor(user, type) {
+      this.id = guid();
+      this.type = type || 'remote';
       this.owner = user;
       this.users = [user];
-      this.id = uniqueId();
       this.max = 2;
       this.teams = [];
       this.status = 'created';
       this.seed = Date.now();
+      this.actions = [];
+      this.spectators = [];
     }
 
     start() {
       this.status = 'started';
+    }
+
+    save() {
+      let data = JSON.stringify(this);
+      let file = new File(`${__dirname}/games/${this.id}.json`);
+      return file.write(data);
+    }
+
+    static load(id) {
+      let file = new File(`${__dirname}/games/${id}.json`);
+      return file.read()
+      .then(() => {
+        console.log('loaded game', file)
+        let game = new Game();
+        Object.assign(game, file.js());
+        game.spectators = [];
+        console.log('returning game', game)
+        return game;
+      })
+    }
+
+    spectate(user) {
+      this.spectators.push(user);
     }
 
     join(user) {
@@ -67,6 +91,22 @@ module.exports = function(server) {
     constructor() {
       this.games = [];
       this.users = [];
+      this.loadOnGoingGames();
+    }
+
+    loadOnGoingGames() {
+      fs.readdir(__dirname + '/games', (err, fileNames) => {
+        console.log(fileNames)
+        fileNames.forEach(fn => {
+          Game.load(fn.replace('.json', ''))
+          .then(game => {
+            this.games.push(game);
+          })
+          .catch(e => {
+            console.log('error loading games', e)
+          })
+        })
+      })
     }
 
     cast(channel, data, excludeUser) {
@@ -83,6 +123,16 @@ module.exports = function(server) {
         let socket = sockets.get({playerId: u.id});
         socket && socket.ship(channel, data);
       });
+      game.spectators.forEach(u => {
+        if(excludeUser && excludeUser.id == u.id) return;
+        let socket = sockets.get({playerId: u.id});
+        socket && socket.ship(channel, data);
+      });
+    }
+
+    castToUser(user, channel, data) {
+      let socket = sockets.get({playerId: user.id});
+      socket && socket.ship(channel, data);
     }
 
     battleAction(gameId, user, action) {
@@ -90,13 +140,25 @@ module.exports = function(server) {
       if(!game) {
         return;
       }
-
+      game.actions.push(action);
       this.castInGame(game, 'battle action confirmed', {game, action});
     }
 
     createGame(user) {
       let game = new Game(user);
       this.games.push(game);
+      console.log('game created', game)
+      this.cast('game created', game);
+    }
+
+    createPlayByPostGame(user) {
+      let game = new Game(user, 'play by post');
+      this.games.push(game);
+      user.joinGame(game.id);
+      user.save();
+      game.save()
+      .then(() => console.log('game save success'))
+      .catch(e => console.log('game save error', e));
       this.cast('game created', game);
     }
 
@@ -107,6 +169,21 @@ module.exports = function(server) {
       }
       game.join(user);
       this.cast('game joined', {game, user});
+      if(game.type == 'play by post' && game.full) {
+        user.joinGame(game.id);
+        user.save();
+        game.save()
+        .then(() => console.log('game save success'))
+        .catch(e => console.log('game save error', e));
+        // this.stopGame(game.id);
+      }
+    }
+
+    continueGame(gameId, user) {
+      this.loadGame(gameId)
+      .then(game => {
+        this.castToUser(user, 'game continued', game);
+      })
     }
 
     startGame(gameId) {
@@ -119,13 +196,75 @@ module.exports = function(server) {
       this.cast('game started', game);
     }
 
-    selectTeam(gameId, user, team) {
+    spectate(gameId, user) {
       let game = this.games.find(g => g.id == gameId);
+      console.log('spectate', game)
       if(!game) {
         return;
       }
-      game.addTeam(user, team);
-      game.ready && this.cast('game ready', game);
+      game.spectate(user);
+      this.castToUser(user, 'spectate confirmed', game);
+    }
+
+    winGame(gameId, user) {
+      console.log('win game')
+      user.wins += 1;
+      user.leaveGame(gameId);
+      user.save()
+      .then(() => this.loadGame(gameId))
+      .then(game => {
+        game.status = 'complete';
+        game.winner = user;
+        return game.save()
+      })
+    }
+
+    loseGame(gameId, user) {
+      console.log('lose game')
+      user.losses += 1;
+      user.leaveGame(gameId);
+      user.save()
+      .then(() => this.loadGame(gameId))
+      .then(game => {
+        game.status = 'complete';
+        return game.save()
+      })
+    }
+
+    loadGame(id) {
+      return new Promise((resolve, reject) => {
+        let game = this.games.find(g => g.id == id);
+        if(game) {
+          console.log('load game from memory');
+          return resolve(game);
+        }
+        console.log('load game from disk');
+        return Game.load(id).then(resolve, reject);
+      })
+    }
+
+    selectTeam(gameId, user, team) {
+      console.log('selecting team')
+      this.loadGame(gameId)
+      .then(game => {
+        console.log('selectTeam', gameId, user, team, game);
+        if(!game) {
+          return;
+        }
+        game.addTeam(user, team);
+        if(game.type == 'play by post') {
+          console.log('team selected. saving play by post game')
+          game.save()
+          .then(() => console.log('game save success'))
+          .catch(e => console.log('game save error', e));
+        }
+        this.castInGame(game, 'team selected', game);
+        game.ready && this.cast('game ready', game);
+
+      })
+      .catch(e => {
+        console.log('selectin team error', e)
+      })
     }
 
     stopGame(gameId) {
@@ -144,18 +283,21 @@ module.exports = function(server) {
       this.cast('game list', this.games);
       let socket = sockets.get({playerId: user.id});
       socket && socket.ship('user list', this.users);
+    }
 
-
+    sendToken(user, token) {
+      let socket = sockets.get({playerId: user.id});
+      socket && socket.ship('token', {token, name: user.name});
     }
 
     leave(user) {
-      let index = this.users.indexOf(user);
+      let index = this.users.findIndex(u => u.id == user.id);
       if(!~index) {
         return;
       }
       this.cast('user left', user);
       this.games.forEach(g => {
-        if(g.owner.id == user.id) {
+        if(g.type == 'remote' && g.owner.id == user.id) {
           this.stopGame(g.id);
         }
       })
@@ -163,17 +305,19 @@ module.exports = function(server) {
     }
 
     disconnect(user) {
-      let index = this.users.indexOf(user);
+      let index = this.users.findIndex(u => u.id == user.id);
+      console.log('disconnect user index', index)
       if(!~index) {
         return;
       }
       this.users.splice(index, 1);
       this.games.forEach(g => {
-        if(g.owner.id == user.id) {
+        if(g.type == 'remote' && g.owner.id == user.id) {
           this.stopGame(g.id);
         }
       })
       this.games.forEach(g => {
+        if(g.type == 'play by post') return;
         g.teams = g.teams.filter(t => t.user.id != user.id);
         g.users = g.users.filter(u => u.id != user.id);
       })
@@ -198,22 +342,66 @@ module.exports = function(server) {
   }
   var channels = {
     'enter lobby'(socket, data) {
-      let user = new User(data.name);
-      PLAYERS[user.id] = user;
-      sockets.set({playerId: user.id, socketId: socket.id});
-      LOBBY.enter(user);
+      let p = data.name.split(':');
+      let name = p[0];
+      let password = p[1];
+      console.log('enter lobby', data)
+      User.login(name, password)
+      .then(user => {
+        let token = user.createToken();
+        PLAYERS[user.id] = user;
+        sockets.set({playerId: user.id, socketId: socket.id});
+        LOBBY.enter(user.toSafe());
+        LOBBY.sendToken(user, token.toString());
+
+      })
+      .catch(e => {
+        console.log('error logging in user', e);
+      })
+    },
+    'login'(socket, data) {
+      User.loginWithToken(data.token)
+      .then(user => {
+        console.log('user logged in with token', user);
+        PLAYERS[user.id] = user;
+        sockets.set({playerId: user.id, socketId: socket.id});
+        LOBBY.enter(user.toSafe());
+      })
+      .catch(e => {
+        console.log('error logging in user', e);
+      })
     },
     'leave lobby'(socket, data) {
       let user = getUser(socket);
       LOBBY.leave(user);
     },
+    'win game'(socket, data) {
+      let user = getUser(socket);
+      LOBBY.winGame(data.id, user);
+    },
+    'lose game'(socket, data) {
+      let user = getUser(socket);
+      LOBBY.loseGame(data.id, user);
+    },
     'create game'(socket, data) {
       let user = getUser(socket);
       LOBBY.createGame(user);
     },
+    'create play by post game'(socket, data) {
+      let user = getUser(socket);
+      LOBBY.createPlayByPostGame(user);
+    },
+    'continue game'(socket, data) {
+      let user = getUser(socket);
+      LOBBY.continueGame(data.id, user);
+    },
     'join game'(socket, data) {
       let user = getUser(socket);
       LOBBY.joinGame(data.id, user);
+    },
+    'spectate'(socket, data) {
+      let user = getUser(socket);
+      LOBBY.spectate(data.id, user);
     },
     'stop game'(socket, data) {
       let user = getUser(socket);
@@ -253,7 +441,7 @@ module.exports = function(server) {
     })
     socket.on('close', function() {
       let user = getUser(socket) || {id: ''};
-      console.log('user leaving', user)
+      console.log('user leaving', socket.id, user)
       LOBBY.disconnect(user);
       sockets.del({
         playerId: user.id,

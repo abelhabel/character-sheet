@@ -110,6 +110,10 @@ Module.onLoad(['monsters.js', 'abilities.js', 'terrains.js', 'arenas.js', 'icons
     lobby.didEnter(user);
   });
 
+  socket.on('token', data => {
+    lobby.setToken(data);
+  })
+
   socket.on('user left', (user) => {
     console.log('user left', user)
     lobby.didLeave(user);
@@ -135,6 +139,10 @@ Module.onLoad(['monsters.js', 'abilities.js', 'terrains.js', 'arenas.js', 'icons
     lobby.gameDidStart(game);
   })
 
+  socket.on('spectate confirmed', game => {
+    lobby.startSpectate(game);
+  })
+
   socket.on('game ready', game => {
     // when all teams have been selected
     lobby.gameIsReady(game);
@@ -145,6 +153,14 @@ Module.onLoad(['monsters.js', 'abilities.js', 'terrains.js', 'arenas.js', 'icons
   })
   socket.on('game updated', game => {
     lobby.updateGame(game);
+  })
+
+  socket.on('team selected', game => {
+    lobby.teamSelected(game);
+  })
+
+  socket.on('game continued', game => {
+    lobby.gameContinued(game);
   })
 
   socket.on('battle action confirmed', data => {
@@ -207,9 +223,15 @@ Module.onLoad(['monsters.js', 'abilities.js', 'terrains.js', 'arenas.js', 'icons
 
   })
   document.body.appendChild(container);
-  // beasts.forEach(m => m.ai = true);
-  // var battle = new Battle(undead, humans, w, h, tw, th, grid, initiative, effects);
-  // battle.start();
+
+  function assembleTeam(team) {
+    return team.map(t => {
+      let template = monsters.find(m => m.id == t.templateId);
+      let monster = new Monster(template, t.stacks);
+      return monster;
+    })
+  }
+
   lobby.on('local game', (game) => {
     var generator = new Rand(Date.now()).generator;
     window._random = (t) => {
@@ -220,12 +242,19 @@ Module.onLoad(['monsters.js', 'abilities.js', 'terrains.js', 'arenas.js', 'icons
     window._roll = (a, b) => {
       return Math.ceil(a + _random() * (b-a));
     }
-    console.log('local game', game);
+    selectContainer.style.display = 'block';
     var teamSelect = new TeamSelect(monsters, selectContainer, w, h, tw, th, cash, 2, () => {
       selectContainer.style.display = 'none';
       teamSelect.teams[0].forEach(m => m.ai = false);
       teamSelect.teams[1].forEach(m => m.ai = false);
-      var battle = new Battle(teamSelect.teams[0], teamSelect.teams[1], w, h, tw, th, grid, effects);
+      var battle = new Battle(teamSelect.teams[0], teamSelect.teams[1], w, h, tw, th, container);
+      battle.onGameEnd = (o) => {
+        battle.destroy();
+        container.innerHTML = '';
+        selectContainer.innerHTML = '';
+        window.battle = null;
+        lobby.show();
+      };
       battle.start();
       window.battle = battle;
     });
@@ -233,13 +262,122 @@ Module.onLoad(['monsters.js', 'abilities.js', 'terrains.js', 'arenas.js', 'icons
     teamSelect.render();
   });
 
-  function assembleTeam(team) {
-    return team.map(t => {
-      let template = monsters.find(m => m.id == t.templateId);
-      let monster = new Monster(template, t.stacks);
-      return monster;
+  lobby.on('start spectate', game => {
+    console.log('start spectate mode', game)
+    lobby.hide();
+    var generator = new Rand(game.seed).generator;
+    window._random = (t) => {
+      let r = generator.random();
+      // logger.log(r);
+      return r;
+    };
+    window._roll = (a, b) => {
+      return Math.ceil(a + _random() * (b-a));
+    }
+    let team1 = assembleTeam(game.teams[0].team);
+    let team2 = assembleTeam(game.teams[1].team);
+    var battle = new Battle(team1, team2, w, h, tw, th, container);
+    battle.onAction = (action, team) => {
+      console.log('battle.onAction', action)
+    };
+
+    battle.onGameEnd = (o) => {
+      battle.destroy();
+      container.innerHTML = '';
+      selectContainer.innerHTML = '';
+      window.battle = null;
+      lobby.show();
+    };
+
+
+    lobby.on('battle action confirmed', (data) => {
+      console.log('battle action confirmed', data);
+      let a = battle.createAction(data.action);
+      battle.addAction(a, true);
     })
-  }
+
+
+    battle.start()
+    .then(() => {
+      battle.fastForward(game.actions);
+    });
+    window.battle = battle;
+    selectContainer.style.display = 'none';
+  })
+
+  lobby.on('play by post', game => {
+    console.log('play by post', game);
+    lobby.hide();
+    if(game.teams && game.teams.length == 2) {
+      console.log('game full. fast forward actions')
+      var generator = new Rand(game.seed).generator;
+      window._random = (t) => {
+        let r = generator.random();
+        // logger.log(r);
+        return r;
+      };
+      window._roll = (a, b) => {
+        return Math.ceil(a + _random() * (b-a));
+      }
+      console.log('battle can start', game);
+      let localTeam = game.teams.find(t => t.user.id == lobby.localUser.id);
+      let remoteTeam = game.teams.find(t => t.user.id != lobby.localUser.id);
+      let firstTeam = game.owner.id == lobby.localUser.id ? localTeam.team : remoteTeam.team;
+      let secondTeam = game.owner.id != lobby.localUser.id ? localTeam.team : remoteTeam.team;
+      if(game.owner.id == lobby.localUser.id) {
+        firstTeam = localTeam.team;
+        secondTeam = remoteTeam.team;
+        localTeam = 'team1';
+      } else {
+        firstTeam = remoteTeam.team;
+        secondTeam = localTeam.team;
+        localTeam = 'team2';
+      }
+      var battle = new Battle(assembleTeam(firstTeam), assembleTeam(secondTeam), w, h, tw, th, container);
+
+      battle.onAction = (action, team) => {
+        if(team != localTeam) return;
+        console.log('battle.onAction', action)
+        lobby.battleAction(game, action);
+      };
+      battle.onGameEnd = (o) => {
+        battle.destroy();
+        container.innerHTML = '';
+        selectContainer.innerHTML = '';
+        window.battle = null;
+        lobby.show();
+      };
+      lobby.on('battle action confirmed', (data) => {
+        console.log('battle action confirmed', data);
+        let a = battle.createAction(data.action);
+        battle.addAction(a, true);
+      })
+      battle.start()
+      .then(() => {
+        battle.fastForward(game.actions);
+      });
+      window.battle = battle;
+      selectContainer.style.display = 'none';
+    } else
+    if(game.teams && game.teams.find(t => t.user.id == lobby.localUser.id)){
+      console.log('team has been selected. waiting for other player to select team');
+    } else {
+      console.log('team not selected yet')
+      lobby.hide();
+      var teamSelect = new TeamSelect(monsters, selectContainer, w, h, tw, th, cash, 1, (team) => {
+        console.log('team selected', team);
+        var selected = team.map(m => {
+          return {
+            templateId: m.template.id,
+            stacks: m.stacks
+          }
+        })
+        lobby.selectTeam(game, selected);
+
+      });
+    }
+  })
+
   lobby.on('remote game', (game) => {
     console.log(game)
     var generator = new Rand(game.seed).generator;
@@ -278,12 +416,24 @@ Module.onLoad(['monsters.js', 'abilities.js', 'terrains.js', 'arenas.js', 'icons
           secondTeam = localTeam.team;
           localTeam = 'team2';
         }
-        var battle = new Battle(assembleTeam(firstTeam), assembleTeam(secondTeam), w, h, tw, th, grid, effects);
+        var battle = new Battle(assembleTeam(firstTeam), assembleTeam(secondTeam), w, h, tw, th, container);
 
         battle.onAction = (action, team) => {
           if(team != localTeam) return;
           console.log('battle.onAction', action)
           lobby.battleAction(game, action);
+        };
+        battle.onGameEnd = (o) => {
+          if(o.winningTeam == localTeam) {
+            lobby.winGame(game);
+          } else {
+            lobby.loseGame(game);
+          }
+          battle.destroy();
+          container.innerHTML = '';
+          selectContainer.innerHTML = '';
+          window.battle = null;
+          lobby.show();
         };
         lobby.on('battle action confirmed', (data) => {
           console.log('battle action confirmed', data);
@@ -295,5 +445,6 @@ Module.onLoad(['monsters.js', 'abilities.js', 'terrains.js', 'arenas.js', 'icons
         selectContainer.style.display = 'none';
       })
     });
+
   });
 })

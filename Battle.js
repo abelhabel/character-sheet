@@ -187,70 +187,6 @@ class R extends Array {
   }
 }
 
-class Round extends Array {
-  constructor() {
-    super();
-    this.current = null;
-    this.order = [];
-    this.round = 0;
-    this.turn = -1;
-    this.future = [];
-    this.stages = {
-      current: {
-        hasActed: [],
-        willAct: []
-      },
-      next: []
-    }
-  }
-
-  add(actors) {
-    this.push.apply(this, actors);
-    actors.forEach(a => {
-      this.order.push({
-        count: a.totalStat('initiative'),
-        actor: a
-      });
-    });
-
-    this.resetFuture();
-  }
-
-  resetFuture() {
-    this.future = [];
-    for(let i = 0; i < 500; i++) {
-      this.future.push(this._next());
-    }
-    this.turn = -1;
-  }
-
-  next() {
-    this.turn += 1;
-    return this.future[this.turn];
-  }
-
-  _next() {
-    this.order.forEach(a => {
-      a.count += 20 + a.actor.totalStat('initiative');
-    });
-
-    let n;
-    this.order.forEach(a => {
-      if(!n && a.count > 100) {
-        n = a;
-      } else
-      if(a.count > 100 && a.count > n.count) {
-        n = a;
-      }
-    });
-
-    if(!n) return this._next();
-    n.count = 0;
-    return n.actor;
-  }
-
-}
-
 class Turn {
   constructor(actor) {
     this.actor = actor;
@@ -296,7 +232,8 @@ class Action {
 }
 
 class Battle {
-  constructor(team1, team2, w, h, tw, th, board, effects) {
+  constructor(team1, team2, w, h, tw, th, container) {
+    this.container = container;
     this.mouse = {
       x: 0,
       y: 0
@@ -333,36 +270,9 @@ class Battle {
     this.h = this.arena.h;
     this.tw = tw;
     this.th = th;
-    this.board = board;
-    this.board.width = this.w * this.tw;
-    this.board.height = this.h * this.th;
-    this.board.style.zIndex = 1;
-    this.effects = effects;
-    this.effects.width = this.w * this.tw;
-    this.effects.height = this.h * this.th;
-    this.board.style.copyTo(this.effects.style);
-    // Object.assign(this.effects.style, this.board.style);
-    effects.style.zIndex = this.board.style.zIndex + 1;
-    this.inputCanvas = document.createElement('canvas');
-    this.inputCanvas.width = this.board.width;
-    this.inputCanvas.height = this.board.height;
-    this.board.style.copyTo(this.inputCanvas.style);
-    this.inputCanvas.style.zIndex = 100;
-    this.board.parentNode.appendChild(this.inputCanvas);
-
+    this.createCanvases();
     this.hasActed = [];
-    // this.grid = new PL(w, h);
     this.terrain = new PL(this.w, this.h);
-    this.terrainCanvas = document.createElement('canvas');
-    this.terrainCanvas.width = this.board.width;
-    this.terrainCanvas.height = this.board.height;
-    this.board.style.copyTo(this.terrainCanvas.style);
-    this.board.parentNode.insertBefore(this.terrainCanvas, this.board);
-    var terrain = new Terrain(terrains.find(t => t.bio.name == 'Sand Stone'));
-
-    // this.terrain.loop((x, y) => {
-    //   this.terrain.set(x, y, {sprite: terrain.sprite, x, y});
-    // })
     this.images = {};
     this.sounds = {};
     this.monsterCards = [];
@@ -374,12 +284,66 @@ class Battle {
       all: []
     };
     [...this.team1, ...this.team2].forEach(m => this.addAuras(m))
-    this.turnOrder = new Round();
-    this.turnOrder.add([...this.team1, ...this.team2]);
     this.tr = new R();
     this.tr.add([...this.team1, ...this.team2]);
     this.tr.order();
     this.setEvents();
+  }
+
+  createCanvases() {
+    let {w, h, tw, th} = this;
+    var board = document.createElement('canvas');
+    var effects = document.createElement('canvas');
+    var container = this.container;
+    board.style.position = effects.style.position = 'absolute';
+    board.style.left = effects.style.left = '0px';
+    board.style.top = effects.style.top = '0px';
+    board.style.zIndex = 1;
+    effects.style.zIndex = 2;
+    effects.style.position = 'block';
+    container.appendChild(effects);
+    container.appendChild(board);
+    Object.assign(board.style, {
+      display: 'block',
+      border: '1px solid green',
+      width: w * tw,
+      height: h * th,
+      left: '50%',
+      transform: 'translateX(-50%)',
+
+    })
+    this.board = board;
+    this.board.width = this.w * this.tw;
+    this.board.height = this.h * this.th;
+    this.board.style.zIndex = 1;
+    this.effects = effects;
+    this.effects.style.zIndex = this.board.style.zIndex + 1;
+    this.effects.width = this.w * this.tw;
+    this.effects.height = this.h * this.th;
+    this.board.style.copyTo(this.effects.style);
+
+    this.inputCanvas = document.createElement('canvas');
+    this.inputCanvas.width = this.board.width;
+    this.inputCanvas.height = this.board.height;
+    this.board.style.copyTo(this.inputCanvas.style);
+    this.inputCanvas.style.zIndex = 100;
+    this.board.parentNode.appendChild(this.inputCanvas);
+
+    this.terrainCanvas = document.createElement('canvas');
+    this.terrainCanvas.width = this.board.width;
+    this.terrainCanvas.height = this.board.height;
+    this.board.style.copyTo(this.terrainCanvas.style);
+    this.terrainCanvas.style.zIndex = 0;
+    this.board.parentNode.insertBefore(this.terrainCanvas, this.board);
+  }
+
+  destroy() {
+    let mc = document.getElementById('monster-cards');
+    mc && document.body.removeChild(mc);
+    let oa = document.getElementById('outer-abilities');
+    oa && document.body.removeChild(oa);
+    let keys = Object.keys(this);
+    keys.forEach(key => delete this[key]);
   }
 
   addAuras(m) {
@@ -824,7 +788,7 @@ class Battle {
 
   loadSpriteSheets() {
     var sheets = [];
-    var items = this.turnOrder.filter(item => {
+    var items = this.tr.filter(item => {
       var s = item.bio.sprite.spritesheet;
       if(!~sheets.indexOf(s)) {
         sheets.push(s);
@@ -854,13 +818,6 @@ class Battle {
       image.src = item.bio.sprite.spritesheet;
 
     })
-  }
-
-  setTurnOrder() {
-    this.turnOrder = [...this.team1, ...this.team2].sort((a, b) => {
-      return a.totalStat('initiative') > b.totalStat('initiative') ? -1 : 1;
-    })
-    return this;
   }
 
   drawGrid() {
@@ -1312,7 +1269,7 @@ class Battle {
   }
 
   findClosestTarget(p, exclude = []) {
-    var t = this.turnOrder.filter(item => {
+    var t = this.tr.filter(item => {
       return item.team != p.team;
     })
     .sort((a, b) => {
@@ -1330,7 +1287,7 @@ class Battle {
   }
 
   findWeakestTarget(p, exclude = []) {
-    var t = this.turnOrder.filter(item => {
+    var t = this.tr.filter(item => {
       return item.team != p.team;
     })
     .sort((a, b) => {
@@ -1348,7 +1305,7 @@ class Battle {
   }
 
   findStrongestTarget(p, exclude = []) {
-    var t = this.turnOrder.filter(item => {
+    var t = this.tr.filter(item => {
       return item.team != p.team && !~exclude.indexOf(item);
     })
     .sort((a, b) => {
@@ -1583,6 +1540,67 @@ class Battle {
     return new Action(o.type, o.position, o.abilityId);
   }
 
+  fastForward(actions) {
+    let next = (action) => {
+      return new Promise((resolve, reject) => {
+        var {position, abilityId, type} = action;
+        let actor = this.currentActor;
+        console.log('start action', action, actor)
+        let p;
+        if(type == 'wait') {
+          let canWait = this.wait(actor)
+          if(canWait) {
+            p = Promise.resolve();
+          } else {
+            reject("Cannot wait");
+          }
+        } else
+        if(type == 'defend') {
+          this.defend(actor);
+          p = Promise.resolve();
+        } else
+        if(type == 'move') {
+          this.grid.remove(actor.x, actor.y);
+          actor.move(position.x, position.y);
+          this.grid.setItem(actor);
+          p = Promise.resolve();
+        } else
+        if(type == 'use ability') {
+          let ability = actor.abilities.find(a => a.template.id == abilityId);
+          if(!ability) {
+            return reject("Invalid ability")
+          }
+          p = this.useAbility(actor, position, ability);
+        } else {
+          p = Promise.resolve();
+        }
+
+        p.then(() => {
+          console.log('end of action')
+          this.turn.addAction(action);
+          if(this.turn.isOver) {
+            console.log('ended action', type)
+            this.endTurn();
+            this.act();
+          }
+          resolve();
+        })
+        .catch(reject);
+      })
+    }
+    let que = Promise.resolve();
+    actions.forEach(action => {
+      que = que.then(() => next(action));
+    });
+    que.then(() => {
+      console.log('all actions fast forwarded');
+      this.render();
+    })
+    .catch(e => {
+      console.log('fast forward failed', e)
+    })
+  }
+
   addAction(action, fromOutside) {
     if(this.onAction && !fromOutside) {
       this.onAction(action, this.currentActor.team);
@@ -1626,6 +1644,7 @@ class Battle {
 
       p.then(() => {
         this.turn.addAction(action);
+        console.log('turn over?', this.turn.isOver)
         if(this.turn.isOver) {
           this.endTurn();
           this.act();
@@ -1703,8 +1722,6 @@ class Battle {
 
   kill(a) {
     this.sounds.death.play();
-    // var i = this.turnOrder.findIndex(item => item == a);
-    // this.turnOrder.splice(i, 1);
     this.tr.remove(a);
     this.grid.remove(a.x,a.y);
     this.render();
@@ -1770,6 +1787,15 @@ class Battle {
     this.applyEffects(a);
     this.render();
     this.battleMenu.setActor(a);
+    if(!this.tr.filter(m => m.team != a.team).length) {
+      logger.log(a.team, 'won the game!');
+      if(typeof this.onGameEnd == 'function') {
+        this.onGameEnd({
+          winningTeam: a.team,
+          monstersLeft: Array.from(this.tr)
+        });
+      }
+    }
   }
 
   endTurn() {
@@ -1830,10 +1856,8 @@ class Battle {
             this.defend(a);
           }
         }
-        a.alive && this.turnOrder.push(a);
         this.render();
-        if(this.turnOrder.length) this.act();
-
+        this.act();
       }, 500)
     })
 
@@ -1941,15 +1965,13 @@ class Battle {
     logger.minimized = false;
     logger.redraw();
     this.loadSounds();
-    // this.setTurnOrder();
-
     this.createMonsterCardContainer();
     this.createOuterAbilitiesContainer();
     this.createAbilityContainer();
     this.createTriggerContainer();
     this.createEffectContainer();
 
-    this.loadSpriteSheets()
+    return this.loadSpriteSheets()
     .then(images => {
       this.cacheCanvases();
       this.makeMonsterCards();
