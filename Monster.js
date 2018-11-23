@@ -347,7 +347,6 @@ class Monster {
 
   replenishMana(n) {
     this.manaUsed = Math.max(0, this.manaUsed - n);
-    console.log('replenish mana', n);
   }
 
   useMana(n) {

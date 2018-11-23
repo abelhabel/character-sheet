@@ -11,14 +11,11 @@ class WS {
 
     });
     socket.addEventListener('ping', (event) => {
-      console.log('got ping');
       this.heartbeat();
     });
     // Listen for messages
     socket.addEventListener('message', (event) => {
-      console.log('got message', event)
       var all = event.data.split(this.SPLITTER);
-      console.log('all', all)
       var channel = all[0];
       var data = '';
       if(typeof all[1] == 'string') {

@@ -259,7 +259,6 @@ class Battle {
       }
     };
     var arena = arenas[1];
-    console.log(arena)
     this.arena = new Arena(arena, tw, th);
     this.grid = this.arena.obstacles;
     this.w = this.arena.w;
@@ -470,7 +469,6 @@ class Battle {
 
     this.inputCanvas.addEventListener('contextmenu', e => {
       e.preventDefault();
-      console.log('context');
       this.monsterCards.forEach(c => {
         if(!c.cached) return;
         if(c.item == this.grid.get(this.mouse.x, this.mouse.y)) {
@@ -1530,7 +1528,6 @@ class Battle {
         var {positions, abilityId, type} = action;
         let position = positions[0];
         let actor = this.currentActor;
-        console.log('start action', action, actor)
         let p;
         if(type == 'wait') {
           let canWait = this.wait(actor)
@@ -1561,10 +1558,8 @@ class Battle {
         }
 
         p.then(() => {
-          console.log('end of action')
           this.turn.addAction(action);
           if(this.turn.isOver) {
-            console.log('ended action', type)
             this.endTurn();
             this.act();
           }
@@ -1578,7 +1573,6 @@ class Battle {
       que = que.then(() => next(action));
     });
     que.then(() => {
-      console.log('all actions fast forwarded');
       this.render();
     })
     .catch(e => {
@@ -1630,7 +1624,6 @@ class Battle {
 
       p.then(() => {
         this.turn.addAction(action);
-        console.log('turn over?', this.turn.isOver)
         if(this.turn.isOver) {
           this.endTurn();
           this.act();
@@ -1827,7 +1820,6 @@ class Battle {
     var a = this.currentActor;
     if(!a) return;
     if(!a.alive) {
-      console.log(a.bio.name, 'is not alive');
       this.kill(a);
       this.endTurn();
       return this.act();

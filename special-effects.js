@@ -14,7 +14,6 @@ module.exports.suicide = {
     let adjacent = battle.grid.around(caster.x, caster.y, 1);
     adjacent.filter(t => t.item instanceof caster.constructor)
     .forEach(t => {
-      console.log('explosion power', p)
       battle.dealDamage(caster, t.item, healthLost, ability, true);
     })
     return new Special();
@@ -25,7 +24,6 @@ module.exports.charge = {
   when: 'per use',
   fn: function (battle, caster, target, ability, power, triggeredPower, selections) {
     let tiles = battle.abilityTargets(caster, ability, selections[0].x, selections[0].y).tiles;
-    console.log(tiles)
     let tile = tiles[tiles.length -1];
     if(battle.grid.get(tile.x, tile.y)) {
       tile = battle.grid.closestEmpty(tile.x, tile.y);
@@ -57,7 +55,6 @@ module.exports.berzerk = {
     var t = battle.grid.closest(target.x, target.y, (b) => {
       return b instanceof target.constructor && b.team != caster.team;
     });
-    console.log('berserk target', t, target)
     if(!t) return;
     var a = target.actives.find(a => a.stats.targetFamily == 'enemies' && battle.grid.squareRadius(target.x, target.y, t.x, t.y) <= a.stats.range);
     if(!a) return;
@@ -71,14 +68,12 @@ module.exports.giveEffectAsAbility = {
   fn: function (battle, caster, target, ability, power, triggeredPower, selections) {
     var template = ability.stats.effect.template;
     var a = new ability.constructor(template, target);
-    console.log('giveEffectAsAbility', a.bio.name, target.bio.name)
     target.abilities.push(a);
     battle.addAura(a);
     return new Special(function() {
       let index = target.abilities.findIndex(b => b.id == a.id);
       target.abilities.splice(index, 1);
       battle.removeAura(a);
-      console.log('removed ability', a.bio.name, a.id)
     });
   }
 };
@@ -87,7 +82,6 @@ module.exports.giveEffectAsAbility = {
 module.exports.reflectDamage = {
   when: 'per target',
   fn: function (battle, caster, target, ability, power, triggeredPower, selections) {
-    console.log(caster.bio.name,'reflect damage', triggeredPower, target.bio.name)
     battle.dealDamage(caster, target, triggeredPower, ability, true);
     return new Special();
   }
@@ -96,7 +90,6 @@ module.exports.reflectDamage = {
 module.exports.phantomImage = {
   when: 'per target',
   fn: function (battle, caster, target, ability, power, triggeredPower, selections) {
-    console.log(`${caster.bio.name} casts ${ability.bio.name} on ${target.bio.name}`);
     let template = target.template;
     let tile = battle.grid.closestEmpty(caster.x, caster.y);
     battle.summon(caster, ability, template, tile)
@@ -137,7 +130,6 @@ module.exports.dispel = {
 module.exports.teleport = {
   when: 'per target',
   fn: function (battle, caster, target, ability, power, triggeredPower, selections) {
-    console.log('SPECIAL: teleport', caster.selections)
     let actor = battle.grid.get(selections[0].x, selections[0].y);
     let tile = selections[1];
     if(battle.grid.get(tile.x, tile.y)) {
@@ -154,7 +146,6 @@ module.exports.teleport = {
 module.exports.manaThief = {
   when: 'per target',
   fn: function (battle, caster, target, ability, power, triggeredPower, selections) {
-    console.log('SPECIAL: teleport', caster.selections)
     let victim = battle.grid.get(selections[0].x, selections[0].y);
     let benefactor = battle.grid.get(selections[1].x, selections[1].y);
     if(!victim || !benefactor) return;
@@ -182,7 +173,6 @@ module.exports.lifeLeech = {
   when: 'per target',
   fn: function (battle, caster, target, ability, power, triggeredPower, selections) {
     // if(!triggeredPower) return;
-    console.log('lifeleech', caster.bio.name, target.bio.name, ability.bio.name, power, triggeredPower)
     if(triggeredPower) {
       caster.heal(Math.ceil(triggeredPower/2))
     } else {
@@ -194,7 +184,6 @@ module.exports.lifeLeech = {
 module.exports.polymorph = {
   when: 'per target',
   fn: function (battle, caster, target, ability, power, triggeredPower, selections) {
-    console.log('POLYMORPH', target)
     let rand = battle.roll(0, monsters.length-1);
     let monster = monsters[rand];
     Object.assign(target.bio, monster.bio);
