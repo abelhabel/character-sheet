@@ -1,6 +1,8 @@
 const protocol = self.location.protocol == 'https:' ? 'wss:' : 'ws:';
 class WS {
   constructor() {
+    this.pingTimeout = null;
+    this.serverTime = 20000;
     const socket = new WebSocket(`${protocol}//${self.location.host}`);
     this.SPLITTER = '-|-';
     // Connection opened
@@ -8,10 +10,15 @@ class WS {
       this.emit('Hello Server!');
 
     });
-
+    socket.addEventListener('ping', (event) => {
+      console.log('got ping');
+      this.heartbeat();
+    });
     // Listen for messages
     socket.addEventListener('message', (event) => {
+      console.log('got message', event)
       var all = event.data.split(this.SPLITTER);
+      console.log('all', all)
       var channel = all[0];
       var data = '';
       if(typeof all[1] == 'string') {
@@ -20,13 +27,20 @@ class WS {
         } catch (e) {
           console.log('no parsable data');
         }
-      }
+      };
       this.execOn(channel, data);
     });
 
     this.socket = socket;
 
     this.channels = {};
+  }
+
+  heartbeat() {
+    clearTimeout(this.pingTimeout);
+    this.pingTimeout = setTimeout(() => {
+      this.socket.terminate();
+    }, this.serverTime + 1000);
   }
 
   emit(channel, data) {

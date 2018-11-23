@@ -58,7 +58,7 @@ class PositionList2d {
 
   closest(x, y, test) {
     let radius = 1;
-    let maxRadius = 5;
+    let maxRadius = Math.max(this.w, this.h);
     let tile;
     let a = this.get(x, y);
     for(let i  = 1; i < maxRadius; i++) {

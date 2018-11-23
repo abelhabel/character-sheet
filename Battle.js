@@ -3,6 +3,7 @@ const Monster = require("Monster.js");
 const MonsterCard = require("MonsterCard.js");
 const Terrain = require('Terrain.js');
 const Arena = require('Arena.js');
+const specialEffects = require('special-effects.js');
 const abilities = require('abilities.js');
 const monsters = require('monsters.js');
 const terrains = require('terrains.js');
@@ -56,19 +57,14 @@ class R extends Array {
   }
 
   add(actors) {
-    var toInsert = [];
-    actors.forEach(a => {
-      this.current.willAct.find((b, i) => {
-        if(a.totalStat('initiative') > b.totalStat('initiative')) {
-          toInsert.push({i, a});
-          return true;
-        }
-      })
-    })
-    toInsert.forEach((a, i) => {
-      this.current.willAct.splice(a.i + i, 0, a.a);
-    })
+    let ca = this.actor;
     this.push.apply(this, actors);
+    this.current.willAct.push.apply(this.current.willAct, actors);
+    this.current.willAct.sort((a, b) => {
+      if(a == ca) return -1;
+      if(b == ca) return 1;
+      return a.totalStat('initiative') > b.totalStat('initiative') ? -1 : 1;
+    });
   }
 
   wait(actor) {
@@ -224,9 +220,9 @@ class Turn {
 }
 
 class Action {
-  constructor(type, position, abilityId) {
+  constructor(type, positions, abilityId) {
     this.type = type || 'move';
-    this.position = position || {x: 0, y: 0};
+    this.positions = positions || [{x: 0, y: 0}];
     this.abilityId = abilityId || '';
   }
 }
@@ -298,11 +294,8 @@ class Battle {
     board.style.position = effects.style.position = 'absolute';
     board.style.left = effects.style.left = '0px';
     board.style.top = effects.style.top = '0px';
-    board.style.zIndex = 1;
-    effects.style.zIndex = 2;
-    effects.style.position = 'block';
-    container.appendChild(effects);
-    container.appendChild(board);
+    board.id = 'board';
+    effects.id = 'effects';
     Object.assign(board.style, {
       display: 'block',
       border: '1px solid green',
@@ -311,18 +304,23 @@ class Battle {
       left: '50%',
       transform: 'translateX(-50%)',
 
-    })
+    });
+    board.style.copyTo(effects.style);
+    board.style.zIndex = 1;
+    effects.style.zIndex = 2;
+    container.appendChild(effects);
+    container.appendChild(board);
     this.board = board;
     this.board.width = this.w * this.tw;
     this.board.height = this.h * this.th;
     this.board.style.zIndex = 1;
     this.effects = effects;
-    this.effects.style.zIndex = this.board.style.zIndex + 1;
     this.effects.width = this.w * this.tw;
     this.effects.height = this.h * this.th;
-    this.board.style.copyTo(this.effects.style);
+
 
     this.inputCanvas = document.createElement('canvas');
+    this.inputCanvas.id = 'input';
     this.inputCanvas.width = this.board.width;
     this.inputCanvas.height = this.board.height;
     this.board.style.copyTo(this.inputCanvas.style);
@@ -330,6 +328,7 @@ class Battle {
     this.board.parentNode.appendChild(this.inputCanvas);
 
     this.terrainCanvas = document.createElement('canvas');
+    this.terrainCanvas.id = 'terrain';
     this.terrainCanvas.width = this.board.width;
     this.terrainCanvas.height = this.board.height;
     this.board.style.copyTo(this.terrainCanvas.style);
@@ -398,15 +397,16 @@ class Battle {
           a.selections[0] = targets;
         }
       }
-      if(a.selectedAbility && targets.validTargets && a.selections.length == selectionsRequired) {
-        let action = new Action('use ability', {x,y}, a.selectedAbility.template.id);
+      a._select({x,y});
+      if(a.selectedAbility && targets.validTargets && a._selections.length == selectionsRequired) {
+        let action = new Action('use ability', a._selections, a.selectedAbility.template.id);
         this.addAction(action)
         .catch(e => {
           console.log('action error', e)
         });
       } else
       if(a.canMove && !this.grid.get(x, y)) {
-        let action = new Action('move', {x,y}, a.template.id);
+        let action = new Action('move', [{x,y}], a.template.id);
         this.addAction(action)
         .then(() => {
           console.log('walk successful');
@@ -417,27 +417,6 @@ class Battle {
       }
     })
 
-    // var w = document.createElement('button');
-    // w.textContent = 'Wait';
-    // this.waitButton = w;
-    // w.addEventListener('click', () => {
-    //   return this.addAction(new Action('wait'))
-    //   .catch(e => {
-    //     console.log('action error', e)
-    //   });
-    // });
-    //
-    // var b = document.createElement('button');
-    // b.textContent = 'End Turn';
-    // this.endTurnButton = b;
-    // b.addEventListener('click', () => {
-    //   return this.addAction(new Action('defend'))
-    //   .catch(e => {
-    //     console.log('action error', e)
-    //   });
-    // });
-    // document.body.appendChild(b);
-    // document.body.appendChild(w);
     window.addEventListener('keyup', (e) => {
       switch(e.key) {
         case 'd':
@@ -729,10 +708,12 @@ class Battle {
 
   highlightTile(x, y, i) {
     var c = this.effects.getContext('2d');
-    c.strokeStyle = 'rgba(0, 255, 255, 1)';
-    c.strokeRect(x * this.tw, y * this.th, this.tw, this.th);
-    c.fillStyle = 'green';
-    c.fillText(i, 2 + x * this.tw, 12 + y * this.th);
+    let icon = icons.find(i => i.bio.name == 'Tile Target');
+    c.drawImage(icon.canvas, x * this.tw, y * this.th, this.tw, this.th);
+    // c.strokeStyle = 'rgba(0, 255, 255, 1)';
+    // c.strokeRect(x * this.tw, y * this.th, this.tw, this.th);
+    // c.fillStyle = 'green';
+    // c.fillText(i, 2 + x * this.tw, 12 + y * this.th);
   }
 
   highlightAuraTile(x, y, team) {
@@ -1236,6 +1217,7 @@ class Battle {
     var dcontainer = document.getElementById('ability-book-right');
     dcontainer.innerHTML = '';
     container.innerHTML = '';
+    var hand = icons.find(icon => icon.bio.name == 'Hand');
     var title = document.createElement('p');
     var descriptionTag = document.createElement('div');
     title.textContent = 'Abilities';
@@ -1243,6 +1225,7 @@ class Battle {
     this.currentActor.activeAbilities.forEach(a => {
 
       var canvas = document.createElement('canvas');
+      canvas.style.cursor = `url(${hand.canvas.clone(24, 24).toPNG()}), auto`;
       var {w, h} = a.bio.sprite;
       canvas.width = w;
       canvas.height = h;
@@ -1250,12 +1233,14 @@ class Battle {
       c.drawImage(a.canvas, 0, 0, w, h);
 
       canvas.addEventListener('click', () => {
-        if(a.bio.activation == 'when selected') {
-          this.currentActor.selectAbility(a);
-          this.drawAbilities();
-        } else {
-          this.drawAbilityStats(a, descriptionTag);
-        }
+        // if(a.bio.activation == 'when selected') {
+        //   this.currentActor.selectAbility(a);
+        //   this.drawAbilities();
+        // } else {
+        // }
+        dcontainer.innerHTML = '';
+        dcontainer.appendChild(descriptionTag);
+        this.drawAbilityStats(a, descriptionTag);
       })
 
       if(this.currentActor.selectedAbility && a.bio.name == this.currentActor.selectedAbility.bio.name) {
@@ -1345,7 +1330,6 @@ class Battle {
   }
 
   flanks(b) {
-    console.log(b.team)
     return this.grid.around(b.x, b.y, 1)
     .filter(m => {
       return m.item instanceof Monster && m.item.team != b.team
@@ -1394,7 +1378,7 @@ class Battle {
       if(a.bio.activation != event) return;
       if(!target.canTrigger) return;
       var t = a.stats.targetFamily == 'self' ? target : source;
-      this.useAbility(target, t, a, true, power);
+      this.useAbility(target, [t], a, true, power);
       target.triggerCount += 1;
     })
   }
@@ -1524,7 +1508,7 @@ class Battle {
         this.dealDamage(a, a, ab.power, ab, true);
       } else
       if(ab.stats.targetFamily == 'enemies') {
-        this.useAbility(a, a, ab, true);
+        this.useAbility(a, [a], ab, true);
       }
     })
 
@@ -1537,13 +1521,14 @@ class Battle {
   }
 
   createAction(o) {
-    return new Action(o.type, o.position, o.abilityId);
+    return new Action(o.type, o.positions, o.abilityId);
   }
 
   fastForward(actions) {
     let next = (action) => {
       return new Promise((resolve, reject) => {
-        var {position, abilityId, type} = action;
+        var {positions, abilityId, type} = action;
+        let position = positions[0];
         let actor = this.currentActor;
         console.log('start action', action, actor)
         let p;
@@ -1570,7 +1555,7 @@ class Battle {
           if(!ability) {
             return reject("Invalid ability")
           }
-          p = this.useAbility(actor, position, ability);
+          p = this.useAbility(actor, positions, ability);
         } else {
           p = Promise.resolve();
         }
@@ -1609,7 +1594,8 @@ class Battle {
     }
     return new Promise((resolve, reject) => {
 
-      var {position, abilityId, type} = action;
+      var {positions, abilityId, type} = action;
+      let position = positions[0];
       let actor = this.currentActor;
       let p;
       if(type == 'wait') {
@@ -1637,7 +1623,7 @@ class Battle {
         if(!ability) {
           return reject("Invalid ability")
         }
-        p = this.useAbility(actor, position, ability);
+        p = this.useAbility(actor, positions, ability);
       } else {
         p = Promise.resolve();
       }
@@ -1655,49 +1641,66 @@ class Battle {
     })
   }
 
-  useAbility(a, b, ability, fromEffect) {
-    a.setOrientation(b.x);
+  useAbility(a, positions, ability, fromEffect, triggeredPower) {
     return new Promise((resolve, reject) => {
       ability = ability || a.selectedAbility;
-      var targets = this.abilityTargets(a, ability, b.x, b.y);
+      positions.forEach(b => {
+        a.setOrientation(b.x);
+        var targets = this.abilityTargets(a, ability, b.x, b.y);
 
-      if(!a.canUseAbility(ability)) {
-        return;
-      }
-      a.useAbility(ability);
-      if(!ability.stats.summon) {
-        targets.actors.forEach((t, i) => {
-          var power = 0;
-          if(ability.stats.source == 'attack') {
-            power = this.dealAttackDamage(a, t, ability, fromEffect);
-          }
-          if(ability.stats.source == 'spell') {
-            power = this.dealSpellDamage(a, t, ability, fromEffect);
-          }
-          if(ability.stats.source == 'curse') {
-            power = this.dealAttributeDamage(a, t, ability, fromEffect);
-          }
-          if(ability.stats.source == 'blessing') {
-            power = this.dealAttributeDamage(a, t, ability, fromEffect);
-          }
-
-          this.playHitAnimation(a, t, ability);
-          t.addEffect(a, ability, power);
-          if(ability.stats.special != 'giveEffectAsAbility' && ability.stats.effect) {
-            this.useAbility(a, t, ability.stats.effect, true);
-          }
-        });
-        !targets.actors.length && targets.tiles.length &&
-        !fromEffect && a.addEffect(a, ability, ability.roll(a.totalStat('damage')));
-        if(ability.stats.attribute == 'initiative') {
-          this.initiativeChanged('useAbility');
+        if(!a.canUseAbility(ability)) {
+          return;
         }
-      } else {
-        let tile = a.selections[0].tiles[0];
-        let template = monsters.find(m => m.bio.name == ability.stats.summon);
-        this.summon(a, ability, template, tile);
-      }
-      this.sounds.attack.play();
+        a.useAbility(ability);
+
+        if(!ability.stats.summon) {
+          targets.actors.forEach((t, i) => {
+            var power = 0;
+            if(ability.stats.source == 'attack') {
+              power = this.dealAttackDamage(a, t, ability, fromEffect);
+            }
+            if(ability.stats.source == 'spell') {
+              power = this.dealSpellDamage(a, t, ability, fromEffect);
+            }
+            if(ability.stats.source == 'curse') {
+              power = this.dealAttributeDamage(a, t, ability, fromEffect);
+            }
+            if(ability.stats.source == 'blessing') {
+              power = this.dealAttributeDamage(a, t, ability, fromEffect);
+            }
+
+            this.playHitAnimation(a, t, ability);
+
+            let special = specialEffects[ability.stats.special];
+            let specialResult;
+            if(special && special.when == 'per target') {
+              specialResult = special.fn(this, a, t, ability, power, triggeredPower, positions, false);
+            }
+
+            t.addEffect(a, ability, power, fromEffect, triggeredPower, positions, specialResult);
+            if(ability.stats.special != 'giveEffectAsAbility' && ability.stats.effect) {
+              this.useAbility(a, [t], ability.stats.effect, true, power);
+            }
+          });
+          let power = ability.roll(a.totalStat('damage'));
+          let special = specialEffects[ability.stats.special];
+          let specialResult;
+          if(special && special.when == 'per use') {
+            specialResult = special.fn(this, a, b, ability, power, triggeredPower, positions, true);
+          }
+
+          !targets.actors.length && targets.tiles.length &&
+          !fromEffect && a.addEffect(a, ability, power, fromEffect, triggeredPower, positions, specialResult);
+          if(ability.stats.attribute == 'initiative') {
+            this.initiativeChanged('useAbility');
+          }
+        } else {
+          // let tile = a.selections[0].tiles[0];
+          let template = monsters.find(m => m.bio.name == ability.stats.summon);
+          this.summon(a, ability, template, b);
+        }
+        this.sounds.attack.play();
+      })
       resolve();
     })
   }
@@ -1717,6 +1720,7 @@ class Battle {
     this.tr.add([monster]);
     this.addAuras(monster);
     logger.log(a.bio.name, 'summoned', monster.bio.name)
+    this.initiativeChanged('useAbility');
     return monster;
   }
 
@@ -1782,6 +1786,7 @@ class Battle {
     a.selections = [];
     a.triggerCount = 0;
     this.undefend(a);
+    this._selections = [];
     a.resetMovement();
     a.selectAbility(null);
     this.applyEffects(a);
@@ -1820,6 +1825,7 @@ class Battle {
   act() {
     this.startTurn();
     var a = this.currentActor;
+    if(!a) return;
     if(!a.alive) {
       console.log(a.bio.name, 'is not alive');
       this.kill(a);

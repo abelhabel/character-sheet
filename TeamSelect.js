@@ -106,6 +106,10 @@ class TeamSelect  {
     this.container.appendChild(this.sumSpent);
     this.selectedFamily = 'all';
     var familySelect = document.createElement('select');
+    let o = document.createElement('option');
+    o.value = 'all';
+    o.textContent = 'All';
+    familySelect.appendChild(o);
     var families = [];
     items.forEach(item => {
       if(~families.indexOf(item.bio.family)) return;
@@ -120,7 +124,7 @@ class TeamSelect  {
       this.selectedFamily = familySelect.value;
       this.monsterCards.forEach(c => {
         c.card.cached.style.display = 'inline-block';
-        if(c.monster.bio.family != this.selectedFamily) {
+        if(this.selectedFamily != 'all' && c.monster.bio.family != this.selectedFamily) {
           c.card.cached.style.display = 'none';
         }
       })

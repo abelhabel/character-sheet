@@ -114,7 +114,12 @@ class Monster {
     this.attacks = [];
     this.curses = [];
     this.blessings = [];
+    this._selections = [];
     this.sortAbilities();
+  }
+
+  _select(p) {
+    this._selections.push(p);
   }
 
   createAbilities() {
@@ -215,15 +220,11 @@ class Monster {
     }
   }
 
-  addEffect(source, ability, power, triggered, triggeredPower) {
+  addEffect(source, ability, power, triggered, triggeredPower, positions, special) {
     let e = this.effects.filter(e => e.ability.bio.name == ability.bio.name);
     if(e && e.length >= ability.stats.stacks ) {
       e[0].rounds = 0;
       return;
-    }
-    let special;
-    if(ability.stats.special && typeof specialEffects[ability.stats.special] == 'function') {
-      special = specialEffects[ability.stats.special](this.battle, source, this, ability, power, triggeredPower);
     }
 
     if(ability.stats.duration) {
@@ -243,7 +244,6 @@ class Monster {
     if(!a.bio.condition) return true;
     if(a.bio.condition == 'flanked') {
       let flanks = this.battle ? this.battle.flanks(this) : 0;
-      console.log(flanks)
       if(flanks < 2) return false;
       return true;
     }
@@ -333,6 +333,7 @@ class Monster {
     if(a.stats.resourceType == 'mana' && this.totalMana < a.stats.resourceCost) return;
     if(a.stats.resourceType == 'health' && this.totalHealth < a.stats.resourceCost) return;
     this.selectedAbility = a;
+    this._selections = [];
   }
 
   useAbility(a) {
@@ -384,15 +385,19 @@ class Monster {
   }
 
   get maxHealth() {
-    return (this.initialStacks * this.stats.health);
+    return Math.round(this.initialStacks * this.stats.health);
   }
 
   get totalHealth() {
-    return this.maxHealth - this.damageTaken;
+    return Math.round(this.maxHealth - this.damageTaken);
   }
 
   get healthRatio() {
     return this.totalHealth / this.maxHealth;
+  }
+
+  get healthLost() {
+    return Math.min(this.damageTaken, this.maxHealth);
   }
 
   get health() {

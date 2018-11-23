@@ -418,11 +418,20 @@ module.exports = function(server) {
     'battle action'(socket, data) {
       let user = getUser(socket);
       LOBBY.battleAction(data.game.id, user, data.action);
+    },
+    'pong'(socket) {
+      console.log('ponged')
+      socket.isAlive = true;
     }
   };
 
   var channelNames = Object.keys(channels);
   wss.on('connection', function(socket) {
+    socket.isAlive = true;
+    setInterval(() => {
+      if(!socket || !socket.isAlive) return socket.terminate();
+      socket.ping(() => console.log('pinged'));
+    }, 20000);
     if(!socket.id) {
       socket.id = uniqueId();
       SOCKETS[socket.id] = socket;
