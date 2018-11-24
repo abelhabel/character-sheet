@@ -341,6 +341,11 @@ Module.onLoad(['monsters.js', 'abilities.js', 'terrains.js', 'arenas.js', 'icons
         lobby.battleAction(game, action);
       };
       battle.onGameEnd = (o) => {
+        if(o.winningTeam == localTeam) {
+          lobby.winGame(game);
+        } else {
+          lobby.loseGame(game);
+        }
         battle.destroy();
         container.innerHTML = '';
         selectContainer.innerHTML = '';

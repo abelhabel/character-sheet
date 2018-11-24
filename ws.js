@@ -50,11 +50,9 @@ module.exports = function(server) {
       let file = new File(`${__dirname}/games/${id}.json`);
       return file.read()
       .then(() => {
-        console.log('loaded game', file)
         let game = new Game();
         Object.assign(game, file.js());
         game.spectators = [];
-        console.log('returning game', game)
         return game;
       })
     }
@@ -96,10 +94,10 @@ module.exports = function(server) {
 
     loadOnGoingGames() {
       fs.readdir(__dirname + '/games', (err, fileNames) => {
-        console.log(fileNames)
         fileNames.forEach(fn => {
           Game.load(fn.replace('.json', ''))
           .then(game => {
+            if(game.status == 'complete') return;
             this.games.push(game);
           })
           .catch(e => {
@@ -136,18 +134,19 @@ module.exports = function(server) {
     }
 
     battleAction(gameId, user, action) {
-      let game = this.games.find(g => g.id == gameId);
-      if(!game) {
-        return;
-      }
-      game.actions.push(action);
-      this.castInGame(game, 'battle action confirmed', {game, action});
+      this.loadGame(gameId)
+      .then(game => {
+        game.actions.push(action);
+        this.castInGame(game, 'battle action confirmed', {game, action});
+        if(game.type == 'play by post') {
+          return game.save();
+        }
+      })
     }
 
     createGame(user) {
       let game = new Game(user);
       this.games.push(game);
-      console.log('game created', game)
       this.cast('game created', game);
     }
 
@@ -198,7 +197,6 @@ module.exports = function(server) {
 
     spectate(gameId, user) {
       let game = this.games.find(g => g.id == gameId);
-      console.log('spectate', game)
       if(!game) {
         return;
       }
@@ -207,20 +205,19 @@ module.exports = function(server) {
     }
 
     winGame(gameId, user) {
-      console.log('win game')
       user.wins += 1;
       user.leaveGame(gameId);
       user.save()
       .then(() => this.loadGame(gameId))
       .then(game => {
+        console.log('game won', game)
         game.status = 'complete';
         game.winner = user;
-        return game.save()
+        return this.stopGame(gameId, user);
       })
     }
 
     loseGame(gameId, user) {
-      console.log('lose game')
       user.losses += 1;
       user.leaveGame(gameId);
       user.save()
@@ -235,25 +232,25 @@ module.exports = function(server) {
       return new Promise((resolve, reject) => {
         let game = this.games.find(g => g.id == id);
         if(game) {
-          console.log('load game from memory');
           return resolve(game);
         }
-        console.log('load game from disk');
         return Game.load(id).then(resolve, reject);
       })
     }
 
+    saveGame(game) {
+      if(game.type != 'play by post') return Promise.resolve();
+      return game.save();
+    }
+
     selectTeam(gameId, user, team) {
-      console.log('selecting team')
       this.loadGame(gameId)
       .then(game => {
-        console.log('selectTeam', gameId, user, team, game);
         if(!game) {
           return;
         }
         game.addTeam(user, team);
         if(game.type == 'play by post') {
-          console.log('team selected. saving play by post game')
           game.save()
           .then(() => console.log('game save success'))
           .catch(e => console.log('game save error', e));
@@ -267,14 +264,20 @@ module.exports = function(server) {
       })
     }
 
-    stopGame(gameId) {
+    removeGameFromMemory(gameId) {
       let index = this.games.findIndex(g => g.id == gameId);
-      let game = this.games[index];
-      if(!game) {
-        return;
-      }
-      this.games.splice(index, 1);
-      this.cast('game stopped', game);
+      ~index && this.games.splice(index, 1);
+    }
+
+    stopGame(gameId) {
+      this.loadGame(gameId)
+      .then(game => {
+        console.log('stopping game', game)
+        this.removeGameFromMemory(gameId);
+        game.status = 'complete';
+        this.cast('game stopped', game);
+        return this.saveGame(game);
+      })
     }
 
     enter(user) {
@@ -420,7 +423,6 @@ module.exports = function(server) {
       LOBBY.battleAction(data.game.id, user, data.action);
     },
     'pong'(socket) {
-      console.log('ponged')
       socket.isAlive = true;
     }
   };

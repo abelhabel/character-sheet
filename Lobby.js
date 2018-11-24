@@ -332,7 +332,9 @@ class Lobby {
       width: '100%',
       border: '1px solid lightgray',
     })
-    c.textContent = user.name;
+    c.innerHTML = `<span>
+      ${user.name} | wins ${user.wins} | losses ${user.losses}
+    </span>`;
     return c;
   }
 

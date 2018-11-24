@@ -37,13 +37,13 @@ class Token {
 }
 
 class User {
-  constructor(id, name, password, activeGames) {
+  constructor(id, name, password, activeGames, wins, losses) {
     this.id = id;
     this.name = name;
     this.password = password;
     this.activeGames = activeGames || [];
-    this.wins = 0;
-    this.losses = 0;
+    this.wins = wins || 0;
+    this.losses = losses || 0;
   }
 
   static create(name, password) {
@@ -84,7 +84,7 @@ class User {
     return file.read()
     .then(() => {
       let data = file.js();
-      return new User(data.id, data.name, data.password, data.activeGames);
+      return new User(data.id, data.name, data.password, data.activeGames, data.wins, data.losses);
     });
   }
 
