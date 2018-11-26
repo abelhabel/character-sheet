@@ -1,6 +1,8 @@
 const File = require('./File.js');
 const fs = require('fs');
 const guid = require('./guid');
+const backup = require('./backup');
+console.log(process.env)
 module.exports = function(server) {
   var WebSocket = require('ws');
   var wss = new WebSocket.Server({server: server});
@@ -34,6 +36,12 @@ module.exports = function(server) {
       this.seed = Date.now();
       this.actions = [];
       this.spectators = [];
+    }
+
+    static create(g) {
+      let game = new Game();
+      Object.assign(game, g);
+      return game;
     }
 
     start() {
@@ -93,6 +101,17 @@ module.exports = function(server) {
     }
 
     loadOnGoingGames() {
+      if(process.env.environment == 'production') {
+        return backup.getFolder('games')
+        .then(d => JSON.parse(d))
+        .then(data => {
+          console.log('remote games', data);
+          data.forEach(g => {
+            let game = Game.create(g);
+            this.games.push(game);
+          })
+        })
+      }
       fs.readdir(__dirname + '/games', (err, fileNames) => {
         fileNames.forEach(fn => {
           Game.load(fn.replace('.json', ''))
