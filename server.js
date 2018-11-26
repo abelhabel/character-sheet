@@ -65,7 +65,7 @@ function saveData(req, res, folder, url) {
   let name = id + '.json';
   console.log('saving', name, id)
   let local = fs.createWriteStream(__dirname + `/${folder}/${name}`);
-  let remote = backup(folder, name);
+  let remote = backup.stream(folder, name);
   req.on('data', chunk => {
     console.log('writing data to local and remote')
     local.write(chunk);

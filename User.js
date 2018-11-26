@@ -7,6 +7,8 @@ function createHash(secret, text) {
   return sha256.digest("base64");
 }
 const tokenSecret = "0059bd7c-2ad1-1227-05de-f42557bd9f3a";
+const backup = require('./backup');
+var remote = true;
 class Token {
   constructor(id, time) {
     this.id = id;
@@ -71,16 +73,16 @@ class User {
   }
 
   save() {
-    let file = new File(`${__dirname}/users/${this.id}.json`);
+    let file = new File('users', `${this.id}.json`);
     return file.write(JSON.stringify(this))
     .then(() => {
-      let file = new File(`${__dirname}/users/${this.name}`);
+      let file = new File('users', this.name);
       return file.write(this.id);
     });
   }
 
   static load(id) {
-    let file = new File(`${__dirname}/users/${id}.json`);
+    let file = new File('users', `${id}.json`);
     return file.read()
     .then(() => {
       let data = file.js();
@@ -89,7 +91,7 @@ class User {
   }
 
   static loadByName(name) {
-    let file = new File(`${__dirname}/users/${name}`);
+    let file = new File('users', name);
     return file.read()
     .then(() => {
       console.log(file)

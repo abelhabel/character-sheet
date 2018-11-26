@@ -42,12 +42,12 @@ module.exports = function(server) {
 
     save() {
       let data = JSON.stringify(this);
-      let file = new File(`${__dirname}/games/${this.id}.json`);
+      let file = new File('games', `${this.id}.json`);
       return file.write(data);
     }
 
     static load(id) {
-      let file = new File(`${__dirname}/games/${id}.json`);
+      let file = new File('games', `${id}.json`);
       return file.read()
       .then(() => {
         let game = new Game();
