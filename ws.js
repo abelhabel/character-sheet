@@ -300,7 +300,7 @@ module.exports = function(server) {
       }
       this.cast('user left', user);
       this.games.forEach(g => {
-        if(g.type == 'remote' && g.owner.id == user.id) {
+        if(g.type == 'remote' && g.owner && g.owner.id == user.id) {
           this.stopGame(g.id);
         }
       })
