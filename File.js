@@ -1,6 +1,6 @@
 const fs = require('fs');
 const backup = require("./backup");
-var remote = process.env.environment == 'production';
+var remote = process.env.NODE_ENV == 'production';
 class File {
   constructor(folder, name, options) {
     this.folder = folder;

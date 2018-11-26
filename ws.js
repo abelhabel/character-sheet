@@ -2,7 +2,7 @@ const File = require('./File.js');
 const fs = require('fs');
 const guid = require('./guid');
 const backup = require('./backup');
-console.log(process.env)
+console.log(process.env.NODE_ENV)
 module.exports = function(server) {
   var WebSocket = require('ws');
   var wss = new WebSocket.Server({server: server});
@@ -101,11 +101,10 @@ module.exports = function(server) {
     }
 
     loadOnGoingGames() {
-      if(process.env.environment == 'production') {
+      if(process.env.NODE_ENV == 'production') {
         return backup.getFolder('games')
         .then(d => JSON.parse(d))
         .then(data => {
-          console.log('remote games', data);
           data.forEach(g => {
             let game = Game.create(g);
             this.games.push(game);
