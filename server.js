@@ -21,9 +21,11 @@ const files = {
   'terrains.js': () => wrap.pre() + require('./terrains.js')() + wrap.post('terrains.js'),
   'arenas.js': () => wrap.pre() + require('./arenas.js')() + wrap.post('arenas.js'),
   'icons.js': () => wrap.pre() + require('./icons.js')() + wrap.post('icons.js'),
+  'animations.js': () => wrap.pre() + require('./animations.js')() + wrap.post('animations.js'),
   'socket-worker.js': fs.readFileSync(__dirname + '/socket-worker.js'),
   'init-battle.js': fs.readFileSync(__dirname + '/init-battle.js'),
   'init-arena.js': fs.readFileSync(__dirname + '/init-arena.js'),
+  'init-animation.js': fs.readFileSync(__dirname + '/init-animation.js'),
 }
 // console.log(files['abilities.js'])
 function loadFile(name) {
@@ -45,16 +47,22 @@ loadFile('Terrain.js');
 loadFile('Logger.js');
 loadFile('Lobby.js');
 loadFile('Arena.js');
+loadFile('Canvas.js');
+loadFile('Sprite.js');
+loadFile('Slider.js');
+loadFile('Animation.js');
 loadFile('TeamSelect.js');
 loadFile('seven.js');
 loadFile('special-effects.js');
 loadFile('ability-tpl.js');
 loadFile('terrain-tpl.js');
+loadFile('animation-tpl.js');
 loadFile('heroes-like.js');
 loadFile('icon-tpl.js');
 loadFile('pathfinding.js');
 loadFile('index.html');
 loadFile('battle.html');
+loadFile('animation.html');
 loadFile('arena.html');
 loadFile('lobby.html');
 loadFile('DungeonCrawl_ProjectUtumnoTileset.png');
@@ -114,6 +122,9 @@ const server = http.createServer(function(req, res) {
   }
   if(name == 'saveIcon') {
     return saveData(req, res, 'icons', url);
+  }
+  if(name == 'saveAnimation') {
+    return saveData(req, res, 'animations', url);
   }
   if(name.match('.wav')) {
     console.log('loading sound', name)

@@ -3,12 +3,17 @@ const Monster = require("Monster.js");
 const MonsterCard = require("MonsterCard.js");
 const Terrain = require('Terrain.js');
 const Arena = require('Arena.js');
+const Animation = require('Animation.js');
+const Sprite = require('Sprite.js');
+const Canvas = require('Canvas.js');
 const specialEffects = require('special-effects.js');
 const abilities = require('abilities.js');
 const monsters = require('monsters.js');
 const terrains = require('terrains.js');
 const arenas = require('arenas.js');
 const icons = require('icons.js');
+const animations = require('animations.js');
+console.log(animations)
 class TurnOrder extends Array {
   constructor() {
     super();
@@ -317,6 +322,10 @@ class Battle {
     this.effects.width = this.w * this.tw;
     this.effects.height = this.h * this.th;
 
+    this.animationCanvas = new Canvas(this.w * this.tw, this.h * this.th);
+    this.board.style.copyTo(this.animationCanvas.canvas.style);
+    this.animationCanvas.canvas.style.zIndex = 4;
+    this.animationCanvas.canvas.id = 'animation';
 
     this.inputCanvas = document.createElement('canvas');
     this.inputCanvas.id = 'input';
@@ -332,6 +341,8 @@ class Battle {
     this.terrainCanvas.height = this.board.height;
     this.board.style.copyTo(this.terrainCanvas.style);
     this.terrainCanvas.style.zIndex = 0;
+
+    this.board.parentNode.appendChild(this.animationCanvas.canvas);
     this.board.parentNode.insertBefore(this.terrainCanvas, this.board);
   }
 
@@ -1021,26 +1032,63 @@ class Battle {
     this.monsterCards.forEach(c => c.render(container));
   }
 
-  playHitAnimation(a, b, ability) {
-    var counter = 20;
-    var max = counter;
-    var c = this.effects.getContext('2d');
+  playHitAnimation(a, selections, targets, ability) {
+    return new Promise((resolve, reject) => {
+      let list = ability.stats.shape == 'line' ? targets.actors : selections;
+      console.log(selections, targets, list)
+      if(!list.length) return resolve();
+      list.forEach(b => {
+        var play = () => {
+          this.sounds.attack.play();
+          var counter = 20;
+          var max = counter;
+          var c = this.effects.getContext('2d');
 
-    var int = setInterval(() => {
-      c.clearRect(a.x * this.tw, a.y * this.th, this.tw, this.th);
-      c.clearRect(b.x * this.tw, b.y * this.th, this.tw, this.th);
-      counter -= 1;
-      if(counter < 1) {
-        c.globalAlpha = 1;
-        return clearInterval(int);
-      }
-      c.globalAlpha = counter/max;
-      c.fillStyle = `rgb(255, 255, 0)`;
-      c.fillRect(a.x * this.tw, a.y * this.th, this.tw, this.th);
-      c.fillStyle = `rgb(255, 0, 0)`;
-      c.fillRect(b.x * this.tw, b.y * this.th, this.tw, this.th);
-      c.drawImage(ability.canvas, b.x * this.tw, b.y * this.th, this.tw, this.th);
-    }, 50);
+          var int = setInterval(() => {
+            c.clearRect(a.x * this.tw, a.y * this.th, this.tw, this.th);
+            c.clearRect(b.x * this.tw, b.y * this.th, this.tw, this.th);
+            counter -= 1;
+            if(counter < 1) {
+              c.globalAlpha = 1;
+              return clearInterval(int);
+            }
+            c.globalAlpha = counter/max;
+            c.fillStyle = `rgb(255, 255, 0)`;
+            c.fillRect(a.x * this.tw, a.y * this.th, this.tw, this.th);
+            c.fillStyle = `rgb(255, 0, 0)`;
+            c.fillRect(b.x * this.tw, b.y * this.th, this.tw, this.th);
+            c.drawImage(ability.canvas, b.x * this.tw, b.y * this.th, this.tw, this.th);
+          }, 50);
+        }
+        if(ability.animation.template) {
+          let canvas = this.animationCanvas;
+          let sprite = new Sprite(ability.animation.sprite);
+          let animation = new Animation(a.x * this.tw, a.y * this.th, b.x * this.tw, b.y * this.th, sprite, ability.animation.template.stats);
+          console.log(animation)
+          let stopped;
+          animation.on('end', () => {
+            console.log('animation ended');
+            stopped = true;
+            play();
+            resolve();
+            // this.animationCanvas.clear();
+          })
+          function move() {
+            animation.move();
+            canvas.clear();
+            if(stopped) return;
+            animation.draw(canvas);
+            window.requestAnimationFrame(move);
+          }
+          move();
+        } else {
+          play();
+          resolve();
+        }
+
+      })
+    })
+
   }
 
   drawMonsters() {
@@ -1155,9 +1203,10 @@ class Battle {
     } = a.stats;
     let {activation, type, name, description} = a.bio;
     let stat = source == 'blessing' || source == 'curse' ? attribute : 'health';
+    let act = type == 'trigger' ? `\n<span class='bold'>Triggers</span>: ${activation}` : '';
     var text = `<span class='bold'>Name</span>: ${name}
     <span class='bold'>Targets</span>: ${target}/${targetFamily}
-    <span class='bold'>Activates</span>: ${activation}
+    <span class='bold'>Type</span>: ${type}${act}
     <span class='bold'>Shape</span>: ${shape}
     <span class='bold'>Radius</span>: ${radius}
     <span class='bold'>Source</span>: ${source}
@@ -1220,7 +1269,7 @@ class Battle {
     var descriptionTag = document.createElement('div');
     title.textContent = 'Abilities';
     container.appendChild(title);
-    this.currentActor.activeAbilities.forEach(a => {
+    this.currentActor.abilities.forEach(a => {
 
       var canvas = document.createElement('canvas');
       canvas.style.cursor = `url(${hand.canvas.clone(24, 24).toPNG()}), auto`;
@@ -1274,8 +1323,8 @@ class Battle {
       return item.team != p.team;
     })
     .sort((a, b) => {
-      let d1 = a.stats.defence + a.stats.health * (1/this.flanks(a));
-      let d2 = b.stats.defence + b.stats.health * (1/this.flanks(b));
+      let d1 = a.totalStat('defence') + a.stats.totalHealth * (1/this.flanks(a));
+      let d2 = b.totalStat('defence') + b.stats.totalHealth * (1/this.flanks(b));
       return d1 > d2 ? 1 : -1;
     })[0];
     if(!t) return null;
@@ -1313,6 +1362,7 @@ class Battle {
 
   findTarget(a) {
     var weakest = this.findWeakestTarget(a);
+    console.log('weakest', weakest)
     if(weakest && this.canWalkTo(a, this.findClosestTile(a, weakest))) {
       return weakest;
     }
@@ -1637,7 +1687,7 @@ class Battle {
   useAbility(a, positions, ability, fromEffect, triggeredPower) {
     return new Promise((resolve, reject) => {
       ability = ability || a.selectedAbility;
-      positions.forEach(b => {
+      let actions = positions.map(b => {
         a.setOrientation(b.x);
         var targets = this.abilityTargets(a, ability, b.x, b.y);
 
@@ -1662,7 +1712,7 @@ class Battle {
               power = this.dealAttributeDamage(a, t, ability, fromEffect);
             }
 
-            this.playHitAnimation(a, t, ability);
+
 
             let special = specialEffects[ability.stats.special];
             let specialResult;
@@ -1687,14 +1737,16 @@ class Battle {
           if(ability.stats.attribute == 'initiative') {
             this.initiativeChanged('useAbility');
           }
+          return this.playHitAnimation(a, positions, targets, ability);
         } else {
           // let tile = a.selections[0].tiles[0];
           let template = monsters.find(m => m.bio.name == ability.stats.summon);
           this.summon(a, ability, template, b);
+          return Promise.resolve();
         }
-        this.sounds.attack.play();
+
       })
-      resolve();
+      Promise.all(actions).then(resolve, reject);
     })
   }
 
@@ -1726,7 +1778,8 @@ class Battle {
   }
 
   findClosestTile(p, q) {
-    return this.grid.around(q.x, q.y, p.stats.range)
+    let ability = p.selectedAbility;
+    return this.grid.around(q.x, q.y, ability.stats.range)
     .filter(t => !t.item)
     .sort((a, b) => {
       let d1 = this.grid.distance(a.x, a.y, p.x, p.y);
@@ -1831,6 +1884,7 @@ class Battle {
     if(!a.ai) {
       return this.human(a);
     }
+    a.selectBestAbility();
     var t = this.findTarget(a);
     if(!t) {
       this.sounds.victory.play();
@@ -1845,7 +1899,8 @@ class Battle {
     action.then(() => {
       setTimeout(() => {
         if(this.inRange(a, t)) {
-          this.useAbility(a, t);
+          console.log('using ability')
+          this.useAbility(a, [t], a.selectedAbility);
         } else {
           var ct = this.findClosestTarget(a);
           if(ct && this.inRange(a, ct)) {
@@ -1854,7 +1909,7 @@ class Battle {
             this.defend(a);
           }
         }
-        this.render();
+        this.endTurn();
         this.act();
       }, 500)
     })
@@ -2007,7 +2062,7 @@ class Battle {
     this.drawMonsters();
     this.drawMonsterCards();
     this.drawAbilities();
-    this.drawTriggers();
+    // this.drawTriggers();
     this.drawActiveEffects();
   }
 }

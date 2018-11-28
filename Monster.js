@@ -321,6 +321,12 @@ class Monster {
     return this.totalMana >= a.stats.resourceCost;
   }
 
+  selectBestAbility() {
+    let a = this.abilities.find(a => a.stats.source == 'attack' && this.canUseAbility(a));
+    console.log('selectBestAbility', a)
+    this.selectAbility(a);
+  }
+
   selectAbility(a) {
     if(!a) {
       this.selectedAbility = null;

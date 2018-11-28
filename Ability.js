@@ -1,4 +1,6 @@
 const abilities = require('abilities.js');
+const animations = require('animations.js');
+const Animation = require('Animation.js');
 const nextId = (function() {
   var id = 0;
   return function() {
@@ -41,6 +43,15 @@ class Ability {
       summon: t.stats.summon,
 
     };
+    this.animation = {
+      sprite: t.animation && t.animation.sprite,
+      template: t.animation && t.animation.template
+    }
+    this._animation = null;
+    if(this.animation.template) {
+      this.animation.template = animations.find(a => a.bio.name == this.animation.template);
+
+    }
     this.power = 0;
     if(this.bio.type == 'passive') {
       this.power = this.stats.minPower;

@@ -1,5 +1,6 @@
 var abilities = require('abilities.js');
 var monsters = require('monsters.js');
+var animations = require('animations.js');
 function isEffect(a) {
   return a.bio.type == 'active' && (a.stats.source == 'blessing' || a.stats.source == 'curse');
 }
@@ -72,6 +73,27 @@ var tpl = {
           exportAs: 'description',
           type: 'text',
           initial: 'No description added yet.'
+        }
+      ]
+    },
+    {
+      name: 'Animation',
+      exportAs: 'animation',
+      items: [
+        {
+          name: 'Sprite',
+          type: 'spritesheet',
+          exportAs: 'sprite',
+          src: 'DungeonCrawl_ProjectUtumnoTileset.png',
+          w: 32,
+          h: 32
+        },
+        {
+          name: 'Template',
+          type: 'select',
+          exportAs: 'template',
+          values: animations.map(a => a.bio.name),
+          initial: ''
         }
       ]
     },

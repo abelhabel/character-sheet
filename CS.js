@@ -1,5 +1,8 @@
+const Slider = require('Slider.js');
+const Sprite = require('Sprite.js');
+var noop = function() {};
 class CS {
-  constructor(tpl, parent, pools) {
+  constructor(tpl, parent, pools, onUpdateState) {
     this.name = tpl.name;
     this.categories = tpl.categories;
 
@@ -16,6 +19,8 @@ class CS {
     this.drains = {};
     this.initialPools = {};
 
+    this.onUpdateState = onUpdateState || noop;
+
     this.inputTags = [];
     this.selectTags = [];
     this.multiselectTags = [];
@@ -23,6 +28,7 @@ class CS {
     this.spritesheetTags = [];
     this.binaryTags = [];
     this.textTags = [];
+    this.sliderTags = [];
     this['spritesheet-paletteTags'] = [];
     Object.keys(this.pools).forEach(k => {
       this.drains[k] = 0;
@@ -38,6 +44,33 @@ class CS {
 
   setState(c, i, v) {
     this.state[c.exportAs || c.name][i.exportAs || i.name] = v;
+    this.onUpdateState(c, i, v);
+  }
+
+  renderSlider(item, c) {
+    var o = document.createElement('div');
+    o.style.userSelect = 'none';
+    var name = document.createElement('div');
+    var val = document.createElement('div');
+    var proxy = new Proxy({}, {
+      set: (o, k, v) => {
+        this.setState(c, item, v);
+        return val;
+      }
+    })
+    let slider = new Slider(item.name, item.initial, proxy, item.exportAs);
+    val.appendChild(slider.render());
+
+    o.appendChild(name);
+    o.appendChild(val);
+    this.sliderTags.push({
+      name: item.name,
+      cname: c.name,
+      update: (v) => {
+        slider.import(v);
+      }
+    });
+    return o;
   }
 
   renderIncrement(item, c) {
@@ -96,8 +129,8 @@ class CS {
     o.appendChild(val);
     this.incrementTags.push({
       name: item.name,
+      cname: c.name,
       update: (v) => {
-        console.log('updating increment', item.name, v)
         currentVal = v;
         val.textContent = v;
       }
@@ -132,6 +165,7 @@ class CS {
     o.appendChild(val);
     this.textTags.push({
       name: item.name,
+      cname: c.name,
       update: (v) => {
         currentVal = v;
         val.value = v;
@@ -164,6 +198,7 @@ class CS {
     o.appendChild(val);
     this.binaryTags.push({
       name: item.name,
+      cname: c.name,
       update: (v) => {
         currentVal = v;
         val.checked = v;
@@ -199,6 +234,7 @@ class CS {
     o.appendChild(val);
     this.inputTags.push({
       name: item.name,
+      cname: c.name,
       update: (v) => {
         currentVal = v;
         val.value = v;
@@ -263,6 +299,7 @@ class CS {
     o.appendChild(val);
     this.multiselectTags.push({
       name: item.name,
+      cname: c.name,
       update: (v) => {
         v.filter(n => ~v.indexOf(n))
         currentVal = Array.from(new Set(v));
@@ -318,6 +355,7 @@ class CS {
     o.appendChild(val);
     this.selectTags.push({
       name: item.name,
+      cname: c.name,
       update: (v) => {
         currentVal = v;
         val.value = v;
@@ -397,13 +435,16 @@ class CS {
     o.appendChild(val);
     this.spritesheetTags.push({
       name: item.name,
+      cname: c.name,
       update: (v) => {
-        this.openSpriteSheet(item, false, (img) => {
-          var ct = canvas.getContext('2d');
-          ct.clearRect(0, 0, item.w, item.h);
-          ct.drawImage(img, v.x, v.y, item.w, item.h, 0, 0, item.w, item.h);
+        let sprite = new Sprite(v);
+        console.log(sprite, c)
+        let img = sprite.canvas;
+        console.log('update', item.name, v)
+        var ct = canvas.getContext('2d');
+        ct.clearRect(0, 0, item.w, item.h);
+        ct.drawImage(img, 0, 0, item.w, item.h);
           // this.setState(c, item, {x: x, y: y, spritesheet: item.src, w: item.w, h: item.h})
-        }, true)
       }
     });
     return o;
@@ -455,6 +496,7 @@ class CS {
     o.appendChild(val);
     this['spritesheet-paletteTags'].push({
       name: item.name,
+      cname: c.name,
       update: (v) => {
         this.openSpriteSheet(item, false, (img) => {
           let selected = v.map(s => [s.x, s.y, img]);
@@ -483,6 +525,8 @@ class CS {
             return o.appendChild(this.renderText(item, c));
           case 'select':
             return o.appendChild(this.renderSelect(item, c));
+          case 'slider':
+            return o.appendChild(this.renderSlider(item, c));
           case 'multiselect':
             return o.appendChild(this.renderMultipleSelect(item, c));
           case 'spritesheet':
@@ -599,8 +643,7 @@ class CS {
         if(!item) return;
         let value = monster[cname][key];
         let listName = item.type + 'Tags';
-        console.log('item type', item.type)
-        let tag = this[item.type + 'Tags'].find(t => t.name == item.name);
+        let tag = this[item.type + 'Tags'].find(t => t.name == item.name && category.name == t.cname);
         if(tag && typeof tag.update == 'function') tag.update(value);
         this.setState(category, item, value);
       })

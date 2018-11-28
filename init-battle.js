@@ -39,16 +39,22 @@ class Module {
   }
 
   static onLoad(files, fn) {
+    console.log('load modules')
     var o = Promise.resolve();
     files.forEach(f => {
+      let tag = f.match('.js') ? 'script' : 'img';
       o = o.then(() => {
         return new Promise((resolve, reject) => {
-          var script = document.createElement('script');
+          var script = document.createElement(tag);
           script.onload = function() {
+            if(tag == 'img') {
+              let m = new Module(f);
+              m.exports = script;
+            }
             resolve();
           };
           script.src = f;
-          document.body.appendChild(script);
+          tag == 'script' && document.body.appendChild(script);
         })
       })
     })
@@ -97,8 +103,8 @@ class Emitter {
 }
 const socket = new Emitter();
 
-Module.onLoad(['monsters.js', 'abilities.js', 'terrains.js', 'arenas.js', 'icons.js',
-'special-effects.js', 'Logger.js', 'Rand.js',
+Module.onLoad(['DungeonCrawl_ProjectUtumnoTileset.png', 'monsters.js', 'abilities.js', 'terrains.js', 'arenas.js', 'icons.js', 'animations.js',
+'special-effects.js', 'Logger.js', 'Rand.js', 'Canvas.js', 'Sprite.js', 'Animation.js',
 'PositionList2d.js', 'pathfinding.js',  'Ability.js', 'Monster.js', 'Terrain.js',
 'Arena.js', 'MonsterCard.js', 'Lobby.js', 'TeamSelect.js', 'Battle.js'], () => {
   const Lobby = require('Lobby.js');
@@ -245,7 +251,7 @@ Module.onLoad(['monsters.js', 'abilities.js', 'terrains.js', 'arenas.js', 'icons
     selectContainer.style.display = 'block';
     var teamSelect = new TeamSelect(monsters, selectContainer, w, h, tw, th, cash, 2, () => {
       selectContainer.style.display = 'none';
-      teamSelect.teams[0].forEach(m => m.ai = false);
+      teamSelect.teams[0].forEach(m => m.ai = true);
       teamSelect.teams[1].forEach(m => m.ai = false);
       var battle = new Battle(teamSelect.teams[0], teamSelect.teams[1], w, h, tw, th, container);
       battle.onGameEnd = (o) => {

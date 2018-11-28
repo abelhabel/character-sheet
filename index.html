@@ -24,16 +24,22 @@ class Module {
   }
 
   static onLoad(files, fn) {
+    console.log('load modules')
     var o = Promise.resolve();
     files.forEach(f => {
+      let tag = f.match('.js') ? 'script' : 'img';
       o = o.then(() => {
         return new Promise((resolve, reject) => {
-          var script = document.createElement('script');
+          var script = document.createElement(tag);
           script.onload = function() {
+            if(tag == 'img') {
+              let m = new Module(f);
+              m.exports = script;
+            }
             resolve();
           };
           script.src = f;
-          document.body.appendChild(script);
+          tag == 'script' && document.body.appendChild(script);
         })
       })
     })
@@ -50,10 +56,15 @@ function require(name) {
 }
 Module.modules = {};
 Module.loaders = [];
-  Module.onLoad(['abilities.js', 'monsters.js', 'terrains.js', 'icons.js', 'seven.js', 'CS.js', 'heroes-like.js',
-  'ability-tpl.js', 'terrain-tpl.js', 'icon-tpl.js'], () => {
+  Module.onLoad(['DungeonCrawl_ProjectUtumnoTileset.png',
+  'abilities.js', 'monsters.js', 'terrains.js', 'icons.js','animations.js', 'seven.js',
+  'Canvas.js', 'Sprite.js', 'Slider.js', 'Animation.js', 'CS.js',
+  'heroes-like.js', 'animation-tpl.js', 'ability-tpl.js', 'terrain-tpl.js', 'icon-tpl.js'], () => {
     console.log('all loaded')
     const CS = require('CS.js');
+    const Canvas = require('Canvas.js');
+    const Sprite = require('Sprite.js');
+    const Animation = require('Animation.js');
     function loadSeven() {
       const seven = require("seven.js");
       var pools = {
@@ -65,27 +76,77 @@ Module.loaders = [];
     }
 
     function loadHeroes() {
-      const heroes = require("heroes-like.js")
+      let heroes = require("heroes-like.js")
       var cs = new CS(heroes, document.body);
       cs.render();
     }
 
     function loadAbility() {
-      const ability = require("ability-tpl.js");
+      let ability = require("ability-tpl.js");
       var cs  = new CS(ability, document.body);
       cs.render();
     }
 
     function loadTerrain() {
-      const terrain = require("terrain-tpl.js");
+      let terrain = require("terrain-tpl.js");
       var cs  = new CS(terrain, document.body);
       cs.render();
     }
 
     function loadIcons() {
-      const terrain = require("icon-tpl.js");
+      let terrain = require("icon-tpl.js");
       var cs  = new CS(terrain, document.body);
       cs.render();
+    }
+
+    function loadAnimations() {
+      let spriteSelect = document.createElement('div');
+      let selectedSprite;
+      let abilities = require('abilities.js');
+      abilities.forEach(a => {
+        let s = new Sprite(a.bio.sprite);
+        selectedSprite = s;
+        spriteSelect.appendChild(s.canvas);
+        s.canvas.addEventListener('click', e => {
+          selectedSprite = s;
+          animation.sprite = s;
+        })
+      })
+      document.body.appendChild(spriteSelect);
+
+      let w = 12;
+      let h = 11;
+      let tw = 42;
+      let th = 42;
+      var canvas = new Canvas(w * tw, h * th);
+      var c = document.createElement('div');
+      Object.assign(c.style, {
+        position: 'fixed',
+        top: '200px',
+        right: '0px'
+      });
+      canvas.canvas.style.backgroundColor = 'slategray';
+      canvas.mount(c);
+      document.body.appendChild(c);
+      var animation = new Animation(0, 5*th, canvas.w, 5*th, selectedSprite, {});
+      animation.on('end', () => {
+        console.log('animation ended')
+      })
+      window.animation = animation;
+      let template = require("animation-tpl.js");
+      var cs  = new CS(template, document.body, null, (c, i, v) => {
+        // console.log(c, i, 'changed', v)
+        animation[i.exportAs] = v;
+      });
+      cs.render();
+
+      function move() {
+        animation.move();
+        canvas.clear();
+        animation.draw(canvas);
+        window.requestAnimationFrame(move);
+      }
+      move();
     }
 
     var url = new URL(document.location.href);
@@ -106,6 +167,9 @@ Module.loaders = [];
         break;
       case 'icons':
         loadIcons();
+        break;
+      case 'animations':
+        loadAnimations();
         break;
       default:
         loadHeroes();
