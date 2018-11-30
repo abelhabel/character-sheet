@@ -40,6 +40,13 @@ class Animation {
     return {speedStart, speedEnd, speedEase, sizeStart, sizeEnd, elevation, elevationStart};
   }
 
+  rotatePointAround(pointX,pointY,originX,originY,angle) {
+    return {
+      x: Math.cos(angle) * (pointX-originX) - Math.sin(angle) * (pointY-originY) + originX,
+      y: Math.sin(angle) * (pointX-originX) + Math.cos(angle) * (pointY-originY) + originY
+    };
+  }
+
   move() {
     let {pos, elevationStart, elevation, speedEase,
     speedStart, speedEnd, sizeStart, sizeEnd, speed} = this;

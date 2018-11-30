@@ -26,6 +26,7 @@ const files = {
   'init-battle.js': fs.readFileSync(__dirname + '/init-battle.js'),
   'init-arena.js': fs.readFileSync(__dirname + '/init-arena.js'),
   'init-animation.js': fs.readFileSync(__dirname + '/init-animation.js'),
+  'init-ability-compendium.js': fs.readFileSync(__dirname + '/init-ability-compendium.js'),
 }
 // console.log(files['abilities.js'])
 function loadFile(name) {
@@ -65,7 +66,9 @@ loadFile('battle.html');
 loadFile('animation.html');
 loadFile('arena.html');
 loadFile('lobby.html');
+loadFile('ability-compendium.html');
 loadFile('DungeonCrawl_ProjectUtumnoTileset.png');
+loadFile('sheet_of_old_paper.png');
 loadFile('spellbookForFlare.png');
 
 function saveData(req, res, folder, url) {

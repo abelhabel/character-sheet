@@ -553,6 +553,7 @@ class CS {
       textAlign: 'center',
       backgroundColor: 'black',
       color: 'white',
+      userSelect: 'none'
     }
   }
 
@@ -596,6 +597,10 @@ class CS {
     var monsters = require(this.library) || [];
 
     monsters.sort((a, b) => a.bio.name > b.bio.name ? 1 : -1);
+    var n = document.createElement('div');
+    CS.applyStyle(n, CS.buttonCss);
+    n.style.display = 'inline-block';
+    n.textContent = 'Next';
     var d = document.createElement('div');
     CS.applyStyle(d, CS.buttonCss);
     d.style.display = 'inline-block';
@@ -605,10 +610,12 @@ class CS {
     o.textContent = '---';
     o.value = 'none';
     select.appendChild(o);
-    monsters.forEach(m => {
+    var currentIndex = 0;
+    monsters.forEach((m, i) => {
       let o = document.createElement('option');
       o.textContent = m.bio.name;
       o.value = m.id;
+      o.listIndex = i;
       select.appendChild(o);
     });
     var label = document.createElement('span');
@@ -619,7 +626,15 @@ class CS {
       label.textContent = '';
     })
     d.addEventListener('click', (e) => {
-      let monster = monsters.find(m => m.id == select.value);
+      currentIndex = monsters.findIndex(m => m.id == select.value);;
+      let monster = monsters[currentIndex];
+      label.textContent = `Now editing ${monster.bio.name}. Click here to stop editing. (id = ${monster.id})`;
+      this.import(monster);
+    })
+    n.addEventListener('click', e => {
+      currentIndex += 1;
+      let monster = monsters[currentIndex];
+      select.value = monster.id;
       label.textContent = `Now editing ${monster.bio.name}. Click here to stop editing. (id = ${monster.id})`;
       this.import(monster);
     })
@@ -629,6 +644,7 @@ class CS {
     c.style.marginTop = '3px';
 
     c.appendChild(select);
+    c.appendChild(n);
     c.appendChild(d);
     c.appendChild(label);
     return c;

@@ -207,12 +207,16 @@ module.exports.chain = {
   when: 'per target',
   fn: function (battle, caster, target, ability, power, triggeredPower, selections) {
     ability.chains.push(target);
+    let cost = ability.stats.resourceCost;
     let nextTarget = battle.grid.inRadius(target.x, target.y, ability.stats.range)
     .find(p => p.item && !~ability.chains.indexOf(p.item) && p.item.team == target.team);
+    console.log('chain', nextTarget)
     if(!nextTarget || ability.chains.length > 4) {
       ability.chains = [];
+      ability.stats.resourceCost = cost;
       return;
     }
-    battle.useAbility(caster, nextTarget, ability);
+    ability.stats.resourceCost = 0;
+    battle.useAbility(caster, [nextTarget], ability);
   }
 };

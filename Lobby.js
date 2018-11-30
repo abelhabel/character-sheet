@@ -355,7 +355,7 @@ class Lobby {
       if(g.type == 'play by post' && g.full && !g.users.find(u => u.id == this.localUser.id)) {
         return false;
       }
-
+      if(g.status == 'complete') return false;
       return true;
     })
     .forEach(g => {

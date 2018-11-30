@@ -322,7 +322,11 @@ class Monster {
   }
 
   selectBestAbility() {
-    let a = this.abilities.find(a => a.stats.source == 'attack' && this.canUseAbility(a));
+    let a = this.abilities.find(a => {
+      return a.bio.type == 'active' &&
+      (a.stats.source == 'attack' || a.stats.source == 'spell') &&
+      this.canUseAbility(a)
+    });
     console.log('selectBestAbility', a)
     this.selectAbility(a);
   }
