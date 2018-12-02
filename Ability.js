@@ -1,6 +1,8 @@
 const abilities = require('abilities.js');
-const animations = require('animations.js');
+const icons = require('icons.js') || [];
+const animations = require('animations.js') || [];
 const Animation = require('Animation.js');
+const CompositeSprite = require('CompositeSprite.js');
 const nextId = (function() {
   var id = 0;
   return function() {
@@ -43,6 +45,7 @@ class Ability {
       summon: t.stats.summon,
 
     };
+    this.sprite = new CompositeSprite([icons.find(i => i.bio.name == 'Ability Background').bio.sprite, this.template.bio.sprite]);
     this.animation = {
       sprite: t.animation && t.animation.sprite,
       template: t.animation && t.animation.template
@@ -50,7 +53,6 @@ class Ability {
     this._animation = null;
     if(this.animation.template) {
       this.animation.template = animations.find(a => a.bio.name == this.animation.template);
-
     }
     this.power = 0;
     if(this.bio.type == 'passive') {
@@ -60,6 +62,7 @@ class Ability {
     if(this.stats.effect) {
       this.stats.effect = new Ability(abilities.find(a => a.bio.name == this.stats.effect), this);
     }
+    this.might = (this.stats.minPower + this.stats.maxPower) * this.stats.multiplier;
   }
 
   get isAura() {
@@ -74,7 +77,7 @@ class Ability {
   }
 
   get canvas() {
-    return abilities.find(a => a.bio.name == this.bio.name).canvas;
+    return this.sprite.canvas;
   }
 }
 

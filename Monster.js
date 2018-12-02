@@ -6,6 +6,7 @@ const nextId = (function() {
 })();
 const abilities = require('abilities.js');
 const specialEffects = require('special-effects.js');
+const AbilityEffect = require('AbilityEffect.js');
 class StatBonus {
   constructor() {
     this.blessing = {
@@ -115,7 +116,16 @@ class Monster {
     this.curses = [];
     this.blessings = [];
     this._selections = [];
+    this._team = '';
     this.sortAbilities();
+  }
+
+  get team() {
+    return this._team;
+  }
+
+  set team(t) {
+    this._team = t;
   }
 
   _select(p) {
@@ -228,14 +238,14 @@ class Monster {
     }
 
     if(ability.stats.duration) {
-      this.effects.push({
+      this.effects.push(new AbilityEffect({
         triggered: !!triggered,
         power: power,
         rounds: 0,
         source: source,
         ability: new ability.constructor(ability.template, ability.owner),
         onEffectEnd: special && special.onEffectEnd
-      });
+      }));
 
     }
   }
@@ -299,20 +309,19 @@ class Monster {
     return out;
   }
 
-  totalStat(name) {
+  statBonus(name) {
     var base = this.stats[name] || 0;
-    var bonus = this['bonus' + name] || 0;
+    var circumstance = this['bonus' + name] || 0;
     var passive = this.passiveAbilityBonus(name);
     var activeEffects = this.activeEffectBonus(name);
     var auras = this.auraBonus(name);
     var combined = StatBonus.combine(passive, activeEffects, auras);
-    var total = base + bonus + combined.blessing.value - combined.curse.value;
-    // console.log(`Total stat of ${name}:
-    //   base ${base} +
-    //   bonus ${bonus} +
-    //   blessing ${combined.blessing.value} (${combined.blessedBy}) -
-    //   curse ${combined.curse.value} (${combined.cursedBy})
-    //   = ${total}`);
+    var total = base + circumstance + combined.blessing.value - combined.curse.value;
+    return {circumstance, passive, activeEffects, auras, combined: combined.blessing.value - combined.curse.value, total};
+  }
+
+  totalStat(name) {
+    var total = this.statBonus(name).total;
     return Math.max(0, total);
   }
 
@@ -322,13 +331,14 @@ class Monster {
   }
 
   selectBestAbility() {
-    let a = this.abilities.find(a => {
+    let a = this.abilities.sort((a, b) => {
+      return a.might > b.might ? -1 : 1;
+    }).find(a => {
       return a.bio.type == 'active' &&
       (a.stats.source == 'attack' || a.stats.source == 'spell') &&
       this.canUseAbility(a)
     });
-    console.log('selectBestAbility', a)
-    this.selectAbility(a);
+    this.selectedAbility != a && this.selectAbility(a);
   }
 
   selectAbility(a) {

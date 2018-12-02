@@ -1033,26 +1033,29 @@ class Battle {
   }
 
   playHitAnimation(a, b, ability) {
-    this.sounds.attack.play();
-    var counter = 20;
-    var max = counter;
-    var c = this.effects.getContext('2d');
+    return new Promise((resolve, reject) => {
+      this.sounds.attack.play();
+      var counter = 20;
+      var max = counter;
+      var c = this.effects.getContext('2d');
 
-    var int = setInterval(() => {
-      c.clearRect(a.x * this.tw, a.y * this.th, this.tw, this.th);
-      c.clearRect(b.x * this.tw, b.y * this.th, this.tw, this.th);
-      counter -= 1;
-      if(counter < 1) {
-        c.globalAlpha = 1;
-        return clearInterval(int);
-      }
-      c.globalAlpha = counter/max;
-      c.fillStyle = `rgb(255, 255, 0)`;
-      c.fillRect(a.x * this.tw, a.y * this.th, this.tw, this.th);
-      c.fillStyle = `rgb(255, 0, 0)`;
-      c.fillRect(b.x * this.tw, b.y * this.th, this.tw, this.th);
-      c.drawImage(ability.canvas, b.x * this.tw, b.y * this.th, this.tw, this.th);
-    }, 50);
+      var int = setInterval(() => {
+        c.clearRect(a.x * this.tw, a.y * this.th, this.tw, this.th);
+        c.clearRect(b.x * this.tw, b.y * this.th, this.tw, this.th);
+        counter -= 1;
+        if(counter < 1) {
+          c.globalAlpha = 1;
+          resolve();
+          return clearInterval(int);
+        }
+        c.globalAlpha = counter/max;
+        c.fillStyle = `rgb(255, 255, 0)`;
+        c.fillRect(a.x * this.tw, a.y * this.th, this.tw, this.th);
+        c.fillStyle = `rgb(255, 0, 0)`;
+        c.fillRect(b.x * this.tw, b.y * this.th, this.tw, this.th);
+        c.drawImage(ability.canvas, b.x * this.tw, b.y * this.th, this.tw, this.th);
+      }, 50);
+    })
   }
 
   drawMonsters() {
@@ -1111,7 +1114,7 @@ class Battle {
     container.appendChild(title);
     this.currentActor.activeEffects.forEach(e => {
       let a = e.ability;
-      var canvas = a.canvas.clone(32, 32, {cursor: 'pointer'});
+      var canvas = e.canvas;
 
       canvas.addEventListener('click', () => {
         dcontainer.innerHTML = '';
@@ -1287,7 +1290,6 @@ class Battle {
     if(exclude.length > 20) return null;
     let m = p.totalStat('movement');
     var t = this.tr.filter(item => {
-      console.log(item.bio.name, item.team,p.bio.name, p.team)
       return item.team != p.team &&
       !exclude.find(a => a.id != item.id) &&
       this.grid.steps(p.x, p.y, item.x, item.y) <= m;
@@ -1396,7 +1398,7 @@ class Battle {
       if(a.bio.activation != event) return;
       if(!target.canTrigger) return;
       var t = a.stats.targetFamily == 'self' ? target : source;
-      this.useAbility(target, [t], a, true, power);
+      this.useAbility(target, [t], a, true, power, ability);
       target.triggerCount += 1;
     })
   }
@@ -1582,6 +1584,8 @@ class Battle {
           if(this.turn.isOver) {
             this.endTurn();
             this.act();
+          } else {
+            this.act();
           }
           resolve();
         })
@@ -1643,10 +1647,13 @@ class Battle {
       }
 
       p.then(() => {
+        console.log('action done', actor.movesLeft)
         this.turn.addAction(action);
         if(this.turn.isOver) {
           this.endTurn();
           this.act();
+        } else {
+          actor.ai && this.aiAct(actor);
         }
         resolve();
       })
@@ -1654,7 +1661,7 @@ class Battle {
     })
   }
 
-  useAbility(a, positions, ability, fromEffect, triggeredPower) {
+  useAbility(a, positions, ability, fromEffect, triggeredPower, triggeredBy) {
     return new Promise((resolve, reject) => {
       ability = ability || a.selectedAbility;
       let actions = positions.map(b => {
@@ -1667,8 +1674,14 @@ class Battle {
         a.useAbility(ability);
 
         if(!ability.stats.summon) {
-          targets.actors.forEach((t, i) => {
-            this.playHitAnimation(a, t, ability);
+          let acts = targets.actors.map((t, i) => {
+            logger.log(a.bio.name, 'using ability', ability.bio.name, 'on', t.bio.name);
+            let specialResult;
+            let special = specialEffects[ability.stats.special];
+            if(special && special.when == 'before hit') {
+              specialResult = special.fn(this, a, b, ability, power, triggeredPower, positions, triggeredBy);
+              if(specialResult.preventUse) return;
+            }
             var power = 0;
             if(ability.stats.source == 'attack') {
               power = this.dealAttackDamage(a, t, ability, fromEffect);
@@ -1684,23 +1697,21 @@ class Battle {
             }
 
 
-
-            let special = specialEffects[ability.stats.special];
-            let specialResult;
             if(special && special.when == 'per target') {
-              specialResult = special.fn(this, a, t, ability, power, triggeredPower, positions, false);
+              specialResult = special.fn(this, a, t, ability, power, triggeredPower, positions, triggeredBy);
             }
 
             t.addEffect(a, ability, power, fromEffect, triggeredPower, positions, specialResult);
             if(ability.stats.special != 'giveEffectAsAbility' && ability.stats.effect) {
               this.useAbility(a, [t], ability.stats.effect, true, power);
             }
+            return this.playHitAnimation(a, t, ability);
           });
           let power = ability.roll(a.totalStat('damage'));
           let special = specialEffects[ability.stats.special];
           let specialResult;
           if(special && special.when == 'per use') {
-            specialResult = special.fn(this, a, b, ability, power, triggeredPower, positions, true);
+            specialResult = special.fn(this, a, b, ability, power, triggeredPower, positions, triggeredBy);
           }
 
           !targets.actors.length && targets.tiles.length &&
@@ -1708,6 +1719,7 @@ class Battle {
           if(ability.stats.attribute == 'initiative') {
             this.initiativeChanged('useAbility');
           }
+          return Promise.all(acts);
         } else {
           // let tile = a.selections[0].tiles[0];
           let template = monsters.find(m => m.bio.name == ability.stats.summon);
@@ -1752,8 +1764,8 @@ class Battle {
     return this.grid.around(q.x, q.y, ability.stats.range)
     .filter(t => !t.item)
     .sort((a, b) => {
-      let d1 = this.grid.distance(a.x, a.y, p.x, p.y);
-      let d2 = this.grid.distance(b.x, b.y, p.x, p.y);
+      let d1 = this.grid.steps(a.x, a.y, p.x, p.y);
+      let d2 = this.grid.steps(b.x, b.y, p.x, p.y);
       return d1 > d2 ? 1 : -1;
     })[0];
   }
@@ -1838,34 +1850,24 @@ class Battle {
     this.makeMonsterCards();
   }
 
-  act() {
-    this.startTurn();
-    var a = this.currentActor;
-    if(!a) return;
-    if(!a.alive) {
-      this.kill(a);
-      this.endTurn();
-      return this.act();
-    }
-    if(!a.canAct) {
-      this.endTurn();
-      return this.act();
-    }
-    if(!a.ai) {
-      return this.human(a);
-    }
+  aiAct(a) {
     a.selectBestAbility();
-    var t = this.findTarget(a);
-    if(!t) {
-      this.sounds.victory.play();
-      logger.log(`${a.team} won the match`);
-      return;
+    var t = this.findClosestTarget(a);
+    if(!t) return this.endTurn();
+    if(t && this.inRange(a, t)) {
+      this.addAction(new Action('use ability', [t], a.selectedAbility.template.id));
+    } else if(a.canMove && t) {
+      var p = this.findClosestTile(a, t);
+      var path = this.grid.path(a.x, a.y, p.x, p.y);
+      path.shift();
+      path.splice(a.movesLeft);
+      var l = path[path.length -1];
+      this.addAction(new Action('move', [{x: l[0], y: l[1]}]));
+    } else {
+      this.addAction(new Action('defend'));
     }
-    var p = this.grid.closestEmpty(t.x, t.y);
-    console.log('closest empty', p)
-    var path = this.grid.path(a.x, a.y, p.x, p.y);
-    path.shift();
-    path.splice(a.movesLeft);
+
+    return;
     var action = this.inRange(a, t) ? Promise.resolve() : this.walk(a, path);
     action.then(() => {
       setTimeout(() => {
@@ -1884,6 +1886,26 @@ class Battle {
         this.act();
       }, 500)
     })
+  }
+
+  act() {
+    this.startTurn();
+    var a = this.currentActor;
+    if(!a) return;
+    if(!a.alive) {
+      this.kill(a);
+      this.endTurn();
+      return this.act();
+    }
+    if(!a.canAct) {
+      this.endTurn();
+      return this.act();
+    }
+    if(!a.ai) {
+      return this.human(a);
+    }
+    return this.aiAct(a);
+
 
   }
 

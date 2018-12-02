@@ -55,11 +55,11 @@ class MonsterCard {
     var effects = item.activeEffects.map(e => e.ability.bio.name);
     var abilities = item.abilities.map(a => a.bio.name);
     return `<div
-      class='card-outer'>
+      class='card-outer ${item.team}'>
       <div class='card-inner ${turn ? 'turn' : ''} ${item.alive ? '' : 'dead'}'>
         <div class='card-upper'>
           <div class='card-name'>
-            ${name} (${item.stacks}) ${item.alive ? '' : 'dead'} ${item.team}
+            ${name} (${item.stacks}) ${item.alive ? '' : 'dead'}
           </div>
           <div class='card-image'>
           </div>
@@ -143,6 +143,12 @@ class MonsterCard {
       margin: 2px;
       border: none;
       background: linear-gradient(to bottom, #bdb76b 0%,#713c14 100%);
+    }
+    .card-outer.team1 {
+      background: linear-gradient(to bottom, #0000ff 0%,#713c14 100%);
+    }
+    .card-outer.team2 {
+      background: linear-gradient(to bottom, #ff0000 0%,#713c14 100%);
     }
     .card-outer.selected {
       border: 3px solid cornflowerblue;

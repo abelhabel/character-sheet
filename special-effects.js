@@ -1,9 +1,10 @@
 module.exports = {};
 const monsters = require('monsters.js');
 class Special {
-  constructor(onEffectEnd = null, requiresAdditionalTarget = null) {
+  constructor(onEffectEnd = null, preventUse) {
     this.onEffectEnd = onEffectEnd;
-    this.requiresAdditionalTarget = requiresAdditionalTarget;
+    this.preventUse = preventUse;
+
   }
 }
 
@@ -220,3 +221,16 @@ module.exports.chain = {
     battle.useAbility(caster, [nextTarget], ability);
   }
 };
+
+
+module.exports.reflectArrows = {
+  when: 'per target',
+  fn: function (battle, caster, target, ability, power, triggeredPower, selections, triggeredBy) {
+    if(triggeredBy.bio.type != 'attack' || triggeredBy.stats.range < 2) {
+      target.triggerCount -= 1;
+      return;
+    }
+    logger.log(target.bio.name, 'deflected arrow from', triggeredBy.bio.name);
+    battle.useAbility(target, [triggeredBy.owner], triggeredBy, true, ability);
+  }
+}

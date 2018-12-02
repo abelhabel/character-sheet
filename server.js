@@ -27,6 +27,7 @@ const files = {
   'init-arena.js': fs.readFileSync(__dirname + '/init-arena.js'),
   'init-animation.js': fs.readFileSync(__dirname + '/init-animation.js'),
   'init-ability-compendium.js': fs.readFileSync(__dirname + '/init-ability-compendium.js'),
+  'init-bestiary.js': fs.readFileSync(__dirname + '/init-bestiary.js'),
 }
 // console.log(files['abilities.js'])
 function loadFile(name) {
@@ -50,6 +51,8 @@ loadFile('Lobby.js');
 loadFile('Arena.js');
 loadFile('Canvas.js');
 loadFile('Sprite.js');
+loadFile('CompositeSprite.js');
+loadFile('AbilityEffect.js');
 loadFile('Slider.js');
 loadFile('Animation.js');
 loadFile('TeamSelect.js');
@@ -66,6 +69,7 @@ loadFile('battle.html');
 loadFile('animation.html');
 loadFile('arena.html');
 loadFile('lobby.html');
+loadFile('bestiary.html');
 loadFile('ability-compendium.html');
 loadFile('DungeonCrawl_ProjectUtumnoTileset.png');
 loadFile('sheet_of_old_paper.png');

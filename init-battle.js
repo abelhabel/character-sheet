@@ -104,7 +104,7 @@ class Emitter {
 const socket = new Emitter();
 
 Module.onLoad(['DungeonCrawl_ProjectUtumnoTileset.png', 'monsters.js', 'abilities.js', 'terrains.js', 'arenas.js', 'icons.js', 'animations.js',
-'special-effects.js', 'Logger.js', 'Rand.js', 'Canvas.js', 'Sprite.js', 'Animation.js',
+'special-effects.js', 'Logger.js', 'Rand.js', 'Canvas.js', 'Sprite.js', 'CompositeSprite.js', 'AbilityEffect.js', 'Animation.js',
 'PositionList2d.js', 'pathfinding.js',  'Ability.js', 'Monster.js', 'Terrain.js',
 'Arena.js', 'MonsterCard.js', 'Lobby.js', 'TeamSelect.js', 'Battle.js'], () => {
   const Lobby = require('Lobby.js');
@@ -252,14 +252,14 @@ Module.onLoad(['DungeonCrawl_ProjectUtumnoTileset.png', 'monsters.js', 'abilitie
     var teamSelect = new TeamSelect(monsters, selectContainer, w, h, tw, th, cash, 2, () => {
       selectContainer.style.display = 'none';
       teamSelect.teams[0].forEach(m => m.ai = true);
-      teamSelect.teams[1].forEach(m => m.ai = false);
+      teamSelect.teams[1].forEach(m => m.ai = true);
       var battle = new Battle(teamSelect.teams[0], teamSelect.teams[1], w, h, tw, th, container);
       battle.onGameEnd = (o) => {
-        battle.destroy();
-        container.innerHTML = '';
-        selectContainer.innerHTML = '';
-        window.battle = null;
-        lobby.show();
+        // battle.destroy();
+        // container.innerHTML = '';
+        // selectContainer.innerHTML = '';
+        // window.battle = null;
+        // lobby.show();
       };
       battle.start();
       window.battle = battle;
