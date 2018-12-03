@@ -287,6 +287,7 @@ class Battle {
     this.tr = new R();
     this.tr.add([...this.team1, ...this.team2]);
     this.tr.order();
+    this.csPopup = this.popup();
     this.setEvents();
   }
 
@@ -568,8 +569,36 @@ class Battle {
 
   }
 
+  popup() {
+    let tag = html`<div
+      style='
+        display: none;
+        position: fixed;
+        width: 800px;
+        height: 600px;
+        top: 50%;
+        left: 50%;
+        transform: translate(-50%, -50%);
+        padding: 20px;
+        background-color: rgba(0,0,0,0.5);
+        background: url(sheet_of_old_paper_horizontal.png);
+        border-radius: 10px;
+        z-index: 100;
+      '
+    >
+    </div>`;
+    window.addEventListener('keyup', e => {
+      console.log(e)
+      if(e.key != 'Escape') return;
+      tag.style.display = 'none';
+    });
+    document.body.appendChild(tag);
+    return tag;
+  }
+
   toggleAbilityBook() {
-    let c = document.getElementById('outer-abilities');
+    let c = this.csPopup;//document.getElementById('outer-abilities');
+    this.currentActor.drawMonsterCS(c);
     if(c.style.display == 'none')
       c.style.display = 'block';
     else
@@ -614,7 +643,7 @@ class Battle {
     })
     container.appendChild(wait.canvas);
 
-    ability.canvas.addEventListener('click', this.toggleAbilityBook);
+    ability.canvas.addEventListener('click', () => this.toggleAbilityBook());
     let context = document.createElement('div');
     Object.assign(context.style, {
       position: 'absolute',

@@ -30,20 +30,32 @@ class Module {
   }
 
   static onLoad(files, fn) {
+    console.log('load modules')
     var o = Promise.resolve();
-    files.forEach(f => {
-      o = o.then(() => {
-        return new Promise((resolve, reject) => {
-          var script = document.createElement('script');
-          script.onload = function() {
-            resolve();
-          };
-          script.src = f;
-          document.body.appendChild(script);
-        })
+    let calls = files.map(f => {
+      let m = new Module(f);
+      let tag = f.match('.js') ? 'script' : 'img';
+
+      return new Promise((resolve, reject) => {
+        var script = document.createElement(tag);
+        script.async = true;
+        script.defer = true;
+        console.log('loading...', f)
+        script.onload = function() {
+          if(tag == 'img') {
+            m.exports = script;
+          }
+          resolve();
+        };
+        script.src = f;
+        tag == 'script' && document.body.appendChild(script);
       })
-    })
-    o.then(function() {
+    });
+
+    Promise.all(calls).then(function() {
+      Object.keys(Module.modules).forEach(k => {
+        Module.modules[k].pre && Module.modules[k].pre()
+      });
       fn()
     }).catch(e => {
       console.log('loading error', e)

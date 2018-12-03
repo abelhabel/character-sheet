@@ -4,8 +4,8 @@ const URL = require('url').URL;
 const fs = require('fs');
 const PORT = process.env.PORT || 5000;
 const wrap = {
-  pre: () => '(function (module) {\n',
-  post: (name) => `\n})(new Module("${name}"))`
+  pre: () => '(function (module) {\n module.pre = function() {',
+  post: (name) => `\n}})(Module.modules["${name}"])`
 }
 function guid() {
   function s4() {
@@ -73,6 +73,7 @@ loadFile('bestiary.html');
 loadFile('ability-compendium.html');
 loadFile('DungeonCrawl_ProjectUtumnoTileset.png');
 loadFile('sheet_of_old_paper.png');
+loadFile('sheet_of_old_paper_horizontal.png');
 loadFile('spellbookForFlare.png');
 
 function saveData(req, res, folder, url) {

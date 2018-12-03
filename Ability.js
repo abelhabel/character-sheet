@@ -45,6 +45,7 @@ class Ability {
       summon: t.stats.summon,
 
     };
+    let bg = icons.find(i => i.bio.name == 'Ability Background');
     this.sprite = new CompositeSprite([icons.find(i => i.bio.name == 'Ability Background').bio.sprite, this.template.bio.sprite]);
     this.animation = {
       sprite: t.animation && t.animation.sprite,

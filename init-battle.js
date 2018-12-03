@@ -21,7 +21,16 @@ CSSStyleDeclaration.prototype.copyTo = function(o) {
     o[p] = this[p];
   }
 }
+function html(strings, ...values) {
+  let out = '';
+  strings.forEach((s, i) => {
+    out += s + (values[i] == undefined ? '' : values[i]);
+  })
 
+  let d = document.createElement('template');
+  d.innerHTML = out;
+  return d.content.firstElementChild;
+}
 class Module {
   constructor(name) {
     this.name = name;
@@ -41,24 +50,30 @@ class Module {
   static onLoad(files, fn) {
     console.log('load modules')
     var o = Promise.resolve();
-    files.forEach(f => {
+    let calls = files.map(f => {
+      let m = new Module(f);
       let tag = f.match('.js') ? 'script' : 'img';
-      o = o.then(() => {
-        return new Promise((resolve, reject) => {
-          var script = document.createElement(tag);
-          script.onload = function() {
-            if(tag == 'img') {
-              let m = new Module(f);
-              m.exports = script;
-            }
-            resolve();
-          };
-          script.src = f;
-          tag == 'script' && document.body.appendChild(script);
-        })
+
+      return new Promise((resolve, reject) => {
+        var script = document.createElement(tag);
+        script.async = true;
+        script.defer = true;
+        console.log('loading...', f)
+        script.onload = function() {
+          if(tag == 'img') {
+            m.exports = script;
+          }
+          resolve();
+        };
+        script.src = f;
+        tag == 'script' && document.body.appendChild(script);
       })
-    })
-    o.then(function() {
+    });
+
+    Promise.all(calls).then(function() {
+      Object.keys(Module.modules).forEach(k => {
+        Module.modules[k].pre && Module.modules[k].pre()
+      });
       fn()
     }).catch(e => {
       console.log('loading error', e)
@@ -251,8 +266,8 @@ Module.onLoad(['DungeonCrawl_ProjectUtumnoTileset.png', 'monsters.js', 'abilitie
     selectContainer.style.display = 'block';
     var teamSelect = new TeamSelect(monsters, selectContainer, w, h, tw, th, cash, 2, () => {
       selectContainer.style.display = 'none';
-      teamSelect.teams[0].forEach(m => m.ai = true);
-      teamSelect.teams[1].forEach(m => m.ai = true);
+      teamSelect.teams[0].forEach(m => m.ai = false);
+      teamSelect.teams[1].forEach(m => m.ai = false);
       var battle = new Battle(teamSelect.teams[0], teamSelect.teams[1], w, h, tw, th, container);
       battle.onGameEnd = (o) => {
         // battle.destroy();
