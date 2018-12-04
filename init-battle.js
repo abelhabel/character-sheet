@@ -121,7 +121,7 @@ const socket = new Emitter();
 Module.onLoad(['DungeonCrawl_ProjectUtumnoTileset.png', 'monsters.js', 'abilities.js', 'terrains.js', 'arenas.js', 'icons.js', 'animations.js',
 'special-effects.js', 'Logger.js', 'Rand.js', 'Canvas.js', 'Sprite.js', 'CompositeSprite.js', 'AbilityEffect.js', 'Animation.js',
 'PositionList2d.js', 'pathfinding.js',  'Ability.js', 'Monster.js', 'Terrain.js',
-'Arena.js', 'MonsterCard.js', 'Lobby.js', 'TeamSelect.js', 'Battle.js'], () => {
+'Arena.js', 'MonsterCard.js', 'Lobby.js', 'TeamSelect.js', 'BattleResult.js', 'Battle.js', ], () => {
   const Lobby = require('Lobby.js');
   const lobby = new Lobby();
   lobby.render();
@@ -266,15 +266,19 @@ Module.onLoad(['DungeonCrawl_ProjectUtumnoTileset.png', 'monsters.js', 'abilitie
     selectContainer.style.display = 'block';
     var teamSelect = new TeamSelect(monsters, selectContainer, w, h, tw, th, cash, 2, () => {
       selectContainer.style.display = 'none';
-      teamSelect.teams[0].forEach(m => m.ai = false);
-      teamSelect.teams[1].forEach(m => m.ai = false);
+      teamSelect.teams[0].forEach(m => m.ai = true);
+      teamSelect.teams[1].forEach(m => m.ai = true);
       var battle = new Battle(teamSelect.teams[0], teamSelect.teams[1], w, h, tw, th, container);
       battle.onGameEnd = (o) => {
-        // battle.destroy();
-        // container.innerHTML = '';
-        // selectContainer.innerHTML = '';
-        // window.battle = null;
-        // lobby.show();
+        o.results.winningTeam(o.winningTeam);
+        let report = o.results.report(() => {
+          battle.destroy();
+          container.innerHTML = '';
+          selectContainer.innerHTML = '';
+          window.battle = null;
+          lobby.show();
+        });
+        document.body.appendChild(report);
       };
       battle.start();
       window.battle = battle;
@@ -433,6 +437,8 @@ Module.onLoad(['DungeonCrawl_ProjectUtumnoTileset.png', 'monsters.js', 'abilitie
         let remoteTeam = game.teams.find(t => t.user.id != lobby.localUser.id);
         let firstTeam = game.owner.id == lobby.localUser.id ? localTeam.team : remoteTeam.team;
         let secondTeam = game.owner.id != lobby.localUser.id ? localTeam.team : remoteTeam.team;
+        let localName = localTeam.user.name;
+        let remoteName = remoteTeam.user.name;
         if(game.owner.id == lobby.localUser.id) {
           firstTeam = localTeam.team;
           secondTeam = remoteTeam.team;
@@ -450,16 +456,21 @@ Module.onLoad(['DungeonCrawl_ProjectUtumnoTileset.png', 'monsters.js', 'abilitie
           lobby.battleAction(game, action);
         };
         battle.onGameEnd = (o) => {
-          if(o.winningTeam == localTeam) {
-            lobby.winGame(game);
-          } else {
-            lobby.loseGame(game);
-          }
-          battle.destroy();
-          container.innerHTML = '';
-          selectContainer.innerHTML = '';
-          window.battle = null;
-          lobby.show();
+          o.results.winningTeam(localTeam == o.winningTeam ? localName : remoteName);
+          let report = o.results.report(() => {
+            if(o.winningTeam == localTeam) {
+              lobby.winGame(game);
+            } else {
+              lobby.loseGame(game);
+            }
+            battle.destroy();
+            container.innerHTML = '';
+            selectContainer.innerHTML = '';
+            window.battle = null;
+            lobby.show();
+          });
+          document.body.appendChild(report);
+
         };
         lobby.on('battle action confirmed', (data) => {
           console.log('battle action confirmed', data);

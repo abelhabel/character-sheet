@@ -56,6 +56,7 @@ loadFile('AbilityEffect.js');
 loadFile('Slider.js');
 loadFile('Animation.js');
 loadFile('TeamSelect.js');
+loadFile('BattleResult.js');
 loadFile('seven.js');
 loadFile('special-effects.js');
 loadFile('ability-tpl.js');

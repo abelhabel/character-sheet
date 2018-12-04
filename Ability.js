@@ -3,6 +3,8 @@ const icons = require('icons.js') || [];
 const animations = require('animations.js') || [];
 const Animation = require('Animation.js');
 const CompositeSprite = require('CompositeSprite.js');
+const Sprite = require('Sprite.js');
+const AbilityEffect = require('AbilityEffect.js');
 const nextId = (function() {
   var id = 0;
   return function() {
@@ -64,6 +66,20 @@ class Ability {
       this.stats.effect = new Ability(abilities.find(a => a.bio.name == this.stats.effect), this);
     }
     this.might = (this.stats.minPower + this.stats.maxPower) * this.stats.multiplier;
+    this.effectSprite = new AbilityEffect({ability: this}).sprite;
+    this.baseSprite = new Sprite(this.bio.sprite);
+  }
+
+  minPower(d) {
+    let am = this.stats.multiplier / 100;
+    let min = this.stats.minPower + (d || 0);
+    return Math.ceil(am * min);
+  }
+
+  maxPower(d) {
+    let am = this.stats.multiplier / 100;
+    let max = this.stats.maxPower + (d || 0);
+    return Math.ceil(am * max);
   }
 
   get isAura() {

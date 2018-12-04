@@ -262,7 +262,13 @@ class Monster {
 
   abilityConditionMet(a) {
     if(!a.bio.condition) return true;
-    if(a.bio.condition == 'flanked') {
+    console.log('abilityConditionMet', this.bio.name, a.bio.name)
+    if(a.stats.targetFamily == 'self' && a.bio.condition == 'flanked') {
+      let flanks = this.battle ? this.battle.flanks(this) : 0;
+      if(flanks < 2) return false;
+      return true;
+    }
+    if(a.stats.targetFamily == 'enemies' && a.bio.condition == 'flanking') {
       let flanks = this.battle ? this.battle.flanks(this) : 0;
       if(flanks < 2) return false;
       return true;
@@ -300,6 +306,7 @@ class Monster {
 
   auraBonus(name) {
     var out = new StatBonus();
+    var stacks = {};
     this.battle && this.battle.auras.all.forEach(a => {
       if(!a.owner.alive) return
       if(a.stats.attribute != name) return;
@@ -313,8 +320,17 @@ class Monster {
         out.add(a);
       }
       if(a.owner.team != this.team && targetFamily != 'allies' && source == 'curse') {
-        out.add(a);
+        if(!this.abilityConditionMet(a)) return;
+        if(a.stats.stacks > 1) {
+          stacks[a.bio.name] = stacks[a.bio.name] || {power: 0, ability: a};
+          stacks[a.bio.name].power += a.power;
+        } else {
+          out.add(a, a.power);
+        }
       }
+    })
+    Object.keys(stacks).forEach(name => {
+      out.add(stacks[name].ability, stacks[name].power);
     })
     return out;
   }
@@ -340,14 +356,16 @@ class Monster {
     return this.totalMana >= a.stats.resourceCost;
   }
 
-  selectBestAbility() {
-    let a = this.abilities.sort((a, b) => {
+  selectBestAbility(t) {
+    let a = this.abilities
+    .sort((a, b) => {
       return a.might > b.might ? -1 : 1;
     }).find(a => {
       return a.bio.type == 'active' &&
       (a.stats.source == 'attack' || a.stats.source == 'spell') &&
       this.canUseAbility(a)
     });
+    console.log('selecting ability', a)
     this.selectedAbility != a && this.selectAbility(a);
   }
 
@@ -503,6 +521,7 @@ class Monster {
         background-size: cover;
         pointer-events: none;
         border-radius: 5px;
+        background-color: rgba(0,0,0,0);
       }
       .stat-value {
         text-align: center;
@@ -630,10 +649,9 @@ class Monster {
       tag.querySelector('#active-effects').appendChild(c);
     })
     m.passives.forEach(a => {
-      console.log(a)
       if(a.stats.targetFamily != 'self') return;
       // if(!a.owner.abilityConditionMet(a)) return;
-      var c = a.sprite.canvas.clone();
+      var c = a.effectSprite.canvas.clone();
       c.addEventListener('click', e => {
         this.drawEffectStats({ability: a, power: a.power}, tag.querySelector('#details'));
       })
@@ -653,7 +671,7 @@ class Monster {
         d -= radius * 0.415;
       }
       if(d > radius) return;
-      var c = a.sprite.canvas.clone();
+      var c = a.effectSprite.canvas.clone();
       c.addEventListener('click', e => {
         this.drawEffectStats({ability: a, power: a.power}, tag.querySelector('#details'));
       })

@@ -63,7 +63,8 @@ var tpl = {
           type: 'select',
           values: [
             '',
-            'flanked'
+            'flanked',
+            'flanking'
           ],
           initial: '',
           exportAs: 'condition'

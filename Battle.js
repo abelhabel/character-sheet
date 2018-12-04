@@ -6,6 +6,7 @@ const Arena = require('Arena.js');
 const Animation = require('Animation.js');
 const Sprite = require('Sprite.js');
 const Canvas = require('Canvas.js');
+const BattleResult = require('BattleResult.js');
 const specialEffects = require('special-effects.js');
 const abilities = require('abilities.js');
 const monsters = require('monsters.js');
@@ -287,6 +288,7 @@ class Battle {
     this.tr = new R();
     this.tr.add([...this.team1, ...this.team2]);
     this.tr.order();
+    this.br = new BattleResult();
     this.csPopup = this.popup();
     this.setEvents();
   }
@@ -377,6 +379,42 @@ class Battle {
 
   get turn() {
     return this.turns[this.turns.length -1];
+  }
+
+  removeDamagePreview() {
+    let c = document.getElementById('battle-menu');
+    let d = document.getElementById('board-damage-preview')
+    if(d) {
+      c.removeChild(d);
+    }
+  }
+
+  drawDamagePreview(a, b, ability, p) {
+    let c = document.getElementById('battle-menu');
+    let d = document.getElementById('board-damage-preview')
+    if(d) {
+      c.removeChild(d);
+    }
+    let min = ability.stats.source == 'attack' ? this.attackRollMin(a, b, ability) : this.spellRollMin(a, b, ability);
+    let max = ability.stats.source == 'attack' ? this.attackRollMax(a, b, ability) : this.spellRollMin(a, b, ability);
+    let tag = html`<div id='board-damage-preview' style='
+      position: absolute;
+      top: ${p.y}px;
+      left: ${p.x}px;
+      display: inline-block;
+      padding: 4px;
+      background-image: url(sheet_of_old_paper.png);
+      background-repeat: no-repeat;
+      overflow: hidden;
+      border-radius: 2px;
+      z-index: 1000;
+      box-shadow: 0px 0px 5px 1px rgba(0,0,0,0.75);
+      '
+    >
+      ${min} - ${max}
+    </div>`;
+    c.appendChild(tag);
+    return tag;
   }
 
   setEvents() {
@@ -534,15 +572,24 @@ class Battle {
       hovery = y;
       this.mouse.x = x;
       this.mouse.y = y;
-      this.monsterCards.forEach(c => {
+      let hightlighted = this.monsterCards.filter(c => {
         if(!c.cached) return;
         if(c.item == this.grid.get(this.mouse.x, this.mouse.y)) {
           c.hightlightCanvas();
+          if(this.currentActor.selectedAbility) {
+            this.drawDamagePreview(this.currentActor, c.item, this.currentActor.selectedAbility, {x: c.item.x * this.tw, y: c.item.y * this.th -30});
+          }
+          return true;
         } else {
           c.unhightlightCanvas();
+          console.log('removeDamagePreview')
+
         }
 
       })
+      if(!hightlighted.length) {
+        this.removeDamagePreview();
+      }
       if(x > this.w -1 || y > this.h -1) return;
       var path = this.grid.path(a.x, a.y, x, y);
       path.shift();
@@ -607,6 +654,7 @@ class Battle {
 
   drawBattleMenu() {
     let container = document.createElement('div');
+    container.id = 'battle-menu';
     this.board.parentNode.appendChild(container);
     this.board.style.copyTo(container.style);
     Object.assign(container.style, {
@@ -748,10 +796,6 @@ class Battle {
     var c = this.effects.getContext('2d');
     let icon = icons.find(i => i.bio.name == 'Tile Target');
     c.drawImage(icon.canvas, x * this.tw, y * this.th, this.tw, this.th);
-    // c.strokeStyle = 'rgba(0, 255, 255, 1)';
-    // c.strokeRect(x * this.tw, y * this.th, this.tw, this.th);
-    // c.fillStyle = 'green';
-    // c.fillText(i, 2 + x * this.tw, 12 + y * this.th);
   }
 
   highlightAuraTile(x, y, team) {
@@ -788,20 +832,22 @@ class Battle {
     var c = this.effects.getContext('2d');
     c.clearRect(0, 0, this.w * this.tw, this.h * this.th);
     let ability = this.currentActor.selectedAbility;
+
     targets.tiles.forEach((t, i) => {
-      this.highlightTile(t.x, t.y, i+1);
-      if(ability && ability.stats.target == 'ground') {
-        this.highlightAbility(t.x, t.y, ability.canvas);
+      if(ability) {
+        this.highlightAbility(t.x, t.y, ability.baseSprite.canvas);
+      } else {
+        this.highlightTile(t.x, t.y, i+1);
       }
     })
     if(ability && ability.stats.target != 'ground') {
       targets.actors.forEach((t, i) => {
-        this.highlightAbility(t.x, t.y, ability.canvas);
+        this.highlightAbility(t.x, t.y, ability.baseSprite.canvas);
       })
     }
     let pointerTarget = this.grid.get(x, y);
     let aura = pointerTarget && pointerTarget.hasAura;
-    aura && this.highlightAura(aura);
+    aura && !ability && this.highlightAura(aura);
   }
 
 
@@ -1112,190 +1158,6 @@ class Battle {
     })
   }
 
-  drawEffectStats(e, tag) {
-    let a = e.ability;
-    let {source, attribute, element, minPower,
-      maxPower, multiplier, resourceCost, resourceType,
-      range, effect, duration
-    } = a.stats;
-    let {activation, type, name} = a.bio;
-    let stat = source == 'blessing' || source == 'curse' ? attribute : 'health';
-    attribute = source == 'spell' || source == 'attack' ? 'health' : attribute;
-    let time = type == 'passive' ? 'permanent' : `${e.rounds}/${duration} rounds`;
-    var text = `<span class='bold'>Name</span>: ${name}
-    <span class='bold'>Source</span>: ${source}
-    <span class='bold'>Element</span>: ${element}
-    <span class='bold'>Duration</span>: ${time}
-    <span class='bold'>Effect</span>: ${e.power} to ${attribute}`;
-
-    tag.innerHTML = text;
-  }
-
-  drawActiveEffects() {
-    if(!this.currentActor) return;
-    var container = document.getElementById('monster-effects');
-    container.innerHTML = '';
-    var dcontainer = document.getElementById('ability-book-right');
-    dcontainer.innerHTML = '';
-    var title = document.createElement('p');
-    var descriptionTag = document.createElement('div');
-    title.textContent = 'Effects';
-    container.appendChild(title);
-    this.currentActor.activeEffects.forEach(e => {
-      let a = e.ability;
-      var canvas = e.canvas;
-
-      canvas.addEventListener('click', () => {
-        dcontainer.innerHTML = '';
-        dcontainer.appendChild(descriptionTag);
-        this.drawEffectStats(e, descriptionTag);
-      })
-
-      container.appendChild(canvas);
-    });
-    this.auras.all.forEach(a => {
-      if(!a.owner.alive) return;
-      var {source, targetFamily, multiplier, radius} = a.stats;
-      if(a.owner.team == this.currentActor.team) {
-        if(targetFamily == 'enemies') return;
-      } else {
-        if(targetFamily == 'allies') return;
-      }
-      var d = this.grid.distance(this.currentActor.x, this.currentActor.y, a.owner.x, a.owner.y);
-      if(a.stats.shape == 'square') {
-        d -= radius * 0.415;
-      }
-      if(d > radius) return;
-      var canvas = a.canvas.clone(32, 32, {cursor: 'pointer'});
-      canvas.addEventListener('click', () => {
-        dcontainer.innerHTML = '';
-        dcontainer.appendChild(descriptionTag);
-        this.drawEffectStats({ability: a, power: a.power}, descriptionTag);
-      })
-
-      container.appendChild(canvas);
-    })
-    this.currentActor.passives.forEach(a => {
-      var {source, targetFamily, multiplier, radius} = a.stats;
-      var {type, activation, condition} = a.bio;
-      if(targetFamily != 'self') return;
-      if(!a.owner.abilityConditionMet(a)) return;
-      var canvas = a.canvas.clone(32, 32, {cursor: 'pointer'});
-      canvas.addEventListener('click', () => {
-        dcontainer.innerHTML = '';
-        dcontainer.appendChild(descriptionTag);
-        this.drawEffectStats({ability: a, power: a.power}, descriptionTag);
-      })
-
-      container.appendChild(canvas);
-    })
-    container.appendChild(descriptionTag);
-  }
-
-  drawAbilityStats(a, tag) {
-    let {source, attribute, element, minPower, shape, radius,
-      maxPower, multiplier, resourceCost, resourceType,
-      range, effect, duration, target, targetFamily, stacks
-    } = a.stats;
-    let {activation, type, name, description} = a.bio;
-    let stat = source == 'blessing' || source == 'curse' ? attribute : 'health';
-    let act = type == 'trigger' ? `\n<span class='bold'>Triggers</span>: ${activation}` : '';
-    var text = `<span class='bold'>Name</span>: ${name}
-    <span class='bold'>Targets</span>: ${target}/${targetFamily}
-    <span class='bold'>Type</span>: ${type}${act}
-    <span class='bold'>Shape</span>: ${shape}
-    <span class='bold'>Radius</span>: ${radius}
-    <span class='bold'>Source</span>: ${source}
-    <span class='bold'>Element</span>: ${element}
-    <span class='bold'>Cost</span>: ${resourceCost} ${resourceType}
-    <span class='bold'>Range</span>: ${range}`;
-    let time = duration ? ` for ${duration} rounds` : '';
-    if(multiplier) {
-      text += `\n<span class='bold'>Effects</span>: (${minPower}-${maxPower}) * ${multiplier}% to ${stat}${time} (max stacks: ${stacks})`;
-      if(effect) {
-        let {source, attribute, minPower, maxPower, multiplier, duration, stacks} = effect.stats;
-        let stat = source == 'blessing' || source == 'curse' ? attribute : 'health';
-        let time = duration ? ` for ${duration} rounds` : '';
-        text += `, (${minPower}-${maxPower}) * ${multiplier}% to ${stat}${time} (max stacks: ${stacks})`;
-      }
-
-    }
-    text += `\n\n${description}`;
-    tag.innerHTML = text;
-  }
-
-  drawTriggers() {
-    if(!this.currentActor) return;
-    var container = document.getElementById('monster-triggers');
-    container.innerHTML = '';
-    var dcontainer = document.getElementById('ability-book-right');
-    dcontainer.innerHTML = '';
-    var title = document.createElement('p');
-    var descriptionTag = document.createElement('div');
-    title.textContent = 'Triggers';
-    container.appendChild(title);
-    this.currentActor.triggers.forEach(a => {
-
-      var canvas = document.createElement('canvas');
-      var {w, h} = a.bio.sprite;
-      canvas.width = w;
-      canvas.height = h;
-      var c = canvas.getContext('2d');
-      c.drawImage(a.canvas, 0, 0, w, h);
-
-      canvas.addEventListener('click', () => {
-        dcontainer.innerHTML = '';
-        dcontainer.appendChild(descriptionTag);
-        this.drawAbilityStats(a, descriptionTag);
-      })
-
-      container.appendChild(canvas);
-    });
-    dcontainer.appendChild(descriptionTag);
-  }
-
-  drawAbilities() {
-    if(!this.currentActor) return;
-    var container = document.getElementById('monster-abilities');
-    var dcontainer = document.getElementById('ability-book-right');
-    dcontainer.innerHTML = '';
-    container.innerHTML = '';
-    var hand = icons.find(icon => icon.bio.name == 'Hand');
-    var title = document.createElement('p');
-    var descriptionTag = document.createElement('div');
-    title.textContent = 'Abilities';
-    container.appendChild(title);
-    this.currentActor.abilities.forEach(a => {
-
-      var canvas = document.createElement('canvas');
-      canvas.style.cursor = `url(${hand.canvas.clone(24, 24).toPNG()}), auto`;
-      var {w, h} = a.bio.sprite;
-      canvas.width = w;
-      canvas.height = h;
-      var c = canvas.getContext('2d');
-      c.drawImage(a.canvas, 0, 0, w, h);
-
-      canvas.addEventListener('click', () => {
-        // if(a.bio.activation == 'when selected') {
-        //   this.currentActor.selectAbility(a);
-        //   this.drawAbilities();
-        // } else {
-        // }
-        dcontainer.innerHTML = '';
-        dcontainer.appendChild(descriptionTag);
-        this.drawAbilityStats(a, descriptionTag);
-      })
-
-      if(this.currentActor.selectedAbility && a.bio.name == this.currentActor.selectedAbility.bio.name) {
-        c.strokeRect(0, 0, w, h);
-        this.drawAbilityStats(a, descriptionTag);
-      }
-
-      container.appendChild(canvas);
-    });
-    dcontainer.appendChild(descriptionTag);
-  }
-
   findClosestTarget(p, exclude = []) {
     let m = p.totalStat('movement');
     var t = this.tr.filter(item => {
@@ -1436,6 +1298,7 @@ class Battle {
     var c = 'damaged';
     if(this.isHarmful(b, ability)) {
       b.harm(d);
+      this.br.damage(a, b, ability, d);
     } else {
       b.heal(d);
       c = 'healed';
@@ -1497,6 +1360,42 @@ class Battle {
     return d;
   }
 
+  attackRollMin(a, b, ability) {
+    let df = b.totalStat('defence');
+    let at = a.totalStat('attack');
+    let stacks = a.stacks;
+    let bonusDamage = a.totalStat('damage');
+    let flanks = this.flanks(b) - 1;
+    let flankMultiplier = 1 + (flanks / 5);
+    let abilityDamage = ability.minPower(bonusDamage);
+    let multiplier = 1;
+    if(at > df) {
+      multiplier = 1 + (at - df)/10;
+    } else if(df > at) {
+      multiplier = Math.max(0.1, 1 + (at - df)/20);
+    }
+    let d = Math.ceil(abilityDamage * stacks * multiplier * flankMultiplier);
+    return d;
+  }
+
+  attackRollMax(a, b, ability) {
+    let df = b.totalStat('defence');
+    let at = a.totalStat('attack');
+    let stacks = a.stacks;
+    let bonusDamage = a.totalStat('damage');
+    let flanks = this.flanks(b) - 1;
+    let flankMultiplier = 1 + (flanks / 5);
+    let abilityDamage = ability.maxPower(bonusDamage);
+    let multiplier = 1;
+    if(at > df) {
+      multiplier = 1 + (at - df)/10;
+    } else if(df > at) {
+      multiplier = Math.max(0.1, 1 + (at - df)/20);
+    }
+    let d = Math.ceil(abilityDamage * stacks * multiplier * flankMultiplier);
+    return d;
+  }
+
   dealAttackDamage(a, b, ability, fromEffect, effectPower) {
     let d = this.attackRoll(a, b, ability);
     if(d) {
@@ -1519,6 +1418,24 @@ class Battle {
     let stacks = a.stacks;
     let bonusDamage = a.totalStat("damage");
     let abilityDamage = effectPower || ability.roll(bonusDamage);
+    let spellPower = 1 + a.totalStat('spellPower') / 10;
+    let d = Math.ceil(abilityDamage * stacks * spellPower);
+    return d;
+  }
+
+  spellRollMin(a, b, ability, fromEffect, effectPower) {
+    let stacks = a.stacks;
+    let bonusDamage = a.totalStat("damage");
+    let abilityDamage = ability.minPower(bonusDamage);
+    let spellPower = 1 + a.totalStat('spellPower') / 10;
+    let d = Math.ceil(abilityDamage * stacks * spellPower);
+    return d;
+  }
+
+  spellRollMax(a, b, ability, fromEffect, effectPower) {
+    let stacks = a.stacks;
+    let bonusDamage = a.totalStat("damage");
+    let abilityDamage = effectPower || ability.maxPower(bonusDamage);
     let spellPower = 1 + a.totalStat('spellPower') / 10;
     let d = Math.ceil(abilityDamage * stacks * spellPower);
     return d;
@@ -1790,7 +1707,8 @@ class Battle {
 
   findClosestTile(p, q) {
     let ability = p.selectedAbility;
-    return this.grid.around(q.x, q.y, ability.stats.range)
+    let range = ability ? ability.stats.range : 20;
+    return this.grid.around(q.x, q.y, range)
     .filter(t => !t.item)
     .sort((a, b) => {
       let d1 = this.grid.steps(a.x, a.y, p.x, p.y);
@@ -1799,9 +1717,9 @@ class Battle {
     })[0];
   }
 
-  inRange(a, b) {
+  inRange(a, b, ability) {
     var d = this.grid.distance(a.x, a.y, b.x, b.y);
-    var ability = a.selectedAbility;
+    ability = ability || a.selectedAbility;
     if(!ability) return;
     var range = ability ? ability.stats.range : 1;
     return d <= range + 0.42;
@@ -1854,7 +1772,8 @@ class Battle {
       if(typeof this.onGameEnd == 'function') {
         this.onGameEnd({
           winningTeam: a.team,
-          monstersLeft: Array.from(this.tr)
+          monstersLeft: Array.from(this.tr),
+          results: this.br
         });
       }
     }
@@ -1880,10 +1799,12 @@ class Battle {
   }
 
   aiAct(a) {
-    a.selectBestAbility();
     var t = this.findClosestTarget(a);
+    a.selectBestAbility(t);
+    console.log('aiacit', a, t)
+    let b = a.selectedAbility;
     if(!t) return this.endTurn();
-    if(t && this.inRange(a, t)) {
+    if(b && t && this.inRange(a, t)) {
       this.addAction(new Action('use ability', [t], a.selectedAbility.template.id));
     } else if(a.canMove && t) {
       var p = this.findClosestTile(a, t);
@@ -1891,9 +1812,9 @@ class Battle {
       path.shift();
       path.splice(a.movesLeft);
       var l = path[path.length -1];
-      this.addAction(new Action('move', [{x: l[0], y: l[1]}]));
+      return this.addAction(new Action('move', [{x: l[0], y: l[1]}]))
     } else {
-      this.addAction(new Action('defend'));
+      return this.addAction(new Action('defend'));
     }
 
     return;
@@ -1967,47 +1888,6 @@ class Battle {
     });
   }
 
-  createOuterAbilitiesContainer() {
-    var c = document.createElement('div');
-    this.dragndrop(c);
-    c.id = 'outer-abilities';
-    Object.assign(c.style, {
-      width: '700px',
-      height: '400px',
-      position: 'fixed',
-      display: 'none',
-      top: '0px',
-      left: '0px',
-      whiteSpace: 'pre-line',
-      overflowY: 'auto',
-      backgroundImage: 'url(spellbookForFlare.png)',
-      backgroundSize: 'contain',
-      backgroundRepeat: 'no-repeat',
-      padding: '20px 100px',
-      zIndex: 100
-    })
-    var left = document.createElement('div');
-    left.id = 'ability-book-left';
-    var right = document.createElement('div');
-    right.id = 'ability-book-right';
-    Object.assign(left.style, Battle.bookContainerStyle);
-    Object.assign(right.style, Battle.bookContainerStyle, {
-      verticalAlign: 'top',
-      padding: '20px 25px',
-      height: '280px'
-    });
-    c.appendChild(left);
-    c.appendChild(right);
-    document.body.appendChild(c);
-  }
-
-  static get bookContainerStyle() {
-    return {
-      display: 'inline-block',
-      width: '50%'
-    }
-  }
-
   createMonsterCardContainer() {
     var c = document.createElement('div');
     c.id = 'monster-cards';
@@ -2015,36 +1895,11 @@ class Battle {
     document.body.appendChild(c);
   }
 
-  createAbilityContainer() {
-    var o = document.getElementById('ability-book-left');
-    var c = document.createElement('div');
-    c.id = 'monster-abilities';
-    o.appendChild(c);
-  }
-
-  createTriggerContainer() {
-    var o = document.getElementById('ability-book-left');
-    var c = document.createElement('div');
-    c.id = 'monster-triggers';
-    o.appendChild(c);
-  }
-
-  createEffectContainer() {
-    var o = document.getElementById('ability-book-left');
-    var c = document.createElement('div');
-    c.id = 'monster-effects';
-    o.appendChild(c);
-  }
-
   start() {
     logger.minimized = false;
     logger.redraw();
     this.loadSounds();
     this.createMonsterCardContainer();
-    this.createOuterAbilitiesContainer();
-    this.createAbilityContainer();
-    this.createTriggerContainer();
-    this.createEffectContainer();
 
     return this.loadSpriteSheets()
     .then(images => {
@@ -2083,9 +1938,6 @@ class Battle {
     // this.drawGrid();
     this.drawMonsters();
     this.drawMonsterCards();
-    this.drawAbilities();
-    // this.drawTriggers();
-    this.drawActiveEffects();
   }
 }
 

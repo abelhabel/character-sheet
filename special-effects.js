@@ -24,6 +24,7 @@ module.exports.suicide = {
 module.exports.charge = {
   when: 'per use',
   fn: function (battle, caster, target, ability, power, triggeredPower, selections) {
+    console.log('charge')
     let tiles = battle.abilityTargets(caster, ability, selections[0].x, selections[0].y).tiles;
     let tile = tiles[tiles.length -1];
     if(battle.grid.get(tile.x, tile.y)) {
@@ -32,6 +33,7 @@ module.exports.charge = {
     battle.grid.remove(caster.x, caster.y);
     caster.move(tile.x, tile.y);
     battle.grid.setItem(caster);
+    battle.render();
     return new Special();
   }
 };
