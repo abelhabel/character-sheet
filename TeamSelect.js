@@ -1,5 +1,13 @@
 const Monster = require('Monster.js');
 const MonsterCard = require('MonsterCard.js');
+function guid() {
+  function s4() {
+    return Math.floor((1 + Math.random()) * 0x10000)
+      .toString(16)
+      .substring(1);
+  }
+  return s4() + s4() + '-' + s4() + '-' + s4() + '-' + s4() + '-' + s4() + s4() + s4();
+}
 class TeamSelect  {
   constructor(items, container, w, h, tw, th, cash, maxTeams, done) {
     this.items = items;
@@ -15,15 +23,31 @@ class TeamSelect  {
     this.picked.width = 2000;
     this.picked.height = th;
     this.picked.addEventListener('click', (e) => {
+      let split = e.ctrlKey;
+      let removeAll = e.shiftKey;
       let i = Math.floor(e.offsetX / this.tw);
       let item = this.monsters[i];
       let c = item.bio.cost;
-      this.spent -= c;
+      if(split) {
+        if(this.monsters.length < this.max) {
+          let b = Math.floor(item.stacks/2);
+          item.addStack(-b);
+          this.monsters.push(new Monster(item.template, b));
+        }
+      } else
+      if(removeAll) {
+        c = item.stacks * item.bio.cost;
+        this.spent -= c;
+        this.monsters.splice(i, 1);
+      } else
       if(item.stacks > 1) {
+        this.spent -= c;
         item.addStack(-1);
       } else {
+        this.spent -= c;
         this.monsters.splice(i, 1);
       }
+
       this.render();
     })
     this.container.appendChild(this.picked);
@@ -129,6 +153,24 @@ class TeamSelect  {
         }
       })
     })
+    this.shareButton = document.createElement('button');
+    this.shareButton.textContent = 'Share';
+    this.shareButton.style.display = 'block';
+    this.shareButton.style.position = 'fixed';
+    this.shareButton.style.left = '10px';
+    this.shareButton.style.top = '120px';
+    this.shareButton.addEventListener('click', e => {
+      let units = this.monsters.map(m => {
+        return {
+          templateId: m.template.id,
+          stacks: m.stacks
+        }
+      });
+      let name = window.prompt('Name:');
+      let team = {name, units};
+      console.log(JSON.stringify(team));
+      console.log(guid());
+    })
     this.doneButton = document.createElement('button');
     this.doneButton.textContent = 'Done';
     this.doneButton.style.display = 'block';
@@ -145,7 +187,9 @@ class TeamSelect  {
       this.spent = 0;
       this.render();
     });
+
     this.container.appendChild(this.doneButton);
+    this.container.appendChild(this.shareButton);
     this.container.appendChild(familySelect);
   }
 

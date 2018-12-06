@@ -19,6 +19,26 @@ class Canvas {
     c.stroke();
   }
 
+  drawText(x, y, text, color, font = '12px Tahoma') {
+    let c = this.context;
+    c.font = font;
+    if(color) c.fillStyle = color;
+    c.fillText(text, x, y);
+  }
+
+  drawRect(x, y, w, h, fill = '#000', stroke = false) {
+    let c = this.context;
+    if(fill) {
+      c.fillStyle = fill;
+      c.fillRect(x, y, w, h);
+    }
+
+    if(stroke) {
+      c.strokeStyle = stroke;
+      c.strokeRect(x, y, w, h);
+    }
+  }
+
   drawGrid(tw, th, color) {
     console.time('drawGrid')
     let c = this.context;

@@ -14,6 +14,12 @@ class Sprite {
   get canvas() {
     return this._canvas.canvas;
   }
+
+  drawStack(stack) {
+    let fs = 12;
+    this._canvas.drawRect(this.w -fs,this.h-fs, fs, fs);
+    this._canvas.drawText(this.w -fs,this.h, stack, 'red', fs + 'px Tahoma');
+  }
 }
 
 module.exports = Sprite;

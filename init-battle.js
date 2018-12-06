@@ -58,7 +58,6 @@ class Module {
         var script = document.createElement(tag);
         script.async = true;
         script.defer = true;
-        console.log('loading...', f)
         script.onload = function() {
           if(tag == 'img') {
             m.exports = script;
@@ -118,10 +117,12 @@ class Emitter {
 }
 const socket = new Emitter();
 
-Module.onLoad(['DungeonCrawl_ProjectUtumnoTileset.png', 'monsters.js', 'abilities.js', 'terrains.js', 'arenas.js', 'icons.js', 'animations.js',
+Module.onLoad(['DungeonCrawl_ProjectUtumnoTileset.png', 'Hell2.jpg',
+'monsters.js', 'abilities.js', 'terrains.js', 'arenas.js', 'icons.js', 'animations.js', 'teams.js',
 'special-effects.js', 'Logger.js', 'Rand.js', 'Canvas.js', 'Sprite.js', 'CompositeSprite.js', 'AbilityEffect.js', 'Animation.js',
-'PositionList2d.js', 'pathfinding.js',  'Ability.js', 'Monster.js', 'Terrain.js',
+'PositionList2d.js', 'pathfinding.js',  'Ability.js', 'AI.js', 'Monster.js', 'Terrain.js',
 'Arena.js', 'MonsterCard.js', 'Lobby.js', 'TeamSelect.js', 'BattleResult.js', 'Battle.js', ], () => {
+  const aiTeams = require('teams.js');
   const Lobby = require('Lobby.js');
   const lobby = new Lobby();
   lobby.render();
@@ -253,6 +254,46 @@ Module.onLoad(['DungeonCrawl_ProjectUtumnoTileset.png', 'monsters.js', 'abilitie
     })
   }
 
+  lobby.on('human vs ai game', (aiteam) => {
+    var generator = new Rand(Date.now()).generator;
+    window._random = (t) => {
+      let r = generator.random();
+      // logger.log(r);
+      return r;
+    };
+    window._roll = (a, b) => {
+      return Math.ceil(a + _random() * (b-a));
+    }
+    selectContainer.style.display = 'block';
+    var teamSelect = new TeamSelect(monsters, selectContainer, w, h, tw, th, cash, 1, () => {
+      selectContainer.style.display = 'none';
+      aiteam = assembleTeam(aiteam.units);
+      console.log(aiteam)
+      var battle = new Battle(teamSelect.teams[0], aiteam, w, h, tw, th, container);
+      teamSelect.teams[0].forEach(m => {
+        // m.addAI(1)
+        m.ai = false;
+      });
+      aiteam.forEach(m => {
+        m.addAI(1);
+      })
+      battle.onGameEnd = (o) => {
+        o.results.winningTeam(o.winningTeam == 'team1' ? 'You' : 'AI');
+        let report = o.results.report(() => {
+          battle.destroy();
+          container.innerHTML = '';
+          selectContainer.innerHTML = '';
+          window.battle = null;
+          lobby.show();
+        });
+        document.body.appendChild(report);
+      };
+      battle.start();
+      window.battle = battle;
+    });
+
+    teamSelect.render();
+  });
   lobby.on('local game', (game) => {
     var generator = new Rand(Date.now()).generator;
     window._random = (t) => {
@@ -266,9 +307,15 @@ Module.onLoad(['DungeonCrawl_ProjectUtumnoTileset.png', 'monsters.js', 'abilitie
     selectContainer.style.display = 'block';
     var teamSelect = new TeamSelect(monsters, selectContainer, w, h, tw, th, cash, 2, () => {
       selectContainer.style.display = 'none';
-      teamSelect.teams[0].forEach(m => m.ai = true);
-      teamSelect.teams[1].forEach(m => m.ai = true);
       var battle = new Battle(teamSelect.teams[0], teamSelect.teams[1], w, h, tw, th, container);
+      teamSelect.teams[0].forEach(m => {
+        // m.addAI(1)
+        m.ai = false;
+      });
+      teamSelect.teams[1].forEach(m => {
+        // m.addAI(1)
+        m.ai = false;
+      });
       battle.onGameEnd = (o) => {
         o.results.winningTeam(o.winningTeam);
         let report = o.results.report(() => {

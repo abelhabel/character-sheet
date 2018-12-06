@@ -21,6 +21,7 @@ const files = {
   'terrains.js': () => wrap.pre() + require('./terrains.js')() + wrap.post('terrains.js'),
   'arenas.js': () => wrap.pre() + require('./arenas.js')() + wrap.post('arenas.js'),
   'icons.js': () => wrap.pre() + require('./icons.js')() + wrap.post('icons.js'),
+  'teams.js': () => wrap.pre() + require('./teams.js')() + wrap.post('teams.js'),
   'animations.js': () => wrap.pre() + require('./animations.js')() + wrap.post('animations.js'),
   'socket-worker.js': fs.readFileSync(__dirname + '/socket-worker.js'),
   'init-battle.js': fs.readFileSync(__dirname + '/init-battle.js'),
@@ -55,6 +56,7 @@ loadFile('CompositeSprite.js');
 loadFile('AbilityEffect.js');
 loadFile('Slider.js');
 loadFile('Animation.js');
+loadFile('AI.js');
 loadFile('TeamSelect.js');
 loadFile('BattleResult.js');
 loadFile('seven.js');
@@ -64,6 +66,7 @@ loadFile('terrain-tpl.js');
 loadFile('animation-tpl.js');
 loadFile('heroes-like.js');
 loadFile('icon-tpl.js');
+loadFile('team-tpl.js');
 loadFile('pathfinding.js');
 loadFile('index.html');
 loadFile('battle.html');
@@ -76,6 +79,7 @@ loadFile('DungeonCrawl_ProjectUtumnoTileset.png');
 loadFile('sheet_of_old_paper.png');
 loadFile('sheet_of_old_paper_horizontal.png');
 loadFile('spellbookForFlare.png');
+loadFile('Hell2.jpg');
 
 function saveData(req, res, folder, url) {
   let id = url.searchParams.get('id') ||  guid();

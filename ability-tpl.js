@@ -64,7 +64,10 @@ var tpl = {
           values: [
             '',
             'flanked',
-            'flanking'
+            'flanking',
+            'wounded',
+            'near death',
+            'full health'
           ],
           initial: '',
           exportAs: 'condition'

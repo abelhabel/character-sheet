@@ -247,6 +247,7 @@ class Battle {
       m.battle = this;
     });
     this.team2.forEach(m => {
+      console.log('setting up ', m)
       m.team = 'team2';
       m.battle = this;
     });
@@ -726,7 +727,7 @@ class Battle {
     this.battleMenu = {
       setActor(actor) {
         context.innerHTML = '';
-        drawAbilities(actor.activeAbilities);
+        drawAbilities(actor.actives);
       },
       selectAbility(a) {
         if(!a) return;
@@ -1158,82 +1159,10 @@ class Battle {
     })
   }
 
-  findClosestTarget(p, exclude = []) {
-    let m = p.totalStat('movement');
-    var t = this.tr.filter(item => {
-      return item.team != p.team;
-    })
-    .sort((a, b) => {
-      let d1 = this.grid.steps(a.x, a.y, p.x, p.y);
-      let d2 = this.grid.steps(b.x, b.y, p.x, p.y);
-      return d1 > d2 ? 1 : -1;
-    })[0];
-    // if(!t) return null;
-    // var tile = this.findClosestTile(p, t);
-    // if(!tile) {
-    //   exclude.push(t);
-    //   return this.findClosestTarget(p, exclude);
-    // }
-    return t;
-  }
-
-  findWeakestTarget(p, exclude = []) {
-    if(exclude.length > 20) return null;
-    let m = p.totalStat('movement');
-    var t = this.tr.filter(item => {
-      return item.team != p.team &&
-      !exclude.find(a => a.id != item.id) &&
-      this.grid.steps(p.x, p.y, item.x, item.y) <= m;
-    })
-    .sort((a, b) => {
-      let d1 = a.totalStat('defence') + a.totalHealth * (1/this.flanks(a));
-      let d2 = b.totalStat('defence') + b.totalHealth * (1/this.flanks(b));
-      return d1 > d2 ? 1 : -1;
-    })[0];
-    if(!t) return null;
-    // var tile = this.grid.closestEmpty(t.x, t.y);
-    // if(!tile) {
-    //   exclude.push(t);
-    //   return this.findWeakestTarget(p, exclude);
-    // }
-    return t;
-  }
-
-  findStrongestTarget(p, exclude = []) {
-    var t = this.tr.filter(item => {
-      return item.team != p.team && !~exclude.indexOf(item);
-    })
-    .sort((a, b) => {
-      let d1 = a.stats.attack + a.stats.minDamage + a.stats.maxDamage;
-      let d2 = b.stats.attack + b.stats.minDamage + b.stats.maxDamage;
-      return d1 < d2 ? 1 : -1;
-    })[0];
-    if(!t) return null;
-    var tile = this.findClosestTile(p, t);
-    if(!tile) {
-      exclude.push(t);
-      return this.findStrongestTarget(p, exclude);
-    }
-    return t;
-  }
-
   canWalkTo(a, b) {
     let path = this.grid.path(a.x, a.y, b.x, b.y);
     let length = path.length - 1;
     return length <= a.movesLeft;
-  }
-
-  findTarget(a) {
-    var weakest = this.findWeakestTarget(a);
-    console.log('weakest', weakest)
-    if(weakest && this.canWalkTo(a, this.grid.closestEmpty(weakest.x, weakest.y))) {
-      return weakest;
-    }
-    // var strongest = this.findStrongestTarget(a);
-    // if(strongest && this.canWalkTo(a, this.findClosestTile(a, strongest))) {
-    //   return strongest;
-    // }
-    return this.findClosestTarget(a);
   }
 
   roll(a, b) {
@@ -1262,15 +1191,6 @@ class Battle {
 
   undefend(a) {
     a.bonusdefence = 0;
-  }
-
-  pickBestAbility(a, b) {
-    return a.activeAbilities[0];
-  }
-
-  findTargetsInLine(a, b, ability) {
-    return this.grid.inLine(a.x, a.y, b.x, b.y, ability.stats.radius)
-    .filter(t => t.item).map(t => t.item);
   }
 
   isHarmful(b, ability) {
@@ -1593,7 +1513,6 @@ class Battle {
       }
 
       p.then(() => {
-        console.log('action done', actor.movesLeft)
         this.turn.addAction(action);
         if(this.turn.isOver) {
           this.endTurn();
@@ -1705,18 +1624,6 @@ class Battle {
     logger.log(a.bio.name, 'was killed');
   }
 
-  findClosestTile(p, q) {
-    let ability = p.selectedAbility;
-    let range = ability ? ability.stats.range : 20;
-    return this.grid.around(q.x, q.y, range)
-    .filter(t => !t.item)
-    .sort((a, b) => {
-      let d1 = this.grid.steps(a.x, a.y, p.x, p.y);
-      let d2 = this.grid.steps(b.x, b.y, p.x, p.y);
-      return d1 > d2 ? 1 : -1;
-    })[0];
-  }
-
   inRange(a, b, ability) {
     var d = this.grid.distance(a.x, a.y, b.x, b.y);
     ability = ability || a.selectedAbility;
@@ -1799,43 +1706,7 @@ class Battle {
   }
 
   aiAct(a) {
-    var t = this.findClosestTarget(a);
-    a.selectBestAbility(t);
-    console.log('aiacit', a, t)
-    let b = a.selectedAbility;
-    if(!t) return this.endTurn();
-    if(b && t && this.inRange(a, t)) {
-      this.addAction(new Action('use ability', [t], a.selectedAbility.template.id));
-    } else if(a.canMove && t) {
-      var p = this.findClosestTile(a, t);
-      var path = this.grid.path(a.x, a.y, p.x, p.y);
-      path.shift();
-      path.splice(a.movesLeft);
-      var l = path[path.length -1];
-      return this.addAction(new Action('move', [{x: l[0], y: l[1]}]))
-    } else {
-      return this.addAction(new Action('defend'));
-    }
-
-    return;
-    var action = this.inRange(a, t) ? Promise.resolve() : this.walk(a, path);
-    action.then(() => {
-      setTimeout(() => {
-        if(this.inRange(a, t)) {
-          console.log('using ability')
-          this.useAbility(a, [t], a.selectedAbility);
-        } else {
-          var ct = this.findClosestTarget(a);
-          if(ct && this.inRange(a, ct)) {
-            this.useAbility(a, ct);
-          } else {
-            this.defend(a);
-          }
-        }
-        this.endTurn();
-        this.act();
-      }, 500)
-    })
+    return a.routine.act(Action);
   }
 
   act() {
@@ -1852,6 +1723,7 @@ class Battle {
       return this.act();
     }
     if(!a.ai) {
+
       return this.human(a);
     }
     return this.aiAct(a);

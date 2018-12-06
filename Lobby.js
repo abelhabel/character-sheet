@@ -1,3 +1,5 @@
+const icons = require('icons.js');
+const Sprite = require('Sprite.js');
 class User {
   constructor(name, id, activeGames, wins, losses) {
     this.name = name;
@@ -66,8 +68,10 @@ class Lobby {
       'game ready': [],
       'battle action confirmed': [],
       'start spectate': [],
-      'play by post': []
-    }
+      'play by post': [],
+      'human vs ai game': []
+    };
+    this.cursor = new Sprite(icons.find(i => i.bio.name == 'Ability Cursor').bio.sprite);
   }
 
   hide() {
@@ -227,6 +231,31 @@ class Lobby {
     this.trigger('local game');
   }
 
+  createLocalAIGame() {
+    let teams = require('teams.js');
+    let Sprite = require('Sprite.js');
+    let templates = require('monsters.js');
+    let selected;
+    let c = html`<div style='border: 1px solid black;position: fixed; width: 600px; height: 600px; left: 50%; top:50%;transform:translate(-50%,-50%);z-index:2000;'></div>`;
+    teams.forEach(t => {
+      console.log(t)
+      let d = html`<div><p>${t.name}</p></div>`;
+      t.units.forEach(u => {
+        let tpl = templates.find(tp => tp.id == u.templateId);
+        let s = new Sprite(tpl.bio.sprite);
+        s.drawStack(u.stacks);
+        d.appendChild(s.canvas);
+      })
+      d.addEventListener('click', e => {
+        document.body.removeChild(c);
+        this.hide();
+        this.trigger('human vs ai game', t);
+      });
+      c.appendChild(d);
+    })
+    document.body.appendChild(c);
+  }
+
   didJoinGame(data) {
     console.log('didJoinGame', data)
     let game = this.games.find(g => g.id == data.game.id);
@@ -279,11 +308,7 @@ class Lobby {
   renderGame(game) {
     console.log('render game', game)
     let c = document.createElement('div');
-    Object.assign(c.style, {
-      width: '100%',
-      height: '100px',
-      border: '1px solid lightgray'
-    })
+    c.className = 'game'
     if(~this.localUser.activeGames.indexOf(game.id)) {
       let cont = document.createElement('button');
       cont.textContent = 'Continue Game';
@@ -374,19 +399,9 @@ class Lobby {
   }
 
   render() {
+
     let c = document.createElement('div');
-    Object.assign(c.style, {
-      position: 'fixed',
-      zIndex: 1000,
-      left: '50%',
-      top: '50%',
-      transform: 'translate(-50%,-50%)',
-      width: '800px',
-      height: '600px',
-      backgroundColor: 'rgba(0,0,0,0.5)',
-      border: '1px solid gray',
-      color: 'white'
-    })
+    c.id = 'lobby';
     let buttons = document.createElement('div');
     buttons.classList.add('buttons');
 
@@ -402,6 +417,10 @@ class Lobby {
     createLocal.textContent = 'Create Local Game';
     createLocal.addEventListener('click', () => this.createLocalGame(this.localUser));
 
+    let createLocalAI = document.createElement('button');
+    createLocalAI.textContent = 'Create Human vs AI';
+    createLocalAI.addEventListener('click', () => this.createLocalAIGame(this.localUser));
+
     let enter = document.createElement('button');
     enter.textContent = 'Enter';
     enter.addEventListener('click', () => this.enter());
@@ -413,26 +432,72 @@ class Lobby {
     buttons.appendChild(create);
     buttons.appendChild(playByPost);
     buttons.appendChild(createLocal);
+    buttons.appendChild(createLocalAI);
     buttons.appendChild(enter);
     buttons.appendChild(leave);
     let users = document.createElement('div');
     let games = document.createElement('div');
-    Object.assign(users.style, {
-      display: 'inline-block',
-      width: '50%',
-      height: '90%',
-      verticalAlign: 'top'
-    });
-    Object.assign(games.style, {
-      display: 'inline-block',
-      width: '50%',
-      height: '90%',
-      verticalAlign: 'top'
-    })
+    users.className = 'half';
+    games.className = 'half';
     c.appendChild(buttons);
     c.appendChild(users);
     c.appendChild(games);
-    document.body.appendChild(c);
+
+    let outer = document.createElement('div');
+    let shadow = outer.attachShadow({mode: 'open'});
+    let style = html`<style>
+      * {
+        box-sizing: border-box;
+      }
+      #lobby {
+        position: fixed;
+        z-index: 1000;
+        left: 50%;
+        top: 50%;
+        transform: translate(-50%,-50%);
+        width: 100vw;
+        height: 100vh;
+        background-color: rgba(0,0,0,0.5);
+        background-image: url(sheet_of_old_paper_horizontal.png);
+        background-repeat: norepeat;
+        background-size: contain;
+        border: 1px solid gray;
+        color: white;
+        cursor: url(${this.cursor.canvas.toDataURL('image/png')}), auto;
+        padding: 20px;
+      }
+      button {
+        padding: 10px;
+        border: none;
+        font-size: 20px;
+        margin: 4px;
+        box-shadow: 0px 2px 4px -1px rgba(0,0,0,0.5);
+        border-radius: 4px;
+        background-color: rgba(0,0,0,0);
+        cursor: inherit;
+      }
+      button:hover {
+        background-color: rgba(0,0,0,0.1);
+      }
+      .half {
+        display: inline-block;
+        width: 50%;
+        height: 90%;
+        vertical-align: top;
+        padding: 10px;
+      }
+      .game {
+        width: 100%;
+        background-color: rgba(0,0,0,0.1);
+        padding: 5px;
+        border-radius: 8px;
+        box-shadow: -1px 2px 5px -1px #5a5a5a;
+      }
+    </style>`;
+    shadow.appendChild(style);
+    shadow.appendChild(c);
+
+    document.body.appendChild(outer);
 
     this.tags.container = c;
     this.tags.users = users;
@@ -441,6 +506,7 @@ class Lobby {
     this.tags.enter = enter;
     this.tags.leave = leave;
     this.tags.createLocal = createLocal;
+    this.tags.createLocalAI = createLocalAI;
     this.tags.playByPost = playByPost;
     this.update();
   }

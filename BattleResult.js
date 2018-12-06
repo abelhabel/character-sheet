@@ -59,6 +59,7 @@ class BattleResult {
       td {
         width: 33%;
         text-align: center;
+        border-bottom: 1px solid black;
       }
     </style>`;
     let tag = html`<div id='outer'>

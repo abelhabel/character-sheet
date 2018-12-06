@@ -9,6 +9,7 @@ const icons = require('icons.js');
 const specialEffects = require('special-effects.js');
 const AbilityEffect = require('AbilityEffect.js');
 const Sprite = require('Sprite.js');
+const AI = require('AI.js');
 class StatBonus {
   constructor() {
     this.blessing = {
@@ -84,6 +85,7 @@ class Monster {
     this.battle = null;
     this.id = nextId();
     this.ai = false;
+    this.routine = this.ai ? new AI(this, 1) : null;
     this.x = 0;
     this.y = 0;
     this.selections = [];
@@ -121,13 +123,13 @@ class Monster {
     this.abilities = this.createAbilities();
     this.passiveAbilities = [];
     this.activeAbilities = [];
-    this.spells = [];
-    this.attacks = [];
-    this.curses = [];
-    this.blessings = [];
     this._selections = [];
     this._team = '';
-    this.sortAbilities();
+  }
+
+  addAI(level = 1) {
+    this.ai = true;
+    this.routine = new AI(this.battle, this, level);
   }
 
   get team() {
@@ -149,30 +151,20 @@ class Monster {
     });
   }
 
-  sortAbilities() {
-    this.abilities.forEach(a => {
-      if(a.bio.type == 'passive' && a.bio.activation == 'when selected') {
-        this.passiveAbilities.push(a);
-      } else
-      if(a.bio.type == 'active' && a.bio.activation == 'when selected') {
-        this.activeAbilities.push(a);
-      }
-      if(a.stats.source == 'attack') {
-        this.attacks.push(a);
-      }
-      if(a.stats.source == 'spell') {
-        this.spells.push(a);
-      }
-      if(a.stats.source == 'curse') {
-        this.curses.push(a);
-      }
-      if(a.stats.source == 'blessing') {
-        this.blessings.push(a);
-      }
-      // if(a.bio.activation != 'when selected') {
-      //   this.triggers.push(a);
-      // }
-    })
+  get attacks() {
+    return this.abilities.filter(a => a.bio.type == 'active' && a.stats.source == 'attack');
+  }
+
+  get spells() {
+    return this.abilities.filter(a => a.bio.type == 'active' && a.stats.source == 'spell');
+  }
+
+  get attacks() {
+    return this.abilities.filter(a => a.bio.type == 'active' && a.stats.source == 'attack');
+  }
+
+  get damaging() {
+    return this.abilities.filter(a => a.bio.type == 'active' && (a.stats.source == 'spell' || a.stats.source == 'attack'));
   }
 
   get actives() {
@@ -262,11 +254,19 @@ class Monster {
 
   abilityConditionMet(a) {
     if(!a.bio.condition) return true;
-    console.log('abilityConditionMet', this.bio.name, a.bio.name)
     if(a.stats.targetFamily == 'self' && a.bio.condition == 'flanked') {
       let flanks = this.battle ? this.battle.flanks(this) : 0;
       if(flanks < 2) return false;
       return true;
+    }
+    if(a.stats.targetFamily == 'self' && a.bio.condition == 'wounded') {
+      return this.totalHealth < this.maxHealth/2;
+    }
+    if(a.stats.targetFamily == 'self' && a.bio.condition == 'near death') {
+      return this.totalHealth < this.maxHealth/10;
+    }
+    if(a.stats.targetFamily == 'self' && a.bio.condition == 'full health') {
+      return this.totalHealth >= this.maxHealth;
     }
     if(a.stats.targetFamily == 'enemies' && a.bio.condition == 'flanking') {
       let flanks = this.battle ? this.battle.flanks(this) : 0;
@@ -365,7 +365,6 @@ class Monster {
       (a.stats.source == 'attack' || a.stats.source == 'spell') &&
       this.canUseAbility(a)
     });
-    console.log('selecting ability', a)
     this.selectedAbility != a && this.selectAbility(a);
   }
 
@@ -650,7 +649,7 @@ class Monster {
     })
     m.passives.forEach(a => {
       if(a.stats.targetFamily != 'self') return;
-      // if(!a.owner.abilityConditionMet(a)) return;
+      if(!a.owner.abilityConditionMet(a)) return;
       var c = a.effectSprite.canvas.clone();
       c.addEventListener('click', e => {
         this.drawEffectStats({ability: a, power: a.power}, tag.querySelector('#details'));
@@ -718,7 +717,7 @@ class Monster {
       range, effect, duration, target, targetFamily, stacks
     } = a.stats;
     tag.style.whiteSpace = 'pre-line';
-    let {activation, type, name, description} = a.bio;
+    let {activation, type, name, description, condition} = a.bio;
     let stat = source == 'blessing' || source == 'curse' ? attribute : 'health';
     let act = type == 'trigger' ? `\n<span class='bold'>Triggers</span>: ${activation}` : '';
     var text = `<span class='bold'>Name</span>: ${name}
@@ -731,6 +730,9 @@ class Monster {
     <span class='bold'>Cost</span>: ${resourceCost} ${resourceType}
     <span class='bold'>Range</span>: ${range}`;
     let time = duration ? ` for ${duration} rounds` : '';
+    if(condition) {
+      text += `\n<span class='bold'>Condition</span>: ${condition}`
+    }
     if(multiplier) {
       text += `\n<span class='bold'>Effects</span>: (${minPower}-${maxPower}) * ${multiplier}% to ${stat}${time} (max stacks: ${stacks})`;
       if(effect) {

@@ -63,9 +63,9 @@ function require(name) {
 Module.modules = {};
 Module.loaders = [];
   Module.onLoad(['DungeonCrawl_ProjectUtumnoTileset.png',
-  'abilities.js', 'monsters.js', 'terrains.js', 'icons.js','animations.js', 'seven.js',
+  'abilities.js', 'monsters.js', 'terrains.js', 'icons.js','animations.js', 'seven.js', 'teams.js',
   'Canvas.js', 'Sprite.js', 'Slider.js', 'Animation.js', 'CS.js',
-  'heroes-like.js', 'animation-tpl.js', 'ability-tpl.js', 'terrain-tpl.js', 'icon-tpl.js'], () => {
+  'heroes-like.js', 'animation-tpl.js', 'ability-tpl.js', 'terrain-tpl.js', 'icon-tpl.js', 'team-tpl.js'], () => {
     console.log('all loaded')
     const CS = require('CS.js');
     const Canvas = require('Canvas.js');
@@ -102,6 +102,12 @@ Module.loaders = [];
     function loadIcons() {
       let terrain = require("icon-tpl.js");
       var cs  = new CS(terrain, document.body);
+      cs.render();
+    }
+
+    function loadTeams() {
+      let teams = require("team-tpl.js");
+      var cs  = new CS(teams, document.body);
       cs.render();
     }
 
@@ -176,6 +182,9 @@ Module.loaders = [];
         break;
       case 'animations':
         loadAnimations();
+        break;
+      case 'teams':
+        loadTeams();
         break;
       default:
         loadHeroes();
