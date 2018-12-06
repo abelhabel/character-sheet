@@ -352,14 +352,11 @@ class Lobby {
   }
 
   renderUser(user) {
-    let c = document.createElement('div');
-    Object.assign(c.style, {
-      width: '100%',
-      border: '1px solid lightgray',
-    })
-    c.innerHTML = `<span>
-      ${user.name} | wins ${user.wins} | losses ${user.losses}
-    </span>`;
+    let c = html`<div class='user'>
+      <span>
+        ${user.name} | wins ${user.wins} | losses ${user.losses}
+      </span>
+    </div>`;
     return c;
   }
 
@@ -470,6 +467,7 @@ class Lobby {
         padding: 10px;
         border: none;
         font-size: 20px;
+        font-weight: bold;
         margin: 4px;
         box-shadow: 0px 2px 4px -1px rgba(0,0,0,0.5);
         border-radius: 4px;
@@ -487,6 +485,13 @@ class Lobby {
         padding: 10px;
       }
       .game {
+        width: 100%;
+        background-color: rgba(0,0,0,0.1);
+        padding: 5px;
+        border-radius: 8px;
+        box-shadow: -1px 2px 5px -1px #5a5a5a;
+      }
+      .user {
         width: 100%;
         background-color: rgba(0,0,0,0.1);
         padding: 5px;
