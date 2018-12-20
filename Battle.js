@@ -583,8 +583,6 @@ class Battle {
           return true;
         } else {
           c.unhightlightCanvas();
-          console.log('removeDamagePreview')
-
         }
 
       })
@@ -1108,6 +1106,19 @@ class Battle {
     this.monsterCards.forEach(c => c.render(container));
   }
 
+  playAbilityAnimation(a, b, ability) {
+    console.log(ability)
+    if(ability.animation.template) {
+      let {sprite, template} = ability.animation;
+      let anim = new Animation(a.x * this.tw, a.y*this.th, b.x*this.tw, b.y*this.th, sprite, template.stats);
+      console.log(anim)
+      return anim.playAndEnd(this.animationCanvas)
+      .then(() => this.playHitAnimation(a, b, ability))
+      .catch(e => console.log('animation error', e))
+    }
+    return this.playHitAnimation(a, b, ability);
+  }
+
   playHitAnimation(a, b, ability) {
     return new Promise((resolve, reject) => {
       this.sounds.attack.play();
@@ -1262,6 +1273,42 @@ class Battle {
     if(!b.alive) this.kill(b);
   }
 
+  vigorMultiplier(a, b) {
+    let d = this.grid.squareRadius(a.x, a.y, b.x, b.y);
+    let m = 1;
+    if(a.hasVigor('intimidating') && d <= 1) {
+      m += 0.25;
+    }
+    if(b.hasVigor('prepared') && d <= 1) {
+      m -= 0.25;
+    }
+    if(a.hasVigor('precise') && d > 5) {
+      m += 0.25;
+    }
+    if(b.hasVigor('hidden') && d > 5) {
+      m -= 0.25;
+    }
+    return m;
+  }
+
+  ailmentMultiplier(a, b) {
+    let d = this.grid.squareRadius(a.x, a.y, b.x, b.y);
+    let m = 1;
+    if(b.hasAilment('overwhelmed') && d <= 1) {
+      m += 0.25;
+    }
+    if(a.hasAilment('meek') && d <= 1) {
+      m -= 0.25;
+    }
+    if(b.hasAilment('exposed') && d > 5) {
+      m += 0.25;
+    }
+    if(a.hasAilment('rushed') && d > 5) {
+      m -= 0.25;
+    }
+    return m;
+  }
+
   attackRoll(a, b, ability) {
     let df = b.totalStat('defence');
     let at = a.totalStat('attack');
@@ -1271,12 +1318,14 @@ class Battle {
     let flankMultiplier = 1 + (flanks / 5);
     let abilityDamage = ability.roll(bonusDamage);
     let multiplier = 1;
+    let vigorMultiplier = this.vigorMultiplier(a, b);
+    let ailmentMultiplier = this.ailmentMultiplier(a, b);
     if(at > df) {
       multiplier = 1 + (at - df)/10;
     } else if(df > at) {
       multiplier = Math.max(0.1, 1 + (at - df)/20);
     }
-    let d = Math.ceil(abilityDamage * stacks * multiplier * flankMultiplier);
+    let d = Math.ceil(abilityDamage * stacks * multiplier * flankMultiplier * vigorMultiplier * ailmentMultiplier);
     return d;
   }
 
@@ -1289,12 +1338,14 @@ class Battle {
     let flankMultiplier = 1 + (flanks / 5);
     let abilityDamage = ability.minPower(bonusDamage);
     let multiplier = 1;
+    let vigorMultiplier = this.vigorMultiplier(a, b);
+    let ailmentMultiplier = this.ailmentMultiplier(a, b);
     if(at > df) {
       multiplier = 1 + (at - df)/10;
     } else if(df > at) {
       multiplier = Math.max(0.1, 1 + (at - df)/20);
     }
-    let d = Math.ceil(abilityDamage * stacks * multiplier * flankMultiplier);
+    let d = Math.ceil(abilityDamage * stacks * multiplier * flankMultiplier * vigorMultiplier * ailmentMultiplier);
     return d;
   }
 
@@ -1307,12 +1358,14 @@ class Battle {
     let flankMultiplier = 1 + (flanks / 5);
     let abilityDamage = ability.maxPower(bonusDamage);
     let multiplier = 1;
+    let vigorMultiplier = this.vigorMultiplier(a, b);
+    let ailmentMultiplier = this.ailmentMultiplier(a, b);
     if(at > df) {
       multiplier = 1 + (at - df)/10;
     } else if(df > at) {
       multiplier = Math.max(0.1, 1 + (at - df)/20);
     }
-    let d = Math.ceil(abilityDamage * stacks * multiplier * flankMultiplier);
+    let d = Math.ceil(abilityDamage * stacks * multiplier * flankMultiplier * vigorMultiplier * ailmentMultiplier);
     return d;
   }
 
@@ -1384,7 +1437,7 @@ class Battle {
     a.activeEffects.forEach(e => {
       var {source} = e.ability.stats;
       if(e.ability.stats.source == 'attack' || e.ability.stats.source == 'spell') {
-        this.dealDamage(e.source, a, e.power, e.ability, true);
+        e.power && this.dealDamage(e.source, a, e.power, e.ability, true);
       }
     })
 
@@ -1570,7 +1623,7 @@ class Battle {
             if(ability.stats.special != 'giveEffectAsAbility' && ability.stats.effect) {
               this.useAbility(a, [t], ability.stats.effect, true, power);
             }
-            return this.playHitAnimation(a, t, ability);
+            return this.playAbilityAnimation(a, t, ability);
           });
           let power = ability.roll(a.totalStat('damage'));
           let special = specialEffects[ability.stats.special];

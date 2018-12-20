@@ -42,6 +42,7 @@ class Ability {
       source: t.stats.source,
       attribute: t.stats.attribute,
       ailment: t.stats.ailment,
+      vigor: t.stats.vigor,
       special: t.stats.special,
       selections: t.stats.selections,
       summon: t.stats.summon,
@@ -50,7 +51,7 @@ class Ability {
     let bg = icons.find(i => i.bio.name == 'Ability Background');
     this.sprite = new CompositeSprite([icons.find(i => i.bio.name == 'Ability Background').bio.sprite, this.template.bio.sprite]);
     this.animation = {
-      sprite: t.animation && t.animation.sprite,
+      sprite: t.animation && t.animation.sprite && new Sprite(t.animation.sprite),
       template: t.animation && t.animation.template
     }
     this._animation = null;

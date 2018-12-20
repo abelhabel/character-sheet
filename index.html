@@ -135,14 +135,19 @@ Module.loaders = [];
       Object.assign(c.style, {
         position: 'fixed',
         top: '200px',
-        right: '0px'
+        right: '10px'
       });
       canvas.canvas.style.backgroundColor = 'slategray';
       canvas.mount(c);
       document.body.appendChild(c);
-      var animation = new Animation(0, 5*th, canvas.w, 5*th, selectedSprite, {});
+      var animation = new Animation(5*tw, 5*th, canvas.w, 5*th, selectedSprite, {});
       animation.on('end', () => {
         console.log('animation ended')
+      })
+      canvas.canvas.addEventListener('click', e => {
+        animation.ex = e.offsetX;
+        animation.ey = e.offsetY;
+        animation.reset();
       })
       window.animation = animation;
       let template = require("animation-tpl.js");

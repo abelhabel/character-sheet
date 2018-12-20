@@ -233,9 +233,30 @@ var tpl = {
         {
           name: 'Ailment',
           type: 'select',
-          values: ['stunned', 'held'],
+          values: [
+            '',
+            'stunned', //unable to take any action
+            'held', //unable to move,
+            'overwhelmed', //25% increased damage taken from adjacent enemies
+            'meekened', //25% reduced damage dealt to adjacent enemies
+            'exposed', //25% increased damage taken from enemies far away
+            'rushed', //25% reduced damage dealt to enemies far away,
+          ],
           initial: '',
           exportAs: 'ailment'
+        },
+        {
+          name: 'Vigor',
+          type: 'select',
+          values: [
+            '',
+            'intimidating', //25% increased damage dealt to adjacent enemies
+            'prepared', //25% reduced damage taken from adjacent enemies
+            'precise', //25% increased damage dealt to enemies far away
+            'hidden', //25% reduced damage taken from enemies far away,
+          ],
+          initial: '',
+          exportAs: 'vigor'
         },
         {
           name: 'Special',

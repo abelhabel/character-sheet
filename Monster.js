@@ -232,6 +232,14 @@ class Monster {
     }
   }
 
+  hasVigor(name) {
+    return this.activeEffects.find(e => e.ability.stats.vigor == name);
+  }
+
+  hasAilment(name) {
+    return this.activeEffects.find(e => e.ability.stats.ailment == name);
+  }
+
   addEffect(source, ability, power, triggered, triggeredPower, positions, special) {
     let e = this.effects.filter(e => e.ability.bio.name == ability.bio.name);
     if(e && e.length >= ability.stats.stacks ) {
@@ -695,7 +703,7 @@ class Monster {
     let a = e.ability;
     let {source, attribute, element, minPower,
       maxPower, multiplier, resourceCost, resourceType,
-      range, effect, duration
+      range, effect, duration, ailment, vigor
     } = a.stats;
     tag.style.whiteSpace = 'pre-line';
     let {activation, type, name} = a.bio;
@@ -707,7 +715,8 @@ class Monster {
     <span class='bold'>Element</span>: ${element}
     <span class='bold'>Duration</span>: ${time}
     <span class='bold'>Effect</span>: ${e.power} to ${attribute}`;
-
+    if(ailment) text += `\n<span class='bold'>Ailment</span>: ${ailment}`;
+    if(vigor) text += `\n<span class='bold'>Vigor</span>: ${vigor}`;
     tag.innerHTML = text;
   }
 
