@@ -39,6 +39,12 @@ var tpl = {
           exportAs: 'family',
         },
         {
+          name: 'Summon only',
+          type: 'binary',
+          initial: false,
+          exportAs: 'summonOnly',
+        },
+        {
           name: 'Cost',
           type: 'input',
           initial: 10,

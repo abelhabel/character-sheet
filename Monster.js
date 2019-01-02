@@ -95,6 +95,7 @@ class Monster {
       orientation: t.bio.orientation || 'left',
       name: t.bio.name,
       family: t.bio.family,
+      summonOnly: t.bio.summonOnly || false,
       cost: t.bio.cost,
       maxStacks: t.bio.maxStacks || 1
     };
@@ -121,8 +122,6 @@ class Monster {
     this.tilesMoved = 0;
     this.effects = [];
     this.abilities = this.createAbilities();
-    this.passiveAbilities = [];
-    this.activeAbilities = [];
     this._selections = [];
     this._team = '';
   }

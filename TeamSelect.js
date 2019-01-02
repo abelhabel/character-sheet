@@ -10,7 +10,10 @@ function guid() {
 }
 class TeamSelect  {
   constructor(items, container, w, h, tw, th, cash, maxTeams, done) {
-    this.items = items;
+    this.items = items.filter(m => {
+      console.log(m)
+      return !m.bio.summonOnly
+    });;
     this.w = w;
     this.h = h;
     this.tw = tw;
@@ -56,7 +59,7 @@ class TeamSelect  {
     this.teams = [];
     this.images = {};
     var loading = {};
-    this.imagesLoader = Promise.all(items.map(item => {
+    this.imagesLoader = Promise.all(this.items.map(item => {
       var src = item.bio.sprite.spritesheet;
       if(loading[src]) return Promise.resolve();
       loading[src] = true;
@@ -74,7 +77,7 @@ class TeamSelect  {
       return images;
     })
     .then(images => {
-      this.monsterCards = items.map(item => {
+      this.monsterCards = this.items.map(item => {
         var monster = new Monster(item);
         var out = {
           item: item,
@@ -135,7 +138,7 @@ class TeamSelect  {
     o.textContent = 'All';
     familySelect.appendChild(o);
     var families = [];
-    items.forEach(item => {
+    this.items.forEach(item => {
       if(~families.indexOf(item.bio.family)) return;
       families.push(item.bio.family);
       let o = document.createElement('option');

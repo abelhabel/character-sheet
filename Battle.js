@@ -448,7 +448,7 @@ class Battle {
         }
       }
       a._select({x,y});
-      if(a.selectedAbility && targets.validTargets && a._selections.length == selectionsRequired) {
+      if(a.selectedAbility && targets.validTargets && a._selections.length == selectionsRequired && this.inRange(a, t)) {
         let action = new Action('use ability', a._selections, a.selectedAbility.template.id);
         this.addAction(action)
         .catch(e => {

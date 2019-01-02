@@ -161,9 +161,10 @@ module.exports.manaThief = {
 };
 
 module.exports.blink = {
-  when: 'per target',
+  when: 'per use',
   fn: function (battle, caster, target, ability, power, triggeredPower, selections) {
     let tile = selections[0];
+    console.log('blink', tile.x, tile.y, caster.x, caster.y)
     battle.grid.remove(caster.x, caster.y);
     caster.x = tile.x;
     caster.y = tile.y;
@@ -189,19 +190,15 @@ module.exports.polymorph = {
   fn: function (battle, caster, target, ability, power, triggeredPower, selections) {
     let rand = battle.roll(0, monsters.length-1);
     let monster = monsters[rand];
+    let stacks = Math.floor(target.totalHealth / monster.stats.health);
     Object.assign(target.bio, monster.bio);
     Object.assign(target.stats, monster.stats);
     Object.assign(target.abilities, monster.abilities);
+    target.damageTaken = 0;
+    target.initialStacks = 1;
+    target.addStack(stacks);
     target.abilities = target.createAbilities();
     target.template = monster;
-    target.passiveAbilities = [];
-    target.activeAbilities = [];
-    target.triggers = [];
-    target.spells = [];
-    target.attacks = [];
-    target.curses = [];
-    target.blessings = [];
-    target.sortAbilities();
   }
 };
 
