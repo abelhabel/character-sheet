@@ -64,7 +64,7 @@ class R extends Array {
 
   add(actors) {
     actors.sort((a, b) => {
-      return a.template.id < b.template.id ? -1 : 1;
+      return a.bio.name < b.bio.name ? -1 : 1;
     })
     let ca = this.actor;
     this.push.apply(this, actors);
