@@ -73,7 +73,7 @@ class R extends Array {
       if(a == ca) return -1;
       if(b == ca) return 1;
       if(a.totalStat('initiative') == b.totalStat('initiative')) {
-        return a.template.id < b.template.id < -1 : 1;
+        return a.template.id < b.template.id ? -1 : 1;
       }
       return a.totalStat('initiative') > b.totalStat('initiative') ? -1 : 1;
     });
