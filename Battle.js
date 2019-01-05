@@ -63,15 +63,18 @@ class R extends Array {
   }
 
   add(actors) {
-    actors.sort((a, b) => {
-      return a.bio.name < b.bio.name ? -1 : 1;
-    })
+    // actors.sort((a, b) => {
+    //   return a.bio.name < b.bio.name ? -1 : 1;
+    // })
     let ca = this.actor;
     this.push.apply(this, actors);
     this.current.willAct.push.apply(this.current.willAct, actors);
     this.current.willAct.sort((a, b) => {
       if(a == ca) return -1;
       if(b == ca) return 1;
+      if(a.totalStat('initiative') == b.totalStat('initiative')) {
+        return a.template.id < b.template.id < -1 : 1;
+      }
       return a.totalStat('initiative') > b.totalStat('initiative') ? -1 : 1;
     });
   }
