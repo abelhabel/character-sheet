@@ -23,6 +23,7 @@ const files = {
   'icons.js': () => wrap.pre() + require('./icons.js')() + wrap.post('icons.js'),
   'teams.js': () => wrap.pre() + require('./teams.js')() + wrap.post('teams.js'),
   'animations.js': () => wrap.pre() + require('./animations.js')() + wrap.post('animations.js'),
+  'leaders.js': () => wrap.pre() + require('./leaders.js')() + wrap.post('leaders.js'),
   'socket-worker.js': fs.readFileSync(__dirname + '/socket-worker.js'),
   'init-battle.js': fs.readFileSync(__dirname + '/init-battle.js'),
   'init-arena.js': fs.readFileSync(__dirname + '/init-arena.js'),
@@ -67,6 +68,7 @@ loadFile('animation-tpl.js');
 loadFile('heroes-like.js');
 loadFile('icon-tpl.js');
 loadFile('team-tpl.js');
+loadFile('leader-tpl.js');
 loadFile('pathfinding.js');
 loadFile('index.html');
 loadFile('battle.html');
@@ -122,7 +124,9 @@ const server = http.createServer(function(req, res) {
   }
   if(name == 'saveMonster') {
     return saveData(req, res, 'monsters', url);
-
+  }
+  if(name == 'saveLeader') {
+    return saveData(req, res, 'leaders', url);
   }
   if(name == 'saveAbility') {
     return saveData(req, res, 'abilities', url);

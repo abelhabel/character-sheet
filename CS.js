@@ -91,15 +91,14 @@ class CS {
     val.textContent = currentVal;
     this.setState(c, item, currentVal);
     val.addEventListener('click', (e) => {
-      console.log(e)
-
+      let cost = item.cost || 1;
       let inc = item.step || 1;
       if(e.shiftKey) inc *= 10;
       let nextVal = 0;
       if(e.offsetX < 20) {
         inc *= -1;
       }
-      if(this.drains[c.pool] + inc > this.initialPools[c.pool]) {
+      if(this.drains[c.pool] + (inc * cost) > this.initialPools[c.pool]) {
         console.log('No more points')
         return;
       }
@@ -109,7 +108,7 @@ class CS {
       if(nextVal == currentVal) return;
       currentVal = nextVal;
       this.setState(c, item, currentVal);
-      this.drains[c.pool] += inc;
+      this.drains[c.pool] += (inc * cost);
       val.textContent = currentVal;
     })
 
@@ -512,6 +511,9 @@ class CS {
     this.categories.forEach(c => {
       var n = document.createElement('h2');
       n.textContent = c.name;
+      if(c.pool) {
+        n.textContent += ` ${this.drains[c.pool] / this.initialPools[c.pool]}`
+      }
       d.appendChild(n);
       var o = document.createElement('div');
       d.appendChild(o);

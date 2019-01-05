@@ -262,6 +262,9 @@ module.exports = function(server) {
     }
 
     selectTeam(gameId, user, team) {
+      team.units.sort((a, b) => {
+        return a.templateId < b.templateId ? -1 : 1;
+      });
       this.loadGame(gameId)
       .then(game => {
         if(!game) {

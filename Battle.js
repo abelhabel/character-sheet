@@ -451,6 +451,9 @@ class Battle {
       if(a.selectedAbility && targets.validTargets && a._selections.length == selectionsRequired && this.inRange(a, t)) {
         let action = new Action('use ability', a._selections, a.selectedAbility.template.id);
         this.addAction(action)
+        .then(() => {
+          a.selections = [];
+        })
         .catch(e => {
           console.log('action error', e)
         });

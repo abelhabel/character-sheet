@@ -63,9 +63,9 @@ function require(name) {
 Module.modules = {};
 Module.loaders = [];
   Module.onLoad(['DungeonCrawl_ProjectUtumnoTileset.png',
-  'abilities.js', 'monsters.js', 'terrains.js', 'icons.js','animations.js', 'seven.js', 'teams.js',
+  'abilities.js', 'monsters.js', 'terrains.js', 'icons.js','animations.js', 'seven.js', 'teams.js', 'leaders.js',
   'Canvas.js', 'Sprite.js', 'Slider.js', 'Animation.js', 'CS.js',
-  'heroes-like.js', 'animation-tpl.js', 'ability-tpl.js', 'terrain-tpl.js', 'icon-tpl.js', 'team-tpl.js'], () => {
+  'heroes-like.js', 'animation-tpl.js', 'ability-tpl.js', 'terrain-tpl.js', 'icon-tpl.js', 'team-tpl.js', 'leader-tpl.js'], () => {
     console.log('all loaded')
     const CS = require('CS.js');
     const Canvas = require('Canvas.js');
@@ -84,6 +84,15 @@ Module.loaders = [];
     function loadHeroes() {
       let heroes = require("heroes-like.js")
       var cs = new CS(heroes, document.body);
+      cs.render();
+    }
+
+    function loadLeaders() {
+      let heroes = require("leader-tpl.js")
+      var pools = {
+        stats: 30,
+      };
+      var cs = new CS(heroes, document.body, pools);
       cs.render();
     }
 
@@ -172,6 +181,9 @@ Module.loaders = [];
     switch(part) {
       case 'heroes':
         loadHeroes();
+        break;
+      case 'leaders':
+        loadLeaders();
         break;
       case 'seven':
         loadSeven();

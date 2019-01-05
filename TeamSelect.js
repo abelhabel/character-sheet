@@ -10,10 +10,7 @@ function guid() {
 }
 class TeamSelect  {
   constructor(items, container, w, h, tw, th, cash, maxTeams, done) {
-    this.items = items.filter(m => {
-      console.log(m)
-      return !m.bio.summonOnly
-    });;
+    this.items = items.filter(m => !m.bio.summonOnly);
     this.w = w;
     this.h = h;
     this.tw = tw;
