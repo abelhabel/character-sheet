@@ -153,7 +153,14 @@ class Lobby {
     let list = games.filter(u => !this.games.find(b => b.id == u.id));
     list.forEach(g => {
       let game = Game.create(g);
-      game.users = g.users.map(u => User.create(u));
+      g.users.forEach(u => {
+        if(!u) return;
+        let user = User.create(u)
+        game.users.push(user);
+      });
+      if(!g.users.length) {
+        return this.stopGame(game);
+      }
       this.games.push(game);
     });
     this.update();
