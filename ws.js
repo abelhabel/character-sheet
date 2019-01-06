@@ -336,7 +336,7 @@ module.exports = function(server) {
       }
       this.users.splice(index, 1);
       this.games.forEach(g => {
-        if(!g) return;
+        if(!g || !g.owner) return;
         if(g.type == 'remote' && g.owner.id == user.id) {
           this.stopGame(g.id);
         }
