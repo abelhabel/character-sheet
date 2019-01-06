@@ -342,6 +342,7 @@ module.exports = function(server) {
         }
       })
       this.games.forEach(g => {
+        if(!g || !g.owner) return;
         if(g.type == 'play by post') return;
         g.teams = g.teams.filter(t => t.user.id != user.id);
         g.users = g.users.filter(u => u.id != user.id);
