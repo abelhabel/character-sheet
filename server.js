@@ -60,6 +60,8 @@ loadFile('Animation.js');
 loadFile('AI.js');
 loadFile('TeamSelect.js');
 loadFile('BattleResult.js');
+loadFile('BattleMenu.js');
+loadFile('Menu.js');
 loadFile('seven.js');
 loadFile('special-effects.js');
 loadFile('ability-tpl.js');
@@ -82,6 +84,7 @@ loadFile('sheet_of_old_paper.png');
 loadFile('sheet_of_old_paper_horizontal.png');
 loadFile('spellbookForFlare.png');
 loadFile('Hell2.jpg');
+loadFile('Aclonica.ttf');
 
 function saveData(req, res, folder, url) {
   let id = url.searchParams.get('id') ||  guid();
@@ -120,7 +123,7 @@ const server = http.createServer(function(req, res) {
     if(typeof files[name] == 'function') {
       return res.end(files[name]());
     }
-    return res.end(files[name]);
+    return res.end(files[name], 'binary');
   }
   if(name == 'saveMonster') {
     return saveData(req, res, 'monsters', url);

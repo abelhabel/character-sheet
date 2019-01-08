@@ -143,6 +143,10 @@ class Monster {
     this._selections.push(p);
   }
 
+  _deselect() {
+    this._selections = [];
+  }
+
   createAbilities() {
     return this.abilities.abilities.map(name => {
       let a = abilities.find(c => c.bio.name == name);
@@ -163,7 +167,7 @@ class Monster {
   }
 
   get damaging() {
-    return this.abilities.filter(a => a.bio.type == 'active' && (a.stats.source == 'spell' || a.stats.source == 'attack'));
+    return this.abilities.filter(a => a.bio.type == 'active' && (a.stats.source == 'spell' || a.stats.source == 'attack') && a.stats.multiplier);
   }
 
   get actives() {

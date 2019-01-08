@@ -120,7 +120,7 @@ const socket = new Emitter();
 Module.onLoad(['DungeonCrawl_ProjectUtumnoTileset.png', 'Hell2.jpg',
 'monsters.js', 'abilities.js', 'terrains.js', 'arenas.js', 'icons.js', 'animations.js', 'teams.js',
 'special-effects.js', 'Logger.js', 'Rand.js', 'Canvas.js', 'Sprite.js', 'CompositeSprite.js', 'AbilityEffect.js', 'Animation.js',
-'PositionList2d.js', 'pathfinding.js',  'Ability.js', 'AI.js', 'Monster.js', 'Terrain.js',
+'PositionList2d.js', 'pathfinding.js',  'Ability.js', 'AI.js', 'Monster.js', 'Terrain.js', 'Menu.js', 'BattleMenu.js',
 'Arena.js', 'MonsterCard.js', 'Lobby.js', 'TeamSelect.js', 'BattleResult.js', 'Battle.js', ], () => {
   const aiTeams = require('teams.js');
   const Lobby = require('Lobby.js');

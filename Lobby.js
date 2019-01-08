@@ -1,5 +1,6 @@
 const icons = require('icons.js');
 const Sprite = require('Sprite.js');
+const Menu = require('Menu.js');
 class User {
   constructor(name, id, activeGames, wins, losses) {
     this.name = name;
@@ -243,9 +244,37 @@ class Lobby {
     let Sprite = require('Sprite.js');
     let templates = require('monsters.js');
     let selected;
-    let c = html`<div style='border: 1px solid black;position: fixed; width: 600px; height: 600px; left: 50%; top:50%;transform:translate(-50%,-50%);z-index:2000;'></div>`;
+    let style = html`<style>
+      .outer {
+        color: black;
+        border: 1px solid black;
+        position: absolute;
+        width: 600px;
+        height: 600px;
+        left: 50%;
+        top:50%;
+        transform:translate(-50%,-50%);
+        z-index:2000;
+      }
+      .title {
+        font-size:24px;
+      }
+      #close-team-select {
+        position: absolute;
+        top: 10px;
+        right: 10px;
+        font-weight: bold;
+      }
+    </style>`
+    let c = html`<div class='outer'>
+      <div id='close-team-select'style=''>Close</div>
+      <div class='title'>Pick team to play against</div>
+    </div>`;
+    let o = html`<span></span>`;
+    let shadow = o.attachShadow({mode: 'open'});
+    shadow.appendChild(style);
+    shadow.appendChild(c);
     teams.forEach(t => {
-      console.log(t)
       let d = html`<div><p>${t.name}</p></div>`;
       t.units.forEach(u => {
         let tpl = templates.find(tp => tp.id == u.templateId);
@@ -254,13 +283,14 @@ class Lobby {
         d.appendChild(s.canvas);
       })
       d.addEventListener('click', e => {
-        document.body.removeChild(c);
+        this.tags.container.removeChild(o);
         this.hide();
         this.trigger('human vs ai game', t);
       });
       c.appendChild(d);
     })
-    document.body.appendChild(c);
+    c.querySelector('#close-team-select').addEventListener('click', e => this.tags.container.removeChild(o));
+    this.tags.container.appendChild(o);
   }
 
   didJoinGame(data) {
@@ -368,17 +398,6 @@ class Lobby {
   }
 
   update() {
-    if(this.localUser) {
-      this.tags.enter.style.display = 'none';
-      this.tags.leave.style.display = 'inline-block';
-      this.tags.create.style.display = 'inline-block';
-      this.tags.playByPost.style.display = 'inline-block';
-    } else {
-      this.tags.enter.style.display = 'inline-block';
-      this.tags.create.style.display = 'none';
-      this.tags.playByPost.style.display = 'none';
-      this.tags.leave.style.display = 'none';
-    }
     this.tags.games.innerHTML = '';
     this.games.filter(g => {
       if(g.type == 'play by post' && g.full && !g.users.find(u => u.id == this.localUser.id)) {
@@ -391,10 +410,6 @@ class Lobby {
       let tag = this.renderGame(g);
       this.tags.games.appendChild(tag);
     })
-    // this.localUser && this.localUser.activeGames.forEach(g => {
-    //   let tag = this.renderActiveGame(g);
-    //   this.tags.games.appendChild(tag);
-    // })
     this.tags.users.innerHTML = '';
     this.users.forEach(g => {
       let tag = this.renderUser(g);
@@ -406,44 +421,64 @@ class Lobby {
 
     let c = document.createElement('div');
     c.id = 'lobby';
-    let buttons = document.createElement('div');
-    buttons.classList.add('buttons');
 
-    let create = document.createElement('button');
-    create.textContent = 'Create Multiplayer Game';
-    create.addEventListener('click', () => this.createGame(this.localUser));
+    let menu = new Menu([
+      {
+        text: 'Log In',
+        fn: (e, item) => {
+          this.enter();
+          menu.hide(item);
+          menu.show(menu.items[1]);
+          menu.show(menu.items[2].items[2]);
+          menu.show(menu.items[2].items[3]);
+        }
+      },
+      {
+        text: 'Log Out',
+        hidden: true,
+        fn: (e, item) => {
+          this.leave();
+          menu.hide(item);
+          menu.show(menu.items[0]);
+          menu.hide(menu.items[2].items[2]);
+          menu.hide(menu.items[2].items[3]);
+        }
+      },
+      {
+        text: 'New Game',
+        open: false,
+        items: [
+          {
+            text: 'Human vs AI',
+            items: [
+              {
+                text: 'Easy',
+                fn: () => this.createLocalAIGame(this.localUser, 'easy'),
+              }
+            ]
+          },
+          {
+            text: 'Local Multiplayer',
+            fn: () => this.createLocalGame(this.localUser)
+          },
+          {
+            text: 'Live Multiplayer',
+            hidden: true,
+            fn: () => this.createGame(this.localUser)
+          },
+          {
+            text: 'Play By Post',
+            hidden: true,
+            fn: () => this.createPlayByPostGame(this.localUser)
+          }
+        ]
+      }
+    ]);
 
-    let playByPost = document.createElement('button');
-    playByPost.textContent = 'Create Play By Post Game';
-    playByPost.addEventListener('click', () => this.createPlayByPostGame(this.localUser));
-
-    let createLocal = document.createElement('button');
-    createLocal.textContent = 'Create Local Game';
-    createLocal.addEventListener('click', () => this.createLocalGame(this.localUser));
-
-    let createLocalAI = document.createElement('button');
-    createLocalAI.textContent = 'Create Human vs AI';
-    createLocalAI.addEventListener('click', () => this.createLocalAIGame(this.localUser));
-
-    let enter = document.createElement('button');
-    enter.textContent = 'Enter';
-    enter.addEventListener('click', () => this.enter());
-
-    let leave = document.createElement('button');
-    leave.textContent = 'Leave';
-    leave.addEventListener('click', () => this.leave());
-
-    buttons.appendChild(create);
-    buttons.appendChild(playByPost);
-    buttons.appendChild(createLocal);
-    buttons.appendChild(createLocalAI);
-    buttons.appendChild(enter);
-    buttons.appendChild(leave);
     let users = document.createElement('div');
     let games = document.createElement('div');
     users.className = 'half';
     games.className = 'half';
-    c.appendChild(buttons);
     c.appendChild(users);
     c.appendChild(games);
 
@@ -456,14 +491,10 @@ class Lobby {
       #lobby {
         position: fixed;
         z-index: 1000;
-        left: 50%;
-        top: 50%;
-        transform: translate(-50%,-50%);
         width: 100vw;
         height: 100vh;
         background-color: rgba(0,0,0,0.5);
         background-image: url(sheet_of_old_paper_horizontal.png);
-        background-repeat: norepeat;
         background-size: contain;
         border: 1px solid gray;
         color: white;
@@ -514,12 +545,8 @@ class Lobby {
     this.tags.container = c;
     this.tags.users = users;
     this.tags.games = games;
-    this.tags.create = create;
-    this.tags.enter = enter;
-    this.tags.leave = leave;
-    this.tags.createLocal = createLocal;
-    this.tags.createLocalAI = createLocalAI;
-    this.tags.playByPost = playByPost;
+
+    this.tags.container.appendChild(menu.render());
     this.update();
   }
 

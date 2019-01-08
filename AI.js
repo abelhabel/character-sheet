@@ -24,6 +24,8 @@ class AI {
       })
       .find(a => {
         if(!actor.canUseAbility(a)) return;
+        if(a.stats.element == 'vitality' && t.bio.family != 'Undead') return;
+        if(a.stats.element == 'rot' && t.bio.family == 'Undead') return;
         if(battle.grid.squareRadius(actor.x, actor.y, t.x, t.y) <= a.stats.range) {
           ability = a;
           target = t;

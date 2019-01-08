@@ -7,6 +7,7 @@ const Animation = require('Animation.js');
 const Sprite = require('Sprite.js');
 const Canvas = require('Canvas.js');
 const BattleResult = require('BattleResult.js');
+const BattleMenu = require('BattleMenu.js');
 const specialEffects = require('special-effects.js');
 const abilities = require('abilities.js');
 const monsters = require('monsters.js');
@@ -468,7 +469,7 @@ class Battle {
         let action = new Action('use ability', a._selections, a.selectedAbility.template.id);
         this.addAction(action)
         .then(() => {
-          a.selections = [];
+          a._deselect();
         })
         .catch(e => {
           console.log('action error', e)
@@ -671,7 +672,9 @@ class Battle {
   }
 
   drawBattleMenu() {
-    let container = document.createElement('div');
+    this.battleMenu = new BattleMenu(this);
+    let outer = this.battleMenu.render();
+    let container = html`<div></div>`;
     container.id = 'battle-menu';
     this.board.parentNode.appendChild(container);
     this.board.style.copyTo(container.style);
@@ -679,78 +682,9 @@ class Battle {
       width: this.w * this.tw + 'px',
       height: this.h * this.th + 'px'
     });
-
-    let ability = icons.find(ic => ic.bio.name == 'Ability Book');
-    let defend = icons.find(ic => ic.bio.name == 'Defend');
-    let wait = icons.find(ic => ic.bio.name == 'Wait');
-    let cursor = icons.find(ic => ic.bio.name == 'Ability Cursor');
-    container.style.cursor = `url(${cursor.canvas.clone(24, 24).toPNG()}), auto`;
-    Object.assign(ability.canvas.style, {
-      position: 'absolute',
-      right: '-46px'
-    })
-    container.appendChild(ability.canvas);
-
-    Object.assign(defend.canvas.style, {
-      position: 'absolute',
-      right: '-92px'
-    })
-    defend.canvas.addEventListener('click', e => {
-      this.addAction(new Action('defend'));
-    })
-    container.appendChild(defend.canvas);
-
-    Object.assign(wait.canvas.style, {
-      position: 'absolute',
-      right: '-138px'
-    })
-    wait.canvas.addEventListener('click', e => {
-      this.addAction(new Action('wait'));
-    })
-    container.appendChild(wait.canvas);
-
-    ability.canvas.addEventListener('click', () => this.toggleAbilityBook());
-    let context = document.createElement('div');
-    Object.assign(context.style, {
-      position: 'absolute',
-      right: '-46px',
-      top: '46px',
-      width: '46px'
-    })
-    container.appendChild(context);
-    let canvases = {};
-    let selected = null;
-    let selectAbility = (a) => {
-      if(selected) {
-        canvases[selected.bio.name].style.border = 'none'
-      }
-      if(selected == a) {
-        selected = null;
-        a.owner.selectAbility(null);
-        return;
-      }
-      a.owner.selectAbility(a);
-      selected = a;
-      canvases[selected.bio.name].style.border = '1px solid black'
-    }
-    function drawAbilities(abilities) {
-      abilities.forEach((a, i) => {
-        let canvas = a.canvas.clone();
-        canvases[a.bio.name] = canvas;
-        context.appendChild(canvas);
-        canvas.addEventListener('click', e => selectAbility(a));
-      })
-    }
-    this.battleMenu = {
-      setActor(actor) {
-        context.innerHTML = '';
-        drawAbilities(actor.actives);
-      },
-      selectAbility(a) {
-        if(!a) return;
-        selectAbility(a);
-      }
-    };
+    Object.assign(outer.style, {position: 'relative', left: '100%'});
+    container.appendChild(outer);
+    
   }
 
   highlightMonsterCard(x, y) {
