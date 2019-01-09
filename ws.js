@@ -70,9 +70,11 @@ module.exports = function(server) {
     }
 
     join(user) {
+      console.log('user joins', this, user)
       if(this.full) {
         return;
       }
+      if(this.users.find(u => u.id == user.id)) return;
       this.users.push(user);
     }
 

@@ -9,10 +9,8 @@ function guid() {
   return s4() + s4() + '-' + s4() + '-' + s4() + '-' + s4() + '-' + s4() + s4() + s4();
 }
 class TeamSelect  {
-  constructor(items, container, w, h, tw, th, cash, maxTeams, done) {
+  constructor(items, container, tw, th, cash, maxTeams, done) {
     this.items = items.filter(m => !m.bio.summonOnly);
-    this.w = w;
-    this.h = h;
     this.tw = tw;
     this.th = th;
     this.container = container;

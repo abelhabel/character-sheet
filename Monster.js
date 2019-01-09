@@ -10,6 +10,7 @@ const specialEffects = require('special-effects.js');
 const AbilityEffect = require('AbilityEffect.js');
 const Sprite = require('Sprite.js');
 const AI = require('AI.js');
+const FixedList = require('FixedList.js');
 class StatBonus {
   constructor() {
     this.blessing = {
@@ -122,7 +123,7 @@ class Monster {
     this.tilesMoved = 0;
     this.effects = [];
     this.abilities = this.createAbilities();
-    this._selections = [];
+    this._selections = new FixedList(1);
     this._team = '';
   }
 
@@ -140,11 +141,22 @@ class Monster {
   }
 
   _select(p) {
-    this._selections.push(p);
+    let selectionsRequired = this.selectedAbility && this.selectedAbility.stats.selections || 1;
+    if(this.selectedAbility) {
+      if(selectionsRequired > 1) {
+        this._selections.push(p);
+      } else {
+        this._selections[0] = p;
+      }
+    } else {
+      this._selections[0] = p;
+    }
+    console.log(this._selections)
   }
 
   _deselect() {
-    this._selections = [];
+    let selectionsRequired = this.selectedAbility && this.selectedAbility.stats.selections || 1;
+    this._selections = new FixedList(selectionsRequired);
   }
 
   createAbilities() {
@@ -391,7 +403,8 @@ class Monster {
     if(a.stats.resourceType == 'mana' && this.totalMana < a.stats.resourceCost) return;
     if(a.stats.resourceType == 'health' && this.totalHealth < a.stats.resourceCost) return;
     this.selectedAbility = a;
-    this._selections = [];
+    let selectionsRequired = this.selectedAbility && this.selectedAbility.stats.selections || 1;
+    this._selections = new FixedList(selectionsRequired);
   }
 
   useAbility(a) {

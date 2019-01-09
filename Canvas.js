@@ -7,6 +7,10 @@ class Canvas {
     this.h = h;
   }
 
+  on(e, fn) {
+    this.canvas.addEventListener(e, fn);
+  }
+
   get context() {
     return this.canvas.getContext('2d');
   }

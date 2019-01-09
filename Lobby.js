@@ -156,6 +156,7 @@ class Lobby {
       let game = Game.create(g);
       g.users.forEach(u => {
         if(!u) return;
+        if(u.id == g.owner.id) return;
         let user = User.create(u)
         game.users.push(user);
       });
@@ -357,7 +358,8 @@ class Lobby {
       startGame.textContent = 'Start Game';
       startGame.addEventListener('click', () => this.startRemoteGame(game));
       c.appendChild(startGame);
-    } else {
+    } else
+    if(game.owner.id !== this.localUser.id) {
       let spectate = document.createElement('button');
       spectate.textContent = 'Spectate';
       spectate.addEventListener('click', () => this.spectate(game));
@@ -376,14 +378,12 @@ class Lobby {
       c.appendChild(stopGame);
     }
     let name = game.owner.name == this.localUserName ? 'You' : game.owner.name;
-    let html = `<p>
+    let d = html`<p>
       Type: ${game.type}<br>
       Created by: ${name}<br>
       Users: ${game.users.map(u => u.name).join(', ')}<br>
       ${game.users.length}/${game.max}
     </p>`;
-    let d = document.createElement('div');
-    d.innerHTML = html;
     c.appendChild(d);
     return c;
   }
@@ -401,6 +401,7 @@ class Lobby {
     this.tags.games.innerHTML = '';
     this.games.filter(g => {
       if(g.type == 'play by post' && g.full && !g.users.find(u => u.id == this.localUser.id)) {
+        console.log('do not render game', g)
         return false;
       }
       if(g.status == 'complete') return false;

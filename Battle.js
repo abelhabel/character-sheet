@@ -251,7 +251,7 @@ class Action {
 }
 
 class Battle {
-  constructor(team1, team2, w, h, tw, th, container) {
+  constructor(team1, team2, tw, th, container) {
     this.container = container;
     this.mouse = {
       x: 0,
@@ -453,18 +453,7 @@ class Battle {
         t = {x, y};
       }
       var targets = this.abilityTargets(a, a.selectedAbility, x, y);
-      if(a.selectedAbility) {
-        if(selectionsRequired > 1) {
-          if(a.selections[0]) {
-            a.selections[1] = targets;
-          } else {
-            a.selections[0] = targets;
-          }
-        } else {
-          a.selections[0] = targets;
-        }
-      }
-      a._select({x,y});
+      targets.validTargets && a._select({x,y});
       if(a.selectedAbility && targets.validTargets && a._selections.length == selectionsRequired && this.inRange(a, t)) {
         let action = new Action('use ability', a._selections, a.selectedAbility.template.id);
         this.addAction(action)
@@ -684,7 +673,7 @@ class Battle {
     });
     Object.assign(outer.style, {position: 'relative', left: '100%'});
     container.appendChild(outer);
-    
+
   }
 
   highlightMonsterCard(x, y) {

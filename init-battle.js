@@ -119,9 +119,10 @@ const socket = new Emitter();
 
 Module.onLoad(['DungeonCrawl_ProjectUtumnoTileset.png', 'Hell2.jpg',
 'monsters.js', 'abilities.js', 'terrains.js', 'arenas.js', 'icons.js', 'animations.js', 'teams.js',
-'special-effects.js', 'Logger.js', 'Rand.js', 'Canvas.js', 'Sprite.js', 'CompositeSprite.js', 'AbilityEffect.js', 'Animation.js',
+'special-effects.js','FixedList.js', 'Logger.js', 'Rand.js', 'Canvas.js', 'Sprite.js', 'CompositeSprite.js', 'AbilityEffect.js', 'Animation.js',
 'PositionList2d.js', 'pathfinding.js',  'Ability.js', 'AI.js', 'Monster.js', 'Terrain.js', 'Menu.js', 'BattleMenu.js',
-'Arena.js', 'MonsterCard.js', 'Lobby.js', 'TeamSelect.js', 'BattleResult.js', 'Battle.js', ], () => {
+'Arena.js', 'MonsterCard.js', 'Lobby.js', 'TeamSelect.js', 'BattleResult.js', 'Battle.js',
+'game-modes.js' ], () => {
   const aiTeams = require('teams.js');
   const Lobby = require('Lobby.js');
   const lobby = new Lobby();
@@ -246,6 +247,22 @@ Module.onLoad(['DungeonCrawl_ProjectUtumnoTileset.png', 'Hell2.jpg',
   })
   document.body.appendChild(container);
 
+  const viewer = {
+    selectContainer,
+    container,
+    showTeamSelect() {
+      selectContainer.style.display = 'block'
+    },
+    hideTeamSelect() {
+      selectContainer.style.display = 'none'
+    },
+    reset() {
+      container.innerHTML = '';
+      selectContainer.innerHTML = '';
+      window.battle = null;
+    }
+  };
+
   function assembleTeam(team) {
     return team.map(t => {
       let template = monsters.find(m => m.id == t.templateId);
@@ -254,281 +271,10 @@ Module.onLoad(['DungeonCrawl_ProjectUtumnoTileset.png', 'Hell2.jpg',
     })
   }
 
-  lobby.on('human vs ai game', (aiteam) => {
-    var generator = new Rand(Date.now()).generator;
-    window._random = (t) => {
-      let r = generator.random();
-      // logger.log(r);
-      return r;
-    };
-    window._roll = (a, b) => {
-      return Math.ceil(a + _random() * (b-a));
-    }
-    selectContainer.style.display = 'block';
-    var teamSelect = new TeamSelect(monsters, selectContainer, w, h, tw, th, cash, 1, () => {
-      selectContainer.style.display = 'none';
-      aiteam = assembleTeam(aiteam.units);
-      console.log(aiteam)
-      var battle = new Battle(teamSelect.teams[0], aiteam, w, h, tw, th, container);
-      teamSelect.teams[0].forEach(m => {
-        // m.addAI(1)
-        m.ai = false;
-      });
-      aiteam.forEach(m => {
-        m.addAI(1);
-      })
-      battle.onGameEnd = (o) => {
-        o.results.winningTeam(o.winningTeam == 'team1' ? 'You' : 'AI');
-        let report = o.results.report(() => {
-          battle.destroy();
-          container.innerHTML = '';
-          selectContainer.innerHTML = '';
-          window.battle = null;
-          lobby.show();
-        });
-        document.body.appendChild(report);
-      };
-      battle.start();
-      window.battle = battle;
-    });
-
-    teamSelect.render();
-  });
-  lobby.on('local game', (game) => {
-    var generator = new Rand(Date.now()).generator;
-    window._random = (t) => {
-      let r = generator.random();
-      // logger.log(r);
-      return r;
-    };
-    window._roll = (a, b) => {
-      return Math.ceil(a + _random() * (b-a));
-    }
-    selectContainer.style.display = 'block';
-    var teamSelect = new TeamSelect(monsters, selectContainer, w, h, tw, th, cash, 2, () => {
-      selectContainer.style.display = 'none';
-      var battle = new Battle(teamSelect.teams[0], teamSelect.teams[1], w, h, tw, th, container);
-      teamSelect.teams[0].forEach(m => {
-        // m.addAI(1)
-        m.ai = false;
-      });
-      teamSelect.teams[1].forEach(m => {
-        // m.addAI(1)
-        m.ai = false;
-      });
-      battle.onGameEnd = (o) => {
-        o.results.winningTeam(o.winningTeam);
-        let report = o.results.report(() => {
-          battle.destroy();
-          container.innerHTML = '';
-          selectContainer.innerHTML = '';
-          window.battle = null;
-          lobby.show();
-        });
-        document.body.appendChild(report);
-      };
-      battle.start();
-      window.battle = battle;
-    });
-
-    teamSelect.render();
-  });
-
-  lobby.on('start spectate', game => {
-    console.log('start spectate mode', game)
-    lobby.hide();
-    var generator = new Rand(game.seed).generator;
-    window._random = (t) => {
-      let r = generator.random();
-      // logger.log(r);
-      return r;
-    };
-    window._roll = (a, b) => {
-      return Math.ceil(a + _random() * (b-a));
-    }
-    let team1 = assembleTeam(game.teams[0].team);
-    let team2 = assembleTeam(game.teams[1].team);
-    var battle = new Battle(team1, team2, w, h, tw, th, container);
-    battle.onAction = (action, team) => {
-      console.log('battle.onAction', action)
-    };
-
-    battle.onGameEnd = (o) => {
-      battle.destroy();
-      container.innerHTML = '';
-      selectContainer.innerHTML = '';
-      window.battle = null;
-      lobby.show();
-    };
-
-
-    lobby.on('battle action confirmed', (data) => {
-      console.log('battle action confirmed', data);
-      let a = battle.createAction(data.action);
-      battle.addAction(a, true);
-    })
-
-
-    battle.start()
-    .then(() => {
-      battle.fastForward(game.actions);
-    });
-    window.battle = battle;
-    selectContainer.style.display = 'none';
-  })
-
-  lobby.on('play by post', game => {
-    console.log('play by post', game);
-    lobby.hide();
-    if(game.teams && game.teams.length == 2) {
-      console.log('game full. fast forward actions')
-      var generator = new Rand(game.seed).generator;
-      window._random = (t) => {
-        let r = generator.random();
-        // logger.log(r);
-        return r;
-      };
-      window._roll = (a, b) => {
-        return Math.ceil(a + _random() * (b-a));
-      }
-      console.log('battle can start', game);
-      let localTeam = game.teams.find(t => t.user.id == lobby.localUser.id);
-      let remoteTeam = game.teams.find(t => t.user.id != lobby.localUser.id);
-      let firstTeam = game.owner.id == lobby.localUser.id ? localTeam.team : remoteTeam.team;
-      let secondTeam = game.owner.id != lobby.localUser.id ? localTeam.team : remoteTeam.team;
-      if(game.owner.id == lobby.localUser.id) {
-        firstTeam = localTeam.team;
-        secondTeam = remoteTeam.team;
-        localTeam = 'team1';
-      } else {
-        firstTeam = remoteTeam.team;
-        secondTeam = localTeam.team;
-        localTeam = 'team2';
-      }
-      var battle = new Battle(assembleTeam(firstTeam), assembleTeam(secondTeam), w, h, tw, th, container);
-
-      battle.onAction = (action, team) => {
-        if(team != localTeam) return;
-        console.log('battle.onAction', action)
-        lobby.battleAction(game, action);
-      };
-      battle.onGameEnd = (o) => {
-        if(o.winningTeam == localTeam) {
-          lobby.winGame(game);
-        } else {
-          lobby.loseGame(game);
-        }
-        battle.destroy();
-        container.innerHTML = '';
-        selectContainer.innerHTML = '';
-        window.battle = null;
-        lobby.show();
-      };
-      lobby.on('battle action confirmed', (data) => {
-        console.log('battle action confirmed', data);
-        let a = battle.createAction(data.action);
-        battle.addAction(a, true);
-      })
-      battle.start()
-      .then(() => {
-        battle.fastForward(game.actions);
-      });
-      window.battle = battle;
-      selectContainer.style.display = 'none';
-    } else
-    if(game.teams && game.teams.find(t => t.user.id == lobby.localUser.id)){
-      console.log('team has been selected. waiting for other player to select team');
-    } else {
-      console.log('team not selected yet')
-      lobby.hide();
-      var teamSelect = new TeamSelect(monsters, selectContainer, w, h, tw, th, cash, 1, (team) => {
-        console.log('team selected', team);
-        var selected = team.map(m => {
-          return {
-            templateId: m.template.id,
-            stacks: m.stacks
-          }
-        })
-        lobby.selectTeam(game, selected);
-
-      });
-    }
-  })
-
-  lobby.on('remote game', (game) => {
-    console.log(game)
-    var generator = new Rand(game.seed).generator;
-    window._random = (t) => {
-      let r = generator.random();
-      // logger.log(r);
-      return r;
-    };
-    window._roll = (a, b) => {
-      return Math.ceil(a + _random() * (b-a));
-    }
-    console.log('remote game', game);
-    lobby.hide();
-    var teamSelect = new TeamSelect(monsters, selectContainer, w, h, tw, th, cash, 1, (team) => {
-      console.log('team selected', team);
-      var selected = team.map(m => {
-        return {
-          templateId: m.template.id,
-          stacks: m.stacks
-        }
-      })
-      lobby.selectTeam(game, selected);
-      lobby.on('game ready', (game) => {
-
-        console.log('battle can start', game);
-        let localTeam = game.teams.find(t => t.user.id == lobby.localUser.id);
-        let remoteTeam = game.teams.find(t => t.user.id != lobby.localUser.id);
-        let firstTeam = game.owner.id == lobby.localUser.id ? localTeam.team : remoteTeam.team;
-        let secondTeam = game.owner.id != lobby.localUser.id ? localTeam.team : remoteTeam.team;
-        let localName = localTeam.user.name;
-        let remoteName = remoteTeam.user.name;
-        if(game.owner.id == lobby.localUser.id) {
-          firstTeam = localTeam.team;
-          secondTeam = remoteTeam.team;
-          localTeam = 'team1';
-        } else {
-          firstTeam = remoteTeam.team;
-          secondTeam = localTeam.team;
-          localTeam = 'team2';
-        }
-        var battle = new Battle(assembleTeam(firstTeam), assembleTeam(secondTeam), w, h, tw, th, container);
-
-        battle.onAction = (action, team) => {
-          if(team != localTeam) return;
-          console.log('battle.onAction', action)
-          lobby.battleAction(game, action);
-        };
-        battle.onGameEnd = (o) => {
-          o.results.winningTeam(localTeam == o.winningTeam ? localName : remoteName);
-          let report = o.results.report(() => {
-            if(o.winningTeam == localTeam) {
-              lobby.winGame(game);
-            } else {
-              lobby.loseGame(game);
-            }
-            battle.destroy();
-            container.innerHTML = '';
-            selectContainer.innerHTML = '';
-            window.battle = null;
-            lobby.show();
-          });
-          document.body.appendChild(report);
-
-        };
-        lobby.on('battle action confirmed', (data) => {
-          console.log('battle action confirmed', data);
-          let a = battle.createAction(data.action);
-          battle.addAction(a, true);
-        })
-        battle.start();
-        window.battle = battle;
-        selectContainer.style.display = 'none';
-      })
-    });
-
-  });
+  const gameModes = require('game-modes.js');
+  gameModes.humanVSAI(lobby, viewer);
+  gameModes.localMultiplayer(lobby, viewer);
+  gameModes.spectate(lobby, viewer);
+  gameModes.liveMultiplayer(lobby, viewer);
+  gameModes.playByPost(lobby, viewer);
 })

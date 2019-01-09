@@ -7,6 +7,16 @@
 
 </body>
 <script>
+function html(strings, ...values) {
+  let out = '';
+  strings.forEach((s, i) => {
+    out += s + (values[i] == undefined ? '' : values[i]);
+  })
+
+  let d = document.createElement('template');
+  d.innerHTML = out;
+  return d.content.firstElementChild;
+}
 class Module {
   constructor(name) {
     this.name = name;
@@ -64,7 +74,7 @@ Module.modules = {};
 Module.loaders = [];
   Module.onLoad(['DungeonCrawl_ProjectUtumnoTileset.png',
   'abilities.js', 'monsters.js', 'terrains.js', 'icons.js','animations.js', 'seven.js', 'teams.js', 'leaders.js',
-  'Canvas.js', 'Sprite.js', 'Slider.js', 'Animation.js', 'CS.js',
+  'Canvas.js', 'Sprite.js', 'Slider.js', 'Animation.js', 'CS.js', 'DynamicSound.js', 'init-sound.js',
   'heroes-like.js', 'animation-tpl.js', 'ability-tpl.js', 'terrain-tpl.js', 'icon-tpl.js', 'team-tpl.js', 'leader-tpl.js'], () => {
     console.log('all loaded')
     const CS = require('CS.js');
@@ -118,6 +128,10 @@ Module.loaders = [];
       let teams = require("team-tpl.js");
       var cs  = new CS(teams, document.body);
       cs.render();
+    }
+
+    function loadSound() {
+      require('init-sound.js')();
     }
 
     function loadAnimations() {
@@ -202,6 +216,9 @@ Module.loaders = [];
         break;
       case 'teams':
         loadTeams();
+        break;
+      case 'sound':
+        loadSound();
         break;
       default:
         loadHeroes();
