@@ -69,13 +69,13 @@ class PositionList2d {
     return tile;
   }
 
-  closestEmpty(x, y) {
+  closestEmpty(x, y, test) {
     let radius = 1;
     let maxRadius = 5;
     let tile;
-    for(let i  = 1; i < maxRadius; i++) {
-      let tiles = this.around(x, y);
-      tile = tiles.find(t => !t.item);
+    for(let i = 1; i < maxRadius; i++) {
+      let tiles = this.around(x, y, i);
+      tile = tiles.find(t => !t.item && (test ? test(t.x, t.y) : true));
       if(tile) break;
     }
     return tile;
@@ -203,6 +203,12 @@ class PositionList2d {
         fn(x, y);
       }
     }
+  }
+
+  canWalkTo(sx, sy, ex, ey) {
+    if(this.steps(sx, sy, ex, ey) == 1 && !this.get(ex, ey)) return true;
+    if(this.path(sx, sy, ex, ey).length) return true;
+    return false;
   }
 
   filled(fn) {

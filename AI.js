@@ -15,10 +15,12 @@ class AI {
     // find a Spell or Attack that can be used.
     // If no Ability is found, Move then Defend
     let target;
+    let potentialTarget;
     let ability;
     let tile = battle.grid.closest(actor.x, actor.y, t => {
       if(!(t instanceof actor.constructor)) return;
       if(t.team == actor.team) return;
+      potentialTarget = t;
       return actor.damaging.sort((a, b) => {
         return a.might > b.might ? -1 : 1;
       })
@@ -45,7 +47,7 @@ class AI {
         return true;
       });
       var p = battle.grid.around(tile.x, tile.y).filter( t => {
-        return !t.item;
+        return !t.item && battle.grid.canWalkTo(actor.x, actor.y, t.x, t.y);
       })
       .sort((a, b) => {
         let d1 = battle.grid.steps(a.x, a.y, actor.x, actor.y);
@@ -53,7 +55,14 @@ class AI {
         return d1 < d2 ? -1 : 1;
       })[0];
       if(!p) {
-        return battle.addAction(new Action('defend'));
+        if(potentialTarget) {
+          p = battle.grid.closestEmpty(potentialTarget.x, potentialTarget.y, (x, y) => {
+            return battle.grid.canWalkTo(actor.x, actor.y, x, y);
+          })
+        }
+        if(!p) {
+          return battle.addAction(new Action('defend'));
+        }
       }
       var path = battle.grid.path(actor.x, actor.y, p.x, p.y);
       path.shift();
@@ -65,8 +74,6 @@ class AI {
     } else {
       return battle.addAction(new Action('defend'));
     }
-    console.log('tile', tile);
-    console.log('ability', ability);
   }
 }
 
