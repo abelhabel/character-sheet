@@ -264,7 +264,6 @@ class Battle {
       m.battle = this;
     });
     this.team2.forEach(m => {
-      console.log('setting up ', m)
       m.team = 'team2';
       m.battle = this;
     });
@@ -309,6 +308,11 @@ class Battle {
     this.br = new BattleResult();
     this.csPopup = this.popup();
     this.setEvents();
+  }
+
+  getEnemyTeam(team) {
+    if(team == 'team1') return this.team2;
+    return this.team1;
   }
 
   createCanvases() {
@@ -1049,11 +1053,9 @@ class Battle {
   }
 
   playAbilityAnimation(a, b, ability) {
-    console.log(ability)
     if(ability.animation.template) {
       let {sprite, template} = ability.animation;
       let anim = new Animation(a.x * this.tw, a.y*this.th, b.x*this.tw, b.y*this.th, sprite, template.stats);
-      console.log(anim)
       return anim.playAndEnd(this.animationCanvas)
       .then(() => this.playHitAnimation(a, b, ability))
       .catch(e => console.log('animation error', e))
@@ -1494,7 +1496,7 @@ class Battle {
       if(type == 'move') {
         let path = this.grid.path(actor.x, actor.y, position.x, position.y);
         path.shift();
-        if(actor.movesLeft < path.length) return reject("Invalid move");
+        if(actor.movesLeft < path.length) return reject(["Invalid move", actor.movesLeft, path]);
         p = this.walk(actor, path);
       } else
       if(type == 'use ability') {
@@ -1513,11 +1515,14 @@ class Battle {
           this.endTurn();
           this.act();
         } else {
-          actor.ai && this.aiAct(actor);
+          if(actor.ai) return this.aiAct(actor).then(resolve, reject);
         }
         resolve();
       })
       .catch(reject);
+    })
+    .catch(e => {
+      console.log('Action Error:', e)
     })
   }
 

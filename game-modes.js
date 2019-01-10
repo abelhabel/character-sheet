@@ -23,7 +23,7 @@ function createRNG(seed) {
 }
 
 gameModes.humanVSAI = function(lobby, viewer) {
-  lobby.on('human vs ai game', (aiteam) => {
+  lobby.on('human vs ai game', (aiteam, aiLevel = 1) => {
     var generator = createRNG();
     viewer.showTeamSelect();
     var teamSelect = new TeamSelect(monsters, viewer.selectContainer, tw, th, cash, 1, () => {
@@ -31,13 +31,8 @@ gameModes.humanVSAI = function(lobby, viewer) {
       aiteam = assembleTeam(aiteam.units);
       console.log(aiteam)
       var battle = new Battle(teamSelect.teams[0], aiteam, tw, th, viewer.container);
-      teamSelect.teams[0].forEach(m => {
-        // m.addAI(1)
-        m.ai = false;
-      });
-      aiteam.forEach(m => {
-        m.addAI(1);
-      })
+      teamSelect.teams[0].forEach(m => m.ai = false);
+      aiteam.forEach(m => m.addAI(aiLevel));
       battle.onGameEnd = (o) => {
         o.results.winningTeam(o.winningTeam == 'team1' ? 'You' : 'AI');
         let report = o.results.report(() => {
@@ -56,14 +51,15 @@ gameModes.humanVSAI = function(lobby, viewer) {
 };
 
 gameModes.AIVSAI = function(lobby, viewer) {
-  lobby.on('ai vs ai game', (team1, team2) => {
+  lobby.on('ai vs ai game', (team1, team2, aiLevel = 1) => {
+    console.log('ai vs ai', team1, team2, aiLevel)
     var generator = createRNG();
     viewer.hideTeamSelect();
     team1 = assembleTeam(team1.units);
     team2 = assembleTeam(team2.units);
     var battle = new Battle(team1, team2, tw, th, viewer.container);
-    team1.forEach(m => m.addAI(1));
-    team2.forEach(m => m.addAI(1));
+    team1.forEach(m => m.addAI(aiLevel));
+    team2.forEach(m => m.addAI(aiLevel));
     battle.onGameEnd = (o) => {
       o.results.winningTeam(o.winningTeam);
       let report = o.results.report(() => {

@@ -129,7 +129,30 @@ class Monster {
 
   addAI(level = 1) {
     this.ai = true;
+    console.log('adding AI', level)
     this.routine = new AI(this.battle, this, level);
+  }
+
+  get prefers() {
+    let attacks = this.attacks;
+    let spells = this.spells;
+    if(attacks.length >= spells.length) return 'attack';
+    return 'spell';
+  }
+
+  get might() {
+    if(this.prefers == 'attack') {
+      return this.stacks * this.totalStat('apr') * this.totalStat('attack') * (1 + Math.min(this.totalStat('tpr'), this.triggers.length));
+    }
+    return this.stacks * this.totalStat('apr') * this.totalStat('spellPower');
+  }
+
+  get potentialRange() {
+    let range = 0;
+    this.actives.forEach(a => {
+      if(a.stats.range > range) range = a.stats.range;
+    })
+    return range;
   }
 
   get team() {
@@ -447,7 +470,7 @@ class Monster {
   }
 
   get canMove() {
-    return this.movesLeft && !this.activeEffects.find(e => e.ability.stats.ailment == 'held');
+    return this.movesLeft > 0 && !this.activeEffects.find(e => e.ability.stats.ailment == 'held');
   }
 
   get canAct() {

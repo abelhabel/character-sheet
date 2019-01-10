@@ -242,7 +242,7 @@ class Lobby {
     this.trigger('local game');
   }
 
-  createLocalAIVSAIGame() {
+  createLocalAIVSAIGame(level = 1) {
     let v1 = new TeamViewer('Pick Team 1');
     let v2 = new TeamViewer();
     v1.render(this.tags.container);
@@ -251,63 +251,18 @@ class Lobby {
       v2.render(this.tags.container);
       v2.on('done', team2 => {
         this.hide();
-        this.trigger('ai vs ai game', team1, team2);
+        this.trigger('ai vs ai game', team1, team2, level);
       });
     });
   }
 
-  createLocalAIGame() {
-    let teams = require('teams.js');
-    let Sprite = require('Sprite.js');
-    let templates = require('monsters.js');
-    let selected;
-    let style = html`<style>
-      .outer {
-        color: black;
-        border: 1px solid black;
-        position: absolute;
-        width: 600px;
-        height: 600px;
-        left: 50%;
-        top:50%;
-        transform:translate(-50%,-50%);
-        z-index:2000;
-      }
-      .title {
-        font-size:24px;
-      }
-      #close-team-select {
-        position: absolute;
-        top: 10px;
-        right: 10px;
-        font-weight: bold;
-      }
-    </style>`
-    let c = html`<div class='outer'>
-      <div id='close-team-select'style=''>Close</div>
-      <div class='title'>Pick team to play against</div>
-    </div>`;
-    let o = html`<span></span>`;
-    let shadow = o.attachShadow({mode: 'open'});
-    shadow.appendChild(style);
-    shadow.appendChild(c);
-    teams.forEach(t => {
-      let d = html`<div><p>${t.name}</p></div>`;
-      t.units.forEach(u => {
-        let tpl = templates.find(tp => tp.id == u.templateId);
-        let s = new Sprite(tpl.bio.sprite);
-        s.drawStack(u.stacks);
-        d.appendChild(s.canvas);
-      })
-      d.addEventListener('click', e => {
-        this.tags.container.removeChild(o);
-        this.hide();
-        this.trigger('human vs ai game', t);
-      });
-      c.appendChild(d);
-    })
-    c.querySelector('#close-team-select').addEventListener('click', e => this.tags.container.removeChild(o));
-    this.tags.container.appendChild(o);
+  createLocalAIGame(level = 1) {
+    let v1 = new TeamViewer('Pick team to play against');
+    v1.render(this.tags.container);
+    v1.on('done', team1 => {
+      this.hide();
+      this.trigger('human vs ai game', team1, level);
+    });
   }
 
   didJoinGame(data) {
@@ -470,7 +425,11 @@ class Lobby {
             items: [
               {
                 text: 'Easy',
-                fn: () => this.createLocalAIGame(this.localUser, 'easy'),
+                fn: () => this.createLocalAIGame(1),
+              },
+              {
+                text: 'Medium',
+                fn: () => this.createLocalAIGame(2),
               }
             ]
           },
@@ -479,7 +438,11 @@ class Lobby {
             items: [
               {
                 text: 'Easy',
-                fn: () => this.createLocalAIVSAIGame(this.localUser, 'easy'),
+                fn: () => this.createLocalAIVSAIGame(1),
+              },
+              {
+                text: 'Medium',
+                fn: () => this.createLocalAIVSAIGame(2),
               }
             ]
           },
