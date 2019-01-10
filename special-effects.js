@@ -10,7 +10,7 @@ class Special {
 
 module.exports.suicide = {
   when: 'per target',
-  fn: function (battle, caster, target, ability, power, triggeredPower, selections) {
+  fn: function (battle, caster, target, ability, power, triggeredPower, selections, triggeredBy) {
     let healthLost = Math.min(caster.maxHealth, power);
     let adjacent = battle.grid.around(caster.x, caster.y, 1);
     adjacent.filter(t => t.item instanceof caster.constructor)
@@ -23,7 +23,7 @@ module.exports.suicide = {
 
 module.exports.charge = {
   when: 'per use',
-  fn: function (battle, caster, target, ability, power, triggeredPower, selections) {
+  fn: function (battle, caster, target, ability, power, triggeredPower, selections, triggeredBy) {
     console.log('charge')
     let tiles = battle.abilityTargets(caster, ability, selections[0].x, selections[0].y).tiles;
     let tile = tiles[tiles.length -1];
@@ -40,7 +40,7 @@ module.exports.charge = {
 
 module.exports.hypnotize = {
   when: 'per target',
-  fn: function (battle, caster, target, ability, power, triggeredPower, selections) {
+  fn: function (battle, caster, target, ability, power, triggeredPower, selections, triggeredBy) {
     var originalTeam = target.team;
     target.team = caster.team;
 
@@ -52,7 +52,7 @@ module.exports.hypnotize = {
 
 module.exports.berzerk = {
   when: 'per target',
-  fn: function (battle, caster, target, ability, power, triggeredPower, selections) {
+  fn: function (battle, caster, target, ability, power, triggeredPower, selections, triggeredBy) {
     var originalTeam = target.team;
     target.team = caster.team;
     var t = battle.grid.closest(target.x, target.y, (b) => {
@@ -68,7 +68,7 @@ module.exports.berzerk = {
 
 module.exports.giveEffectAsAbility = {
   when: 'per target',
-  fn: function (battle, caster, target, ability, power, triggeredPower, selections) {
+  fn: function (battle, caster, target, ability, power, triggeredPower, selections, triggeredBy) {
     var template = ability.stats.effect.template;
     var a = new ability.constructor(template, target);
     target.abilities.push(a);
@@ -84,7 +84,7 @@ module.exports.giveEffectAsAbility = {
 
 module.exports.reflectDamage = {
   when: 'per target',
-  fn: function (battle, caster, target, ability, power, triggeredPower, selections) {
+  fn: function (battle, caster, target, ability, power, triggeredPower, selections, triggeredBy) {
     battle.dealDamage(caster, target, triggeredPower, ability, true);
     return new Special();
   }
@@ -92,7 +92,7 @@ module.exports.reflectDamage = {
 
 module.exports.phantomImage = {
   when: 'per target',
-  fn: function (battle, caster, target, ability, power, triggeredPower, selections) {
+  fn: function (battle, caster, target, ability, power, triggeredPower, selections, triggeredBy) {
     let template = target.template;
     let tile = battle.grid.closestEmpty(caster.x, caster.y);
     battle.summon(caster, ability, template, tile)
@@ -102,7 +102,7 @@ module.exports.phantomImage = {
 
 module.exports.stealBlessing = {
   when: 'per target',
-  fn: function (battle, caster, target, ability, power, triggeredPower, selections) {
+  fn: function (battle, caster, target, ability, power, triggeredPower, selections, triggeredBy) {
     let effects = target.activeEffects.filter(e => e.ability.stats.source == 'blessing');
 
     let effect = effects[0];
@@ -115,9 +115,25 @@ module.exports.stealBlessing = {
   }
 };
 
+module.exports.transferCurse = {
+  when: 'per target',
+  fn: function (battle, caster, target, ability, power, triggeredPower, selections, triggeredBy) {
+    console.log('transferCurse')
+    let effects = caster.activeEffects.filter(e => !e.expired && e.ability.stats.source == 'curse');
+
+    let effect = effects[0];
+    if(!effect) return;
+    let index = caster.effects.indexOf(effect);
+    caster.effects.splice(index, 1);
+    effect.rounds = effect.ability.stats.duration;
+    target.addEffect(caster, effect.ability, effect.power, true, power);
+    return new Special();
+  }
+};
+
 module.exports.dispel = {
   when: 'per target',
-  fn: function (battle, caster, target, ability, power, triggeredPower, selections) {
+  fn: function (battle, caster, target, ability, power, triggeredPower, selections, triggeredBy) {
 
     let effects = target.activeEffects.filter(e => e.ability.stats.source == 'blessing');
 
@@ -132,7 +148,7 @@ module.exports.dispel = {
 
 module.exports.teleport = {
   when: 'per target',
-  fn: function (battle, caster, target, ability, power, triggeredPower, selections) {
+  fn: function (battle, caster, target, ability, power, triggeredPower, selections, triggeredBy) {
     let actor = battle.grid.get(selections[0].x, selections[0].y);
     let tile = selections[1];
     if(battle.grid.get(tile.x, tile.y)) {
@@ -148,7 +164,7 @@ module.exports.teleport = {
 
 module.exports.manaThief = {
   when: 'per target',
-  fn: function (battle, caster, target, ability, power, triggeredPower, selections) {
+  fn: function (battle, caster, target, ability, power, triggeredPower, selections, triggeredBy) {
     let victim = battle.grid.get(selections[0].x, selections[0].y);
     let benefactor = battle.grid.get(selections[1].x, selections[1].y);
     if(!victim || !benefactor) return;
@@ -162,7 +178,7 @@ module.exports.manaThief = {
 
 module.exports.blink = {
   when: 'per use',
-  fn: function (battle, caster, target, ability, power, triggeredPower, selections) {
+  fn: function (battle, caster, target, ability, power, triggeredPower, selections, triggeredBy) {
     let tile = selections[0];
     console.log('blink', tile.x, tile.y, caster.x, caster.y)
     battle.grid.remove(caster.x, caster.y);
@@ -175,7 +191,7 @@ module.exports.blink = {
 
 module.exports.lifeLeech = {
   when: 'per target',
-  fn: function (battle, caster, target, ability, power, triggeredPower, selections) {
+  fn: function (battle, caster, target, ability, power, triggeredPower, selections, triggeredBy) {
     // if(!triggeredPower) return;
     if(triggeredPower) {
       caster.heal(Math.ceil(triggeredPower/2))
@@ -187,7 +203,7 @@ module.exports.lifeLeech = {
 
 module.exports.polymorph = {
   when: 'per target',
-  fn: function (battle, caster, target, ability, power, triggeredPower, selections) {
+  fn: function (battle, caster, target, ability, power, triggeredPower, selections, triggeredBy) {
     let rand = battle.roll(0, monsters.length-1);
     let monster = monsters[rand];
     let stacks = Math.floor(target.totalHealth / monster.stats.health);
@@ -205,7 +221,7 @@ module.exports.polymorph = {
 
 module.exports.chain = {
   when: 'per target',
-  fn: function (battle, caster, target, ability, power, triggeredPower, selections) {
+  fn: function (battle, caster, target, ability, power, triggeredPower, selections, triggeredBy) {
     ability.chains.push(target);
     let cost = ability.stats.resourceCost;
     let nextTarget = battle.grid.inRadius(target.x, target.y, ability.stats.range)

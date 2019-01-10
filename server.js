@@ -63,6 +63,7 @@ loadFile('BattleResult.js');
 loadFile('BattleMenu.js');
 loadFile('Menu.js');
 loadFile('DynamicSound.js');
+loadFile('TeamViewer.js');
 loadFile('FixedList.js');
 loadFile('init-sound.js');
 loadFile('game-modes.js');

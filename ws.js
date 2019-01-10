@@ -108,6 +108,7 @@ module.exports = function(server) {
         .then(d => JSON.parse(d))
         .then(data => {
           data.forEach(g => {
+            if(g.status == 'completed') return;
             let game = Game.create(g);
             this.games.push(game);
           })
@@ -264,9 +265,6 @@ module.exports = function(server) {
     }
 
     selectTeam(gameId, user, team) {
-      // team.units.sort((a, b) => {
-      //   return a.templateId < b.templateId ? -1 : 1;
-      // });
       this.loadGame(gameId)
       .then(game => {
         if(!game) {

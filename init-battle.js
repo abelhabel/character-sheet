@@ -121,7 +121,7 @@ Module.onLoad(['DungeonCrawl_ProjectUtumnoTileset.png', 'Hell2.jpg',
 'monsters.js', 'abilities.js', 'terrains.js', 'arenas.js', 'icons.js', 'animations.js', 'teams.js',
 'special-effects.js','FixedList.js', 'Logger.js', 'Rand.js', 'Canvas.js', 'Sprite.js', 'CompositeSprite.js', 'AbilityEffect.js', 'Animation.js',
 'PositionList2d.js', 'pathfinding.js',  'Ability.js', 'AI.js', 'Monster.js', 'Terrain.js', 'Menu.js', 'BattleMenu.js',
-'Arena.js', 'MonsterCard.js', 'Lobby.js', 'TeamSelect.js', 'BattleResult.js', 'Battle.js',
+'Arena.js', 'MonsterCard.js', 'TeamViewer.js', 'Lobby.js', 'TeamSelect.js', 'BattleResult.js', 'Battle.js',
 'game-modes.js' ], () => {
   const aiTeams = require('teams.js');
   const Lobby = require('Lobby.js');
@@ -273,6 +273,7 @@ Module.onLoad(['DungeonCrawl_ProjectUtumnoTileset.png', 'Hell2.jpg',
 
   const gameModes = require('game-modes.js');
   gameModes.humanVSAI(lobby, viewer);
+  gameModes.AIVSAI(lobby, viewer);
   gameModes.localMultiplayer(lobby, viewer);
   gameModes.spectate(lobby, viewer);
   gameModes.liveMultiplayer(lobby, viewer);

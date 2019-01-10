@@ -96,7 +96,7 @@ var tpl = {
           name: 'Template',
           type: 'select',
           exportAs: 'template',
-          values: animations.map(a => a.bio.name),
+          values: ['', ...animations.map(a => a.bio.name)],
           initial: ''
         }
       ]
@@ -264,7 +264,8 @@ var tpl = {
           values: ['', 'hypnotize', 'berzerk', 'reflectDamage',
             'giveEffectAsAbility', 'phantomImage', 'stealBlessing',
             'dispel', 'teleport', 'lifeLeech', 'polymorph', 'blink',
-            'chain', 'manaThief', 'suicide', 'charge', 'reflectArrows'
+            'chain', 'manaThief', 'suicide', 'charge', 'reflectArrows',
+            'transferCurse'
           ],
           initial: 'false',
           exportAs: 'special'

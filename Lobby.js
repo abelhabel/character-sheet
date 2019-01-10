@@ -1,6 +1,7 @@
 const icons = require('icons.js');
 const Sprite = require('Sprite.js');
 const Menu = require('Menu.js');
+const TeamViewer = require('TeamViewer.js');
 class User {
   constructor(name, id, activeGames, wins, losses) {
     this.name = name;
@@ -70,7 +71,8 @@ class Lobby {
       'battle action confirmed': [],
       'start spectate': [],
       'play by post': [],
-      'human vs ai game': []
+      'human vs ai game': [],
+      'ai vs ai game': []
     };
     this.cursor = new Sprite(icons.find(i => i.bio.name == 'Ability Cursor').bio.sprite);
   }
@@ -88,9 +90,9 @@ class Lobby {
     this.events[event].push(fn);
   }
 
-  trigger(event, data) {
+  trigger(event) {
     if(!this.events[event]) return;
-    this.events[event].forEach(fn => fn(data));
+    this.events[event].forEach(fn => fn.apply(null, Array.from(arguments).splice(1)));
   }
 
   confirmBattleAction(data) {
@@ -238,6 +240,20 @@ class Lobby {
   createLocalGame() {
     this.hide();
     this.trigger('local game');
+  }
+
+  createLocalAIVSAIGame() {
+    let v1 = new TeamViewer('Pick Team 1');
+    let v2 = new TeamViewer();
+    v1.render(this.tags.container);
+    v1.on('done', team1 => {
+      v2.title = `<div>${team1.name} Picked</div>Now, Pick Team 2`;
+      v2.render(this.tags.container);
+      v2.on('done', team2 => {
+        this.hide();
+        this.trigger('ai vs ai game', team1, team2);
+      });
+    });
   }
 
   createLocalAIGame() {
@@ -455,6 +471,15 @@ class Lobby {
               {
                 text: 'Easy',
                 fn: () => this.createLocalAIGame(this.localUser, 'easy'),
+              }
+            ]
+          },
+          {
+            text: 'AI vs AI',
+            items: [
+              {
+                text: 'Easy',
+                fn: () => this.createLocalAIVSAIGame(this.localUser, 'easy'),
               }
             ]
           },

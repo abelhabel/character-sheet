@@ -55,6 +55,29 @@ gameModes.humanVSAI = function(lobby, viewer) {
   });
 };
 
+gameModes.AIVSAI = function(lobby, viewer) {
+  lobby.on('ai vs ai game', (team1, team2) => {
+    var generator = createRNG();
+    viewer.hideTeamSelect();
+    team1 = assembleTeam(team1.units);
+    team2 = assembleTeam(team2.units);
+    var battle = new Battle(team1, team2, tw, th, viewer.container);
+    team1.forEach(m => m.addAI(1));
+    team2.forEach(m => m.addAI(1));
+    battle.onGameEnd = (o) => {
+      o.results.winningTeam(o.winningTeam);
+      let report = o.results.report(() => {
+        battle.destroy();
+        viewer.reset();
+        lobby.show();
+      });
+      document.body.appendChild(report);
+    };
+    battle.start();
+    window.battle = battle;
+  });
+};
+
 gameModes.localMultiplayer = function(lobby, viewer) {
   lobby.on('local game', (game) => {
     var generator = createRNG();

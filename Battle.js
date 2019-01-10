@@ -1535,7 +1535,6 @@ class Battle {
 
         if(!ability.stats.summon) {
           let acts = targets.actors.map((t, i) => {
-            logger.log(a.bio.name, 'using ability', ability.bio.name, 'on', t.bio.name);
             let specialResult;
             let special = specialEffects[ability.stats.special];
             if(special && special.when == 'before hit') {

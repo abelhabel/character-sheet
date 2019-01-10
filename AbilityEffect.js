@@ -17,6 +17,10 @@ class AbilityEffect {
     return new CompositeSprite([bg, fg]);
   }
 
+  get expired() {
+    return this.rounds > this.ability.stats.duration;
+  }
+
   get canvas() {
     return this.sprite.canvas;
   }
