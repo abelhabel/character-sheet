@@ -44,14 +44,17 @@ class File {
     if(remote) return this.writeRemote(data);
     return new Promise((resolve, reject) => {
       let stream = fs.createWriteStream(this.path, this.options);
-      stream.write(data);
       stream.on('close', () => {
         this.content = data;
         stream.close();
         resolve();
       });
       stream.on('error', reject);
-      stream.end();
+      stream.on('open', () => {
+        stream.write(data);
+        stream.end();
+
+      })
 
     })
   }

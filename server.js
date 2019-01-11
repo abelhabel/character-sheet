@@ -1,3 +1,4 @@
+require('./date-extension');
 const http = require("http");
 const backup = require("./backup");
 const URL = require('url').URL;
@@ -7,6 +8,7 @@ const wrap = {
   pre: () => '(function (module) {\n module.pre = function() {',
   post: (name) => `\n}})(Module.modules["${name}"])`
 }
+const blog = require('./blog');
 function guid() {
   function s4() {
     return Math.floor((1 + Math.random()) * 0x10000)
@@ -129,6 +131,9 @@ const server = http.createServer(function(req, res) {
       return res.end(files[name]());
     }
     return res.end(files[name], 'binary');
+  }
+  if(name == 'blog') {
+    return res.end(blog.html())
   }
   if(name == 'saveMonster') {
     return saveData(req, res, 'monsters', url);

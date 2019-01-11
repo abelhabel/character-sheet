@@ -1,0 +1,33 @@
+<article id='${id}' class="blog-post">
+  <header>
+    <h2>AI and a new game mode</h2>
+  </header>
+  <section>
+    <p>
+      Today I added a game mode that lets you pit one AI against another AI.
+      It can be interesting to watch the AI to see how it acts against different monsters
+      and monster compositions.
+    </p>
+    <p>
+      My intention was for the game mode to be informative and a way to study AI behavior,
+      maybe in preparation for a fight, but I found that it is quite fun to watch just watch them.
+    </p>
+    <p>
+      While I added this game mode I also added a second level of AI behavior.
+      Previously there was only one AI behavior, level 1, that finds the closest enemey
+      and tries to attack it with the most appropriate ability. It does this on every tile it is on.
+      If it can't attack it it moves towards it instead, one tile at the time and reevaluates.
+
+      But the new AI, level 2, prioritizes ranged enemies. If it can't attack it moves, and if it can't move
+      it tries to attack the nearest enemy. More specifically, if it can't attack the ranged enemy and have no
+      moves left it will run AI level 1 instead.
+    </p>
+  </section>
+  <footer>
+    <p>
+      Posted on
+      <time datetime="${date}">${shortDate}</time>
+      by Andreas Olsson.
+    </p>
+  </footer>
+</article>

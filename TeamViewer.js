@@ -40,7 +40,7 @@ class TeamViewer {
         right: 10px;
         font-weight: bold;
       }
-    </style>`
+    </style>`;
     let c = html`<div class='outer'>
       <div id='close-team-select'style=''>Close</div>
       <div class='title'>${this.title}</div>
