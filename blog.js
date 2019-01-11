@@ -4,7 +4,7 @@ posts.read()
 .then(files => {
 
 })
-.then(e => console.log('Folder Err:', e));
+.catch(e => console.log('Folder Err:', e));
 
 module.exports = {};
 module.exports.html = function() {
