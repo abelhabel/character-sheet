@@ -3,7 +3,8 @@ let posts = new Folder('_blog');
 posts.read()
 .then(files => {
 
-});
+})
+.then(e => console.log('Folder Err:', e));
 
 module.exports = {};
 module.exports.html = function() {
