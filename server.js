@@ -133,7 +133,13 @@ const server = http.createServer(function(req, res) {
     return res.end(files[name], 'binary');
   }
   if(name == 'blog') {
-    return res.end(blog.html())
+    return blog.html()
+    .then(html => res.end(html))
+    .catch(e => {
+      console.log('Blog Error:', e);
+      res.writeHead(500, {'Content-Type': 'text/plain'});
+      res.end('Server Error');
+    })
   }
   if(name == 'saveMonster') {
     return saveData(req, res, 'monsters', url);
