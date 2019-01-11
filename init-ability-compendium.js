@@ -25,12 +25,12 @@ CSSStyleDeclaration.prototype.copyTo = function(o) {
 function html(strings, ...values) {
   let out = '';
   strings.forEach((s, i) => {
-    out += s + values[i];
+    out += s + (values[i] == undefined ? '' : values[i]);
   })
 
-  let d = document.createElement('div');
+  let d = document.createElement('template');
   d.innerHTML = out;
-  return d.firstElementChild;
+  return d.content.firstElementChild;
 }
 
 class Module {
@@ -50,7 +50,6 @@ class Module {
   }
 
   static onLoad(files, fn) {
-    console.log('load modules')
     var o = Promise.resolve();
     let calls = files.map(f => {
       let m = new Module(f);
@@ -60,7 +59,6 @@ class Module {
         var script = document.createElement(tag);
         script.async = true;
         script.defer = true;
-        console.log('loading...', f)
         script.onload = function() {
           if(tag == 'img') {
             m.exports = script;
@@ -89,21 +87,29 @@ function require(name) {
 Module.modules = {};
 Module.loaders = [];
 
-Module.onLoad(['DungeonCrawl_ProjectUtumnoTileset.png', 'sheet_of_old_paper.png', 'abilities.js', 'Ability.js'], () => {
+Module.onLoad(['DungeonCrawl_ProjectUtumnoTileset.png', 'sheet_of_old_paper.png', 'abilities.js', 'Canvas.js', 'Sprite.js', 'Ability.js'], () => {
   const abilities = require('abilities.js');
-
+  const Sprite = require('Sprite.js');
+  abilities.forEach(a => {
+    let s = new Sprite(a.bio.sprite);
+    a.canvas = s.canvas;
+  })
   class Card {
     constructor(a) {
       this.a = a;
     }
 
     render() {
-      console.log(typeof this.a.stats.special)
+      let outer = html`<span></span>`;
       let n = this.a.bio.name;
       let e = this.a.stats.effect ? `<br>Effect: ${this.a.stats.effect}` : '';
       let s = this.a.stats.special && this.a.stats.special != 'false'? `<br>Special: ${this.a.stats.special}` : '';
-      let tag = html`<div
-        style='
+      let tag = html`<div class='card'>
+        <span class='image'></span>
+        <b>${n}</b>${e}${s}
+      </div>`;
+      let style = html`<style>
+        .card {
           display: inline-block;
           width: 200px;
           min-height:64px;
@@ -111,12 +117,16 @@ Module.onLoad(['DungeonCrawl_ProjectUtumnoTileset.png', 'sheet_of_old_paper.png'
           border: 1px solid gray;
           vertical-align: top;
           cursor: pointer;
-        '
-      >
-        <b>${n}</b>${e}${s}
-      </div>`;
-
-      return tag;
+        }
+        span, b {
+          vertical-align: top;
+        }
+      </style>`;
+      let shadow = outer.attachShadow({mode: 'open'});
+      shadow.appendChild(style);
+      shadow.appendChild(tag);
+      tag.querySelector('.image').appendChild(this.a.canvas.clone());
+      return outer;
     }
 
     drawAbilityStats(a, tag) {
@@ -140,7 +150,7 @@ Module.onLoad(['DungeonCrawl_ProjectUtumnoTileset.png', 'sheet_of_old_paper.png'
       let time = duration ? ` for ${duration} rounds` : '';
       if(multiplier) {
         text += `\n<span class='bold'>Effects</span>: (${minPower}-${maxPower}) * ${multiplier}% to ${stat}${time} (max stacks: ${stacks})`;
-        if(effect) {
+        if(effect && effect.stats) {
           let {source, attribute, minPower, maxPower, multiplier, duration, stacks} = effect.stats;
           let stat = source == 'blessing' || source == 'curse' ? attribute : 'health';
           let time = duration ? ` for ${duration} rounds` : '';
@@ -168,7 +178,6 @@ Module.onLoad(['DungeonCrawl_ProjectUtumnoTileset.png', 'sheet_of_old_paper.png'
     }
 
     update() {
-      console.log('update', this.term)
       this.tags.results.innerHTML = '';
       this.db.filter(card => {
         let item = card.a;
@@ -203,7 +212,11 @@ Module.onLoad(['DungeonCrawl_ProjectUtumnoTileset.png', 'sheet_of_old_paper.png'
         '
       >
       </div>`;
-      tag.addEventListener('click', e => {
+      // tag.addEventListener('click', e => {
+      //   tag.style.display = 'none';
+      // });
+      window.addEventListener('keyup', e => {
+        if(e.key != 'Escape') return;
         tag.style.display = 'none';
       });
       document.body.appendChild(tag);

@@ -37,7 +37,12 @@ class Menu {
   }
 
   renderItem(item) {
-    let i = html`<span><div class='menu-item'>${item.text}</div></span>`;
+    let i;
+    if(item.link) {
+      i = html`<a href='${item.link}' target='_blank'><div class='menu-item'>${item.text}</div></a>`;
+    } else {
+      i = html`<span><div class='menu-item'>${item.text}</div></span>`;
+    }
     i.querySelector('.menu-item')
     .addEventListener('click', e => this.click(e, item));
     return i;
@@ -76,6 +81,11 @@ class Menu {
     } else {
       let outer = html`<div></div>`;
       let style = html`<style>
+      a {
+        text-decoration: none;
+        color: inherit;
+        pointer: inherit;
+      }
       .menu {
         width: 300px;
         position: absolute;
@@ -102,6 +112,7 @@ class Menu {
       }
       .menu-nested {
         padding-left: 15px;
+        opacity: 0.8;
       }
       </style>`;
       let shadow = outer.attachShadow({mode: 'open'});

@@ -461,6 +461,14 @@ class Lobby {
             fn: () => this.createPlayByPostGame(this.localUser)
           }
         ]
+      },
+      {
+        text: 'Bestiary',
+        link: '/bestiary.html'
+      },
+      {
+        text: 'Ability Compendium',
+        link: '/ability-compendium.html'
       }
     ]);
 
