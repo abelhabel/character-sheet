@@ -132,14 +132,18 @@ const server = http.createServer(function(req, res) {
     }
     return res.end(files[name], 'binary');
   }
-  if(name == 'blog') {
-    return blog.html()
-    .then(html => res.end(html))
-    .catch(e => {
-      console.log('Blog Error:', e);
-      res.writeHead(500, {'Content-Type': 'text/plain'});
-      res.end('Server Error');
-    })
+
+  if(name.match(/^blog/)) {
+    let target = name.match(/^blog\/([0-9a-zA-Z-_]+)/);
+    if(target) {
+      let post = blog.get(target[1]);
+      if(!post) {
+        res.statusCode = 404;
+        return res.end(`<html DOCTYPE='html'><head></head><body>Blog post not found. <a href="/blog">See all blog posts</a></body></html>`);
+      }
+      return res.end(post);
+    }
+    return res.end(blog.html())
   }
   if(name == 'saveMonster') {
     return saveData(req, res, 'monsters', url);
