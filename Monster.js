@@ -583,11 +583,22 @@ class Monster {
         bottom: 0px;
         width: 100%;
       }
+      .bio {
+        display: inline-block;
+        vertical-align: top;
+      }
     </style>`;
     if(!document.getElementById('monster-cs-style')) {
       document.head.appendChild(style);
     }
     let tag = html`<div class='outer'>
+      <section>
+        <div class='bio' id='monster-image'></div>
+        <div class='bio'>
+          <span id='monster-name'>${m.bio.name}</span><br>
+          <span id='monster-description'>${m.bio.description || 'No description available for this monster'}</span>
+        </div>
+      </section>
       <div class = 'stat-column'>
         <div class='stat' data-stat='health'>
           <div class='stat-img health'></div>
@@ -652,6 +663,7 @@ class Monster {
       <section id='active-effects'>Active Effects <br></section>
       <section id='details'></section>
     </div>`;
+    tag.querySelector('#monster-image').appendChild(m.canvas.clone());
     tag.querySelector('.stat-img.health').appendChild(health.canvas);
     tag.querySelector('.stat-img.mana').appendChild(mana.canvas);
     tag.querySelector('.stat-img.attack').appendChild(attack.canvas);
