@@ -1,5 +1,5 @@
 const Folder = require('./Folder');
-let posts = new Folder('blog');
+let posts = new Folder('_blog');
 posts.read()
 .then(files => {
 

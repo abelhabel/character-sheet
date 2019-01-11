@@ -6,7 +6,7 @@ let id = d.format('y-M-d-T');
 let date = d.toGMTString();
 let shortDate = date.substr(0, 16);
 let tpl = new File('.', 'blog-template.html');
-let out = new File('blog', id + '.html');
+let out = new File('_blog', id + '.html');
 
 tpl.read().then(() => {
   return eval(`\`${tpl.text}\``);
