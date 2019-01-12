@@ -20,6 +20,10 @@ module.exports = function(server) {
   class Team {
     constructor(user, team) {
       this.user = user;
+      team.forEach(m => {
+        if(m.suuid) return;
+        m.suuid = guid();
+      });
       this.team = team;
     }
   }
