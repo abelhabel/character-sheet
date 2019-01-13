@@ -149,6 +149,7 @@ class R extends Array {
       }
     });
     this.current.willAct = Object.values(this.current.willAct);
+    console.log('setting _actor', this.current.willAct[0].bio.name)
     this._actor = this.current.willAct[0];
   }
 
