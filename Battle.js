@@ -60,7 +60,7 @@ class R extends Array {
   }
 
   get actor() {
-    console.log('_actor', this._actor && this._actor.bio.name)
+    console.log('_actor', this._actor && this._actor.bio.name, this.current.willAct[0] && this.current.willAct[0].bio.name)
     return this._actor || this.current.willAct[0];
   }
 
