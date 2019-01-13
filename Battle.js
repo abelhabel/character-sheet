@@ -1413,6 +1413,7 @@ class Battle {
         var {positions, abilityId, type} = action;
         let position = positions[0];
         let actor = this.currentActor;
+        console.log('fast forward', actor.id)
         let p;
         if(type == 'wait') {
           let canWait = this.wait(actor)
@@ -1448,7 +1449,7 @@ class Battle {
             this.endTurn();
             this.act();
           } else {
-            this.act();
+            if(actor.ai) return this.aiAct(actor).then(resolve, reject);
           }
           resolve();
         })
@@ -1687,6 +1688,7 @@ class Battle {
 
   endTurn() {
     let a = this.currentActor;
+    console.log('end turn', a.id)
     logger.log('Turn end for', a.bio.name);
     this.turn.endMovement.x = a.x;
     this.turn.endMovement.y = a.y;

@@ -76,9 +76,10 @@ class StatBonus {
 
 const Ability = require('Ability.js');
 class Monster {
-  constructor(t, stacks, summoned) {
+  constructor(t, stacks, summoned, suuid) {
     this.template = t;
     this.summoned = summoned;
+    this.suuid = suuid || nextId();
     this.orientation = 0; // 0 = left, 1 = right
     this.initiativeEntropy = 11;
     this.initiativeEntropyCounter = 0;

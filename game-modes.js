@@ -10,7 +10,7 @@ const gameModes = {};
 function assembleTeam(team) {
   return team.map(t => {
     let template = monsters.find(m => m.id == t.templateId);
-    let monster = new Monster(template, t.stacks);
+    let monster = new Monster(template, t.stacks, false, t.suuid);
     return monster;
   })
 }
@@ -230,7 +230,7 @@ gameModes.playByPost = function(lobby, viewer) {
         localTeam = 'team2';
       }
       var battle = new Battle(assembleTeam(firstTeam), assembleTeam(secondTeam), tw, th, viewer.container);
-
+      console.log(battle.team1, battle.team2)
       battle.onAction = (action, team) => {
         if(team != localTeam) return;
         lobby.battleAction(game, action);
