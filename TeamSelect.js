@@ -96,9 +96,10 @@ class TeamSelect  {
           let cost = parseInt(item.bio.cost);
           if(cost + this.spent <= this.cash && this.monsters.length < this.max) {
             let existingMonster = this.hasStackableMonster(item);
-            let stacks = e.shiftKey ? item.bio.maxStacks - (existingMonster ? existingMonster.stacks : 0): 1;
+            let currentStack = existingMonster ? existingMonster.stacks : 0;
+            let stacks = e.shiftKey ? item.bio.maxStacks - currentStack : 1;
             if(cost * stacks > this.left) {
-              stacks = (this.left / cost);
+              stacks = Math.floor(this.left / cost);
             }
             if(existingMonster) {
               existingMonster.addStack(stacks);
