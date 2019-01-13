@@ -1413,7 +1413,6 @@ class Battle {
         var {positions, abilityId, type} = action;
         let position = positions[0];
         let actor = this.currentActor;
-        console.log('fast forward', actor.id)
         let p;
         if(type == 'wait') {
           let canWait = this.wait(actor)
@@ -1428,6 +1427,7 @@ class Battle {
           p = Promise.resolve();
         } else
         if(type == 'move') {
+          console.log('removing before move', actor.bio.name)
           this.grid.remove(actor.x, actor.y);
           actor.move(position.x, position.y);
           this.grid.setItem(actor);
@@ -1619,6 +1619,7 @@ class Battle {
   kill(a) {
     this.sounds.death.play();
     this.tr.remove(a);
+    console.log('removing', this.grid.get(a.x, a.y).bio.name)
     this.grid.remove(a.x,a.y);
     this.render();
     logger.log(a.bio.name, 'was killed');
