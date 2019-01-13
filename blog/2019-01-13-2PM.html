@@ -1,0 +1,36 @@
+<article id="2019-01-13-2PM" class="blog-post">
+  <header>
+    <a href="blog/You're_captured,_stupid_bug!"><h2>You're captured, stupid bug!</h2></a>
+  </header>
+  <section>
+    <p>
+      I found, with help from the dane, some annoying bugs today but they were
+      hunted down and crushed.
+    </p>
+    <p>
+      The first bug was a silly rounding error when selecting a team. If you selected
+      a stack of units, ie holding down shift, it rounded up rather than down when determining
+      how many stacks you could afford of that unit. This allowed you to pick more units than you
+      could afford.
+    </p>
+    <p>
+      The second bug was more tricky to track down but the error was just as silly. When a monster,
+      is removed from the game, ie when it dies, I had forgotten to remove it from the waiting list.
+      There are three lists for keeping track of the initiaitve order: will act, has acted, waiting. So,
+      when a monster had waited and it would later be it's turn it would immediately be killed, which
+      in turn removes that monster from the battle grid. At that time, though, that position on the grid
+      might be occupied by another monster so you remove the wrong monster from the grid.
+    </p>
+    <p>
+      A third bug had been introduced when I made the last AI changes. The AI didn't end it's turn properly,
+      so if there were more than one stack of the same monster the game wouldn't know which of these monster's turn it was.
+    </p>
+  </section>
+  <footer>
+    <p>
+      Posted on
+      <time datetime="Sun, 13 Jan 2019 19:31:36 GMT">Sun, 13 Jan 2019</time>
+      by Andreas Olsson.
+    </p>
+  </footer>
+</article>
