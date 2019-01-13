@@ -15,7 +15,6 @@ const terrains = require('terrains.js');
 const arenas = require('arenas.js');
 const icons = require('icons.js');
 const animations = require('animations.js');
-console.log(animations)
 class TurnOrder extends Array {
   constructor() {
     super();
@@ -60,12 +59,10 @@ class R extends Array {
   }
 
   get actor() {
-    console.log('_actor', this._actor && this._actor.bio.name, this.current.willAct[0] && this.current.willAct[0].bio.name)
     return this._actor || this.current.willAct[0];
   }
 
   add(actors) {
-    console.log('adding actors', actors)
     let ca = this.actor;
     this.push.apply(this, actors);
     this.current.willAct.push.apply(this.current.willAct, actors);
@@ -108,7 +105,6 @@ class R extends Array {
 
   remove(actor) {
     let index = this.indexOf(actor);
-    console.log('removing from turn', actor.bio.name, index)
     if(!~index) return;
     this.splice(index, 1);
     index = this.current.willAct.indexOf(actor);
@@ -117,7 +113,6 @@ class R extends Array {
     if(~index) this.current.hasActed.splice(index, 1);
     index = this.current.waiting.indexOf(actor);
     if(~index) this.current.waiting.splice(index, 1);
-    console.log('removed from turn', Array.from(this), Array.from(this.current.willAct), Array.from(this.current.hasActed))
   }
 
   extraTurn(a, init, turn) {
@@ -151,7 +146,6 @@ class R extends Array {
       }
     });
     this.current.willAct = Object.values(this.current.willAct);
-    console.log('setting _actor', this.current.willAct[0].bio.name)
     this._actor = this.current.willAct[0];
   }
 
@@ -653,7 +647,6 @@ class Battle {
     >
     </div>`;
     window.addEventListener('keyup', e => {
-      console.log(e)
       if(e.key != 'Escape') return;
       tag.style.display = 'none';
     });
@@ -1624,10 +1617,9 @@ class Battle {
   kill(a) {
     this.sounds.death.play();
     this.tr.remove(a);
-    console.log('removing', this.grid.get(a.x, a.y).bio.name, a.bio.name)
     this.grid.remove(a.x,a.y);
     this.render();
-    logger.log(a.bio.name, 'was killed');
+    logger.log(a.biso.name, 'was killed');
   }
 
   inRange(a, b, ability) {
@@ -1694,7 +1686,6 @@ class Battle {
 
   endTurn() {
     let a = this.currentActor;
-    console.log('end turn', a.id)
     logger.log('Turn end for', a.bio.name);
     this.turn.endMovement.x = a.x;
     this.turn.endMovement.y = a.y;
@@ -1719,7 +1710,6 @@ class Battle {
   act() {
     this.startTurn();
     var a = this.currentActor;
-    console.log('act', a && a.bio.name, a && a.alive)
     if(!a) return;
     if(!a.alive) {
       this.kill(a);
