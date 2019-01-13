@@ -5,6 +5,9 @@ function render(body) {
     <head>
       <title>Fangalia Blog</title>
       <style>
+        html, body {
+          font-family: Tahoma, sans serif;
+        }
         .blog-post {
           font-size: 16px;
           line-height: 120%;
