@@ -134,7 +134,7 @@ const server = http.createServer(function(req, res) {
   }
 
   if(name.match(/^blog/)) {
-    let target = name.match(/^blog\/([0-9a-zA-Z-_]+)/);
+    let target = name.match(/^blog\/([0-9a-zA-Z-_,!']+)/);
     if(target) {
       let post = blog.get(target[1]);
       if(!post) {
