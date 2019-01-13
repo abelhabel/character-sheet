@@ -60,6 +60,7 @@ class R extends Array {
   }
 
   get actor() {
+    console.log('_actor', this._actor && this._actor.bio.name)
     return this._actor || this.current.willAct[0];
   }
 
