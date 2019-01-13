@@ -114,6 +114,7 @@ class R extends Array {
     this.current.willAct.splice(index, 1);
     index = this.current.hasActed.indexOf(actor);
     this.current.hasActed.splice(index, 1);
+    console.log('removed from turn', Array.from(this), Array.from(this.current.willAct), Array.from(this.current.hasActed))
   }
 
   extraTurn(a, init, turn) {
