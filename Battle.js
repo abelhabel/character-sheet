@@ -1714,6 +1714,7 @@ class Battle {
   act() {
     this.startTurn();
     var a = this.currentActor;
+    console.log('act', a && a.bio.name, a && a.alive)
     if(!a) return;
     if(!a.alive) {
       this.kill(a);
