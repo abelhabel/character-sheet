@@ -112,9 +112,11 @@ class R extends Array {
     if(!~index) return;
     this.splice(index, 1);
     index = this.current.willAct.indexOf(actor);
-    this.current.willAct.splice(index, 1);
+    if(~index) this.current.willAct.splice(index, 1);
     index = this.current.hasActed.indexOf(actor);
-    this.current.hasActed.splice(index, 1);
+    if(~index) this.current.hasActed.splice(index, 1);
+    index = this.current.waiting.indexOf(actor);
+    if(~index) this.current.waiting.splice(index, 1);
     console.log('removed from turn', Array.from(this), Array.from(this.current.willAct), Array.from(this.current.hasActed))
   }
 
