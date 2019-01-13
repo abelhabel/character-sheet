@@ -107,6 +107,7 @@ class R extends Array {
 
   remove(actor) {
     let index = this.indexOf(actor);
+    console.log('removing from turn', actor.bio.name, index)
     if(!~index) return;
     this.splice(index, 1);
     index = this.current.willAct.indexOf(actor);
