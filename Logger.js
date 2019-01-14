@@ -64,6 +64,16 @@ class Logger {
     this.redraw();
   }
 
+  hide() {
+    this.minimized = true;
+    this.redraw();
+  }
+
+  show() {
+    this.minimized = false;
+    this.redraw();
+  }
+
   tag() {
     var d = document.createElement('div');
     return d;

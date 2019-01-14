@@ -8,6 +8,7 @@ const Sprite = require('Sprite.js');
 const Canvas = require('Canvas.js');
 const BattleResult = require('BattleResult.js');
 const BattleMenu = require('BattleMenu.js');
+const UnitPlacement = require('UnitPlacement.js');
 const specialEffects = require('special-effects.js');
 const abilities = require('abilities.js');
 const monsters = require('monsters.js');
@@ -251,22 +252,25 @@ class Action {
 }
 
 class Battle {
-  constructor(team1, team2, tw, th, container) {
+  constructor(team1, team2, tw, th, container, arena) {
     this.container = container;
     this.mouse = {
       x: 0,
       y: 0
-    }
-    this.team1 = team1;
-    this.team2 = team2;
-    this.team1.forEach(m => {
-      m.team = 'team1';
-      m.battle = this;
-    });
-    this.team2.forEach(m => {
-      m.team = 'team2';
-      m.battle = this;
-    });
+    };
+    this.originalTeam1 = team1;
+    this.originalTeam2 = team2;
+    this.team1 = [];
+    this.team2 = [];
+
+    // this.team1.forEach(m => {
+    //   m.team = 'team1';
+    //   m.battle = this;
+    // });
+    // this.team2.forEach(m => {
+    //   m.team = 'team2';
+    //   m.battle = this;
+    // });
     this.teamColors = {
       team1: {
         aura: 'rgba(22, 88, 110, 0.5)',
@@ -281,7 +285,10 @@ class Battle {
         selected: 'rgba(110, 110, 22, 0.5)'
       }
     };
-    var arena = arenas[1];
+    this.placeUnits = false;
+    this.unitsPlaced = false;
+    this.unitPlacement = null;
+    arena = arena || arenas[1];
     this.arena = new Arena(arena, tw, th);
     this.grid = this.arena.obstacles;
     this.w = this.arena.w;
@@ -301,6 +308,7 @@ class Battle {
       team2: [],
       all: []
     };
+    this.assembleTeams();
     [...this.team1, ...this.team2].forEach(m => this.addAuras(m))
     this.tr = new R();
     this.tr.add([...this.team1, ...this.team2]);
@@ -308,6 +316,53 @@ class Battle {
     this.br = new BattleResult();
     this.csPopup = this.popup();
     this.setEvents();
+  }
+
+  static create(o) {
+    var arena = o.arena || arenas[1];
+    let b = new Battle(o.team1, o.team2, o.tw, o.th, o.container, arena);
+  }
+
+  assembleTeams() {
+    this.originalTeam1.forEach(u => {
+      let tpl = monsters.find(tpl => tpl.id == u.templateId);
+      let m = new Monster(tpl, u.stacks, false, u.suuid);
+      m.team = 'team1';
+      m.battle = this;
+      this.team1.push(m);
+    });
+
+    this.originalTeam2.forEach(u => {
+      let tpl = monsters.find(tpl => tpl.id == u.templateId);
+      let m = new Monster(tpl, u.stacks, false, u.suuid);
+      m.team = 'team2';
+      m.battle = this;
+      this.team2.push(m);
+    });
+
+    this.setPositions();
+
+    this.originalTeam1.forEach(u => {
+      let m = this.team1.find(m => m.suuid == u.suuid);
+      console.log(this.team1, u)
+      if(!isNaN(u.x) && !isNaN(u.y)) {
+        this.grid.remove(m.x, m.y);
+        m.x = Number(u.x);
+        m.y = Number(u.y);
+        this.grid.setItem(m);
+      }
+    })
+
+    this.originalTeam2.forEach(u => {
+      let m = this.team2.find(m => m.suuid == u.suuid);
+      if(!isNaN(u.x) && !isNaN(u.y)) {
+        this.grid.remove(m.x, m.y);
+        m.x = Number(u.x);
+        m.y = Number(u.y);
+        this.grid.setItem(m);
+      }
+    })
+
   }
 
   getEnemyTeam(team) {
@@ -369,6 +424,8 @@ class Battle {
 
     this.board.parentNode.appendChild(this.animationCanvas.canvas);
     this.board.parentNode.insertBefore(this.terrainCanvas, this.board);
+
+
   }
 
   destroy() {
@@ -446,10 +503,14 @@ class Battle {
     var mp = 0;
     var actor = null;
     this.inputCanvas.addEventListener('click', (e) => {
-      let a = this.currentActor;
-      actor = a;
       let x = Math.floor(e.offsetX / this.tw);
       let y = Math.floor(e.offsetY / this.th);
+      if(this.placeUnits && !this.unitsPlaced) {
+        this.unitPlacement.click(x, y);
+        return;
+      }
+      let a = this.currentActor;
+      actor = a;
 
       var t = this.grid.get(x, y);
       let selectionsRequired = a.selectedAbility && a.selectedAbility.stats.selections || 1;
@@ -472,7 +533,7 @@ class Battle {
         let action = new Action('move', [{x,y}], a.template.id);
         this.addAction(action)
         .then(() => {
-          console.log('walk successful');
+          // console.log('walk successful');
         })
         .catch(e => {
           console.log(e)
@@ -576,6 +637,9 @@ class Battle {
     })
 
     this.inputCanvas.addEventListener('mousemove', (e) => {
+      if(this.placeUnits && !this.unitsPlaced) {
+        return;
+      }
       let a = this.currentActor;
       if(!a || a.ai) return;
       let x = Math.floor(e.offsetX / this.tw);
@@ -848,20 +912,15 @@ class Battle {
   }
 
   drawTerrain() {
+    this.arena.canvas.composite && this.arena.drawObstacles();
     var canvas = this.terrainCanvas;
     var c = canvas.getContext('2d');
     var img = this.arena.canvas.composite || this.arena.render();
     c.drawImage(img, 0,0, this.tw*this.w, this.th*this.h);
-    return;
-    var obstacles = new Terrain(terrains.find(t => t.bio.name == 'Trees'));
-    this.terrain.loop((x, y) => {
-      let item = this.terrain.get(x, y);
-      if(!item) return;
-      c.drawImage(item.sprite.canvas, x * this.tw, y * this.th, this.tw, this.th);
-    })
   }
 
   setPositions() {
+
     var w, h;
     h = 2;
     w = Math.ceil(this.team1.length / h);
@@ -926,6 +985,61 @@ class Battle {
         item.y = y;
         this.grid.setItem(item);
       }
+    })
+    return Promise.resolve();
+  }
+
+  placeU() {
+    let placements = [];
+    let placed = 0;
+    let placementDone = () => {
+      if(placed == placements.length) {
+        this.unitsPlaced = true;
+        this.showMonsterCards();
+      }
+    }
+    if(!this.team1[0].ai) placements.push((resolve, reject) => {
+      let up = new UnitPlacement(this, 'team1');
+      console.log('unit placement team1')
+      up.onDone = () => {
+        placed += 1;
+        placementDone();
+        resolve();
+      };
+      this.unitPlacement = up;
+      up.render(document.body);
+      this.render();
+    });
+    if(!this.team2[0].ai) placements.push((resolve, reject) => {
+      let up = new UnitPlacement(this, 'team2');
+      console.log('unit placement team2')
+      up.onDone = () => {
+        placed += 1;
+        placementDone();
+        resolve();
+      };
+      this.unitPlacement = up;
+      up.render(document.body);
+      this.render();
+    })
+    if(placements.length) {
+      logger.hide();
+    }
+    let p = Promise.resolve();
+    placements.forEach(pl => {
+      p = p.then(() => new Promise(pl));
+    })
+    if(placements.length) this.hideMonsterCards();
+    return p;
+    return new Promise((resolve, reject) => {
+      let up = new UnitPlacement(this, 'team2');
+      up.onDone = () => {
+        this.unitsPlaced = true;
+        resolve();
+      };
+      this.unitPlacement = up;
+      up.render(document.body);
+      this.render();
     })
   }
 
@@ -1022,6 +1136,7 @@ class Battle {
       return new MonsterCard(item);
     })
   }
+
 
   drawMonsterCards() {
     var container = document.getElementById('monster-cards');
@@ -1619,7 +1734,7 @@ class Battle {
     this.tr.remove(a);
     this.grid.remove(a.x,a.y);
     this.render();
-    logger.log(a.biso.name, 'was killed');
+    logger.log(a.bio.name, 'was killed');
   }
 
   inRange(a, b, ability) {
@@ -1765,6 +1880,18 @@ class Battle {
     document.body.appendChild(c);
   }
 
+  showMonsterCards() {
+    console.log('showMonsterCards')
+    let c = document.getElementById('monster-cards');
+    c.style.display = 'block';
+  }
+
+  hideMonsterCards() {
+    console.log('hideMonsterCards')
+    let c = document.getElementById('monster-cards');
+    c.style.display = 'none';
+  }
+
   start() {
     logger.minimized = false;
     logger.redraw();
@@ -1775,9 +1902,10 @@ class Battle {
     .then(images => {
       this.cacheCanvases();
       this.makeMonsterCards();
-      this.setPositions();
       this.drawTerrain();
       this.drawBattleMenu();
+    })
+    .then(() => {
       this.render();
       return this.act();
     })
@@ -1807,6 +1935,7 @@ class Battle {
     this.clearCanvases();
     // this.drawGrid();
     this.drawMonsters();
+    this.drawTerrain();
     this.drawMonsterCards();
   }
 }

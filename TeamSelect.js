@@ -1,5 +1,6 @@
 const Monster = require('Monster.js');
 const MonsterCard = require('MonsterCard.js');
+const Team = require('Team.js');
 function guid() {
   function s4() {
     return Math.floor((1 + Math.random()) * 0x10000)
@@ -180,7 +181,13 @@ class TeamSelect  {
       var i = this.teams.push(this.monsters);
       this.teams[i-1].forEach(m => m.ai = true)
       if(this.teams.length == this.maxTeams) {
-        return typeof done == 'function' && done(this.teams[i-1]);
+        if(typeof done !== 'function') return;
+        if(this.maxTeams == 1) {
+          return done(Team.fromMonsters(this.teams[i-1]));
+        }
+        if(this.maxTeams == 2) {
+          return done(Team.fromMonsters(this.teams[0]), Team.fromMonsters(this.teams[1]));
+        }
       }
       this.monsters = [];
       this.spent = 0;

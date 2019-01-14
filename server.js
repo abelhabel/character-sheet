@@ -9,14 +9,7 @@ const wrap = {
   post: (name) => `\n}})(Module.modules["${name}"])`
 }
 const blog = require('./blog');
-function guid() {
-  function s4() {
-    return Math.floor((1 + Math.random()) * 0x10000)
-      .toString(16)
-      .substring(1);
-  }
-  return s4() + s4() + '-' + s4() + '-' + s4() + '-' + s4() + '-' + s4() + s4() + s4();
-}
+const guid = require('./guid');
 const files = {
   'monsters.js': () => wrap.pre() + require('./monsters.js')() + wrap.post('monsters.js'),
   'abilities.js': () => wrap.pre() + require('./abilities.js')() + wrap.post('abilities.js'),
@@ -66,9 +59,12 @@ loadFile('BattleMenu.js');
 loadFile('Menu.js');
 loadFile('DynamicSound.js');
 loadFile('TeamViewer.js');
+loadFile('Team.js');
+loadFile('UnitPlacement.js');
 loadFile('FixedList.js');
 loadFile('init-sound.js');
 loadFile('game-modes.js');
+loadFile('guid.js');
 loadFile('seven.js');
 loadFile('special-effects.js');
 loadFile('ability-tpl.js');
@@ -136,6 +132,11 @@ const server = http.createServer(function(req, res) {
   if(name.match(/^blog/)) {
     let target = name.match(/^blog\/([0-9a-zA-Z-_,!']+)/);
     if(target) {
+      if(target[1] == 'feed') {
+        let feed = blog.jsonFeed();
+        res.writeHead(200, {'Content-Type': 'application/json'})
+        return res.end(feed);
+      }
       let post = blog.get(target[1]);
       if(!post) {
         res.statusCode = 404;
@@ -177,5 +178,13 @@ const server = http.createServer(function(req, res) {
 });
 
 require('./ws.js')(server);
-
+// let ut = require('./update-teams');
+// let Folder = require('./Folder');
+// let f = new Folder('teams');
+// f.readFileNames()
+// .then(fileNames => {
+//   fileNames.forEach(fn => {
+//     ut(fn)
+//   })
+// })
 server.listen(PORT);

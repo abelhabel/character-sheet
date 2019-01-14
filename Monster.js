@@ -88,8 +88,8 @@ class Monster {
     this.id = nextId();
     this.ai = false;
     this.routine = this.ai ? new AI(this, 1) : null;
-    this.x = 0;
-    this.y = 0;
+    this.x = null;
+    this.y = null;
     this.selections = [];
     this.triggerCount = 0;
     this.bio = {
@@ -118,6 +118,7 @@ class Monster {
       apr: t.stats.apr || 1,
       tpr: t.stats.tpr || 1
     };
+    this.sprite = new Sprite(this.bio.sprite);
     this.initialStacks = stacks || 1;
     this.damageTaken = 0;
     this.manaUsed = 0;
@@ -175,7 +176,6 @@ class Monster {
     } else {
       this._selections[0] = p;
     }
-    console.log(this._selections)
   }
 
   _deselect() {
