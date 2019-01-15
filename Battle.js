@@ -57,6 +57,7 @@ class R extends Array {
     this._actor = null;
     this.currentRound = 0;
     this.waited = false;
+    this.cardSize = 'big';
   }
 
   get actor() {
@@ -205,6 +206,74 @@ class R extends Array {
     this.waited = false;
     this._actor = this.current.willAct[0] || this.current.waiting[this.current.waiting.length -1];
   }
+
+  render(battle) {
+    var container = document.getElementById('monster-cards');
+    var shadow = container.shadowRoot;
+    Object.assign(container.style, {position: 'relative'});
+    let cursor = new Sprite(icons.find(i => i.bio.name == 'Ability Cursor').bio.sprite);
+    shadow.innerHTML = '';
+    let style = html`<style>
+      .toggle-control {
+        position: relative;
+        display: inline-block;
+        padding: 10px;
+        border: none;
+        font-size: 20px;
+        font-weight: bold;
+        margin: 4px;
+        box-shadow: 0px 2px 4px -1px rgba(0,0,0,0.5);
+        border-radius: 4px;
+        background-color: rgba(0,0,0,0);
+        cursor: inherit;
+        background: url(sheet_of_old_paper_horizontal.png);
+        text-align: left;
+        user-select: none;
+        cursor: url(${cursor.canvas.toDataURL('image/png')}), auto;
+      }
+      .toggle-button {
+        position: relative;
+        display: inline-block;
+        padding: 10px;
+        border: none;
+        font-size: 20px;
+        font-weight: bold;
+        margin: 4px;
+        box-shadow: 0px 2px 4px -1px rgba(0,0,0,0.5);
+        border-radius: 4px;
+        background-color: rgba(0,0,0,0);
+        cursor: inherit;
+        text-align: left;
+      }
+      .toggle-button:hover {
+        background-color: rgba(0,0,0,0.1);
+      }
+      ${MonsterCard.style}
+    </style>`;
+    let round = battle.tr.currentRound + 1;
+    let teamName = battle.currentTeamName;
+    let actor = battle.currentActor ? battle.currentActor.bio.name : '';
+    let toggle = html`<div class='toggle-control'>
+      <div class='toggle-button'>
+        Change Size
+      </div>
+      <div>
+        Round: ${round}<br>
+        Team: ${teamName}<br>
+        Actor: ${actor}
+      </div>
+    </div>`;
+    toggle.querySelector('.toggle-button').addEventListener('click', e => {
+      this.cardSize = this.cardSize == 'small' ? 'big' : 'small';
+      this.render(battle);
+    })
+    shadow.appendChild(style);
+    shadow.appendChild(toggle);
+    battle.monsterCards.forEach(c => {
+      c.state = this.cardSize;
+      c.render(shadow)
+    });
+  }
 }
 
 class Turn {
@@ -324,7 +393,7 @@ class Battle {
   }
 
   assembleTeams() {
-    this.originalTeam1.forEach(u => {
+    this.originalTeam1.units.forEach(u => {
       let tpl = monsters.find(tpl => tpl.id == u.templateId);
       let m = new Monster(tpl, u.stacks, false, u.suuid);
       m.team = 'team1';
@@ -332,7 +401,7 @@ class Battle {
       this.team1.push(m);
     });
 
-    this.originalTeam2.forEach(u => {
+    this.originalTeam2.units.forEach(u => {
       let tpl = monsters.find(tpl => tpl.id == u.templateId);
       let m = new Monster(tpl, u.stacks, false, u.suuid);
       m.team = 'team2';
@@ -342,9 +411,8 @@ class Battle {
 
     this.setPositions();
 
-    this.originalTeam1.forEach(u => {
+    this.originalTeam1.units.forEach(u => {
       let m = this.team1.find(m => m.suuid == u.suuid);
-      console.log(this.team1, u)
       if(!isNaN(u.x) && !isNaN(u.y)) {
         this.grid.remove(m.x, m.y);
         m.x = Number(u.x);
@@ -353,7 +421,7 @@ class Battle {
       }
     })
 
-    this.originalTeam2.forEach(u => {
+    this.originalTeam2.units.forEach(u => {
       let m = this.team2.find(m => m.suuid == u.suuid);
       if(!isNaN(u.x) && !isNaN(u.y)) {
         this.grid.remove(m.x, m.y);
@@ -458,6 +526,10 @@ class Battle {
 
   get turn() {
     return this.turns[this.turns.length -1];
+  }
+
+  get currentTeamName() {
+    return this.currentActor ? (this.currentActor.team  == 'team1' ? this.originalTeam1.name : this.originalTeam2.name) : '';
   }
 
   removeDamagePreview() {
@@ -1139,26 +1211,52 @@ class Battle {
 
 
   drawMonsterCards() {
+    return this.tr.render(this);
     var container = document.getElementById('monster-cards');
     Object.assign(container.style, {
       position: 'relative'
     })
+    let cursor = new Sprite(icons.find(i => i.bio.name == 'Ability Cursor').bio.sprite);
     container.innerHTML = '';
-    let toggle = document.createElement('div');
-    Object.assign(toggle.style, {
-      position: 'relative',
-      display: 'inline-block',
-      marginLeft: '-45px',
-      top: '0px',
-      width: '45px',
-      height: '45px'
-    });
-    let round = this.tr.currentRound;
-    let team = this.currentActor ? this.currentActor.team : '';
+    let toggle = html`<div style='position: relative;
+      display: inline-block;
+      padding: 10px;
+      border: none;
+      font-size: 20px;
+      font-weight: bold;
+      margin: 4px;
+      box-shadow: 0px 2px 4px -1px rgba(0,0,0,0.5);
+      border-radius: 4px;
+      background-color: rgba(0,0,0,0);
+      cursor: inherit;
+      background: url(sheet_of_old_paper_horizontal.png);
+      text-align: left;
+      user-select: none;
+      cursor: url(${cursor.canvas.toDataURL('image/png')}), auto;'
+    >
+      <div style='position: relative;
+        display: inline-block;
+        padding: 10px;
+        border: none;
+        font-size: 20px;
+        font-weight: bold;
+        margin: 4px;
+        box-shadow: 0px 2px 4px -1px rgba(0,0,0,0.5);
+        border-radius: 4px;
+        background-color: rgba(0,0,0,0);
+        cursor: inherit;
+        background: url(sheet_of_old_paper_horizontal.png);
+        text-align: left;'
+      >
+        Change Size
+      </div>
+    </div>`;
+    let round = this.tr.currentRound + 1;
+    let teamName = this.currentTeamName;
     let actor = this.currentActor ? this.currentActor.bio.name : '';
     let info = html`<div>
       Round: ${round}<br>
-      Team: ${team}<br>
+      Team: ${teamName}<br>
       Actor: ${actor}
     </div>`;
     toggle.appendChild(info);
@@ -1884,7 +1982,7 @@ class Battle {
   createMonsterCardContainer() {
     var c = document.createElement('div');
     c.id = 'monster-cards';
-
+    c.attachShadow({mode: 'open'})
     document.body.appendChild(c);
   }
 

@@ -21,7 +21,6 @@ class Menu {
 
   click(e, item) {
     item.open = !item.open;
-    console.log(item);
     if(typeof item.fn == 'function') item.fn(e, item);
     this.render();
   }
@@ -57,7 +56,6 @@ class Menu {
       if(item.open && Array.isArray(item.items)) {
         let menu = new Menu(item.items, true);
         c.appendChild(menu.render());
-        console.log('render nested')
       }
     });
     return c;
@@ -66,7 +64,6 @@ class Menu {
   update() {
     if(this.tags.outer) {
       let n = this.render();
-      console.log('replaced menu')
     }
   }
 

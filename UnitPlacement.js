@@ -1,9 +1,9 @@
 class UnitPlacement {
-  constructor(arena, units, team) {
+  constructor(arena, team, side) {
     this.arena = arena;
-    this.units = units || [];
     this.team = team;
-    this.side = team == 'team1' ? 'left' : 'right';
+    this.units = this.team.monsters;
+    this.side = side || 'left';
     this.current = null;
     this.w = 2;
     this.h = arena.h;
@@ -18,6 +18,9 @@ class UnitPlacement {
     this.units.forEach((u, i) => {
       u.x = this.x;
       u.y = i;
+      let teamUnit = this.team.get(u.suuid);
+      teamUnit.x = u.x;
+      teamUnit.y = u.y;
       this.arena.obstacles.set(u.x, u.y, u);
     })
   }
@@ -25,10 +28,16 @@ class UnitPlacement {
   click(x, y) {
     if(x >= this.x + this.w || x < this.x) return;
     let unit = this.arena.obstacles.get(x, y);
+    if(this.current) {
+      this.arena.delight(this.current.x, this.current.y);
+    }
     if(!unit && this.current) {
       this.arena.obstacles.remove(this.current.x, this.current.y);
       this.current.x = x;
       this.current.y = y;
+      let teamUnit = this.team.get(this.current.suuid);
+      teamUnit.x = this.current.x;
+      teamUnit.y = this.current.y;
       this.arena.obstacles.set(x, y, this.current);
     } else
     if(unit == this.current) {
@@ -39,8 +48,6 @@ class UnitPlacement {
     }
     if(this.current) {
       this.arena.highlight(x, y);
-    } else {
-      this.arena.delight(x, y);
     }
     this.arena.drawObstacles();
     console.log(this.current && this.current.bio.name)
@@ -60,7 +67,7 @@ class UnitPlacement {
       border-radius: 10px;
       box-shadow: 0px 2px 4px -1px rgba(0,0,0,0.5);
     '>
-      ${this.team}:
+      ${this.team.name}:
       <p>Click on one of your units to select/deselect it. Then click on an empty tile to place it there.</p>
       <p>You can only place units on the 2 first columns of tiles on your side.</p>
       <p>Click done when you have placed all your units.</p>

@@ -2,17 +2,12 @@ const Monster = require('Monster.js');
 const Menu = require('Menu.js');
 const MonsterCard = require('MonsterCard.js');
 const Team = require('Team.js');
-function guid() {
-  function s4() {
-    return Math.floor((1 + Math.random()) * 0x10000)
-      .toString(16)
-      .substring(1);
-  }
-  return s4() + s4() + '-' + s4() + '-' + s4() + '-' + s4() + '-' + s4() + s4() + s4();
-}
+const guid = require('guid.js');
 class TeamSelect  {
-  constructor(items, container, tw, th, cash, maxTeams, done, onExit) {
+  constructor(items, container, tw, th, cash, teamNames, onDone, onExit) {
+    this.onDone = onDone;
     this.onExit = onExit;
+    this.teamNames = teamNames;
     this.items = items.filter(m => !m.bio.summonOnly);
     this.tw = tw;
     this.th = th;
@@ -23,135 +18,50 @@ class TeamSelect  {
     this.picked = document.createElement('canvas');
     this.picked.width = 2000;
     this.picked.height = th;
-    this.picked.addEventListener('click', (e) => {
-      let split = e.ctrlKey;
-      let removeAll = e.shiftKey;
-      let i = Math.floor(e.offsetX / this.tw);
-      let item = this.monsters[i];
-      let c = item.bio.cost;
-      if(split) {
-        if(this.monsters.length < this.max) {
-          let b = Math.floor(item.stacks/2);
-          item.addStack(-b);
-          this.monsters.push(new Monster(item.template, b));
-        }
-      } else
-      if(removeAll) {
-        c = item.stacks * item.bio.cost;
-        this.spent -= c;
-        this.monsters.splice(i, 1);
-      } else
-      if(item.stacks > 1) {
-        this.spent -= c;
-        item.addStack(-1);
-      } else {
-        this.spent -= c;
-        this.monsters.splice(i, 1);
-      }
-
-      this.render();
-    })
+    this.picked.addEventListener('click', (e) => this.sell(e))
     this.container.appendChild(this.picked);
     this.monsters = [];
-    this.maxTeams = maxTeams || 2;
+    this.maxTeams = this.teamNames.length;
     this.teams = [];
     this.images = {};
     var loading = {};
-    this.imagesLoader = Promise.all(this.items.map(item => {
-      var src = item.bio.sprite.spritesheet;
-      if(loading[src]) return Promise.resolve();
-      loading[src] = true;
-      return new Promise((resolve, reject) => {
-        var image = new Image();
-        this.images[src] = image;
-        image.onload = () => {
-          resolve(image);
-        }
-        image.src = src;
-      })
-    }));
-    this.imagesLoader.then(images => {
-      this.cacheCanvases();
-      return images;
+
+    this.teamName = html`<input type='text' value='${this.teamNames[this.teams.length ? this.teams.length-1 : 0]}'
+      style='padding: 10px;
+        border: none;
+        font-size: 20px;
+        font-weight: bold;
+        margin: 4px;
+        box-shadow: 0px 2px 4px -1px rgba(0,0,0,0.5);
+        border-radius: 4px;
+        background-color: rgba(0,0,0,0);
+        cursor: inherit;
+        background: url(sheet_of_old_paper_horizontal.png);
+        text-align: center;'
+    >`;
+    this.teamName.addEventListener('keyup', e => {
+      let i = this.teams.length;
+      this.teamNames[i] = this.teamName.value;
     })
-    .then(images => {
-      this.monsterCards = this.items.map(item => {
-        var monster = new Monster(item);
-        var out = {
-          item: item,
-          monster: monster,
-          card: new MonsterCard(monster),
-          canvas: null,
-          w: 200,
-          h: 200,
-          ct: null,
-          hover: false
-        };
-        var c = document.createElement('div');
-        c.style.display = 'inline-block';
-        out.card.state = 'big';
-        out.card.render(c, true);
-        // let image = c.querySelector('.card-image');
-        // image.appendChild(item.canvas);
-        // c.width = 200;
-        // c.height = 200;
-        c.addEventListener('click', (e) => {
-          let cost = parseInt(item.bio.cost);
-          if(cost + this.spent <= this.cash && this.monsters.length < this.max) {
-            let existingMonster = this.hasStackableMonster(item);
-            let currentStack = existingMonster ? existingMonster.stacks : 0;
-            let stacks = e.shiftKey ? item.bio.maxStacks - currentStack : 1;
-            if(cost * stacks > this.left) {
-              stacks = Math.floor(this.left / cost);
-            }
-            if(existingMonster) {
-              existingMonster.addStack(stacks);
-            } else {
-              this.monsters.push(new Monster(monster.template, stacks));
-
-            }
-            this.spent += cost * stacks;
-            this.render();
-          }
-        })
-        c.addEventListener('mouseover', () => {
-          c.style.backgroundColor = 'pink';
-        })
-        c.addEventListener('mouseout', () => {
-          c.style.backgroundColor = 'transparent';
-        })
-        this.container.appendChild(c);
-        return out;
-      })
-    });
-
-    this.sumSpent = document.createElement('div');
-    this.sumSpent.style.userSelect = 'none';
-    this.sumSpent.style.color = 'white';
-    this.sumSpent.style.fontSize = '24px';
+    this.sumSpent = html`<div style='user-select:none;color:white;font-size:24px;'></div>`;
     this.container.appendChild(this.sumSpent);
+    this.container.appendChild(this.teamName);
     this.selectedFamily = 'all';
-    var familySelect = document.createElement('select');
-    let o = document.createElement('option');
-    o.value = 'all';
-    o.textContent = 'All';
-    familySelect.appendChild(o);
+    var familySelect = html`<select><option value='all'>All</option></select>`;
     var families = [];
     this.items.forEach(item => {
       if(~families.indexOf(item.bio.family)) return;
       families.push(item.bio.family);
-      let o = document.createElement('option');
-      o.value = item.bio.family;
-      o.textContent = item.bio.family;
+      let o = html`<option value='${item.bio.family}'>${item.bio.family}</option>`;
       familySelect.appendChild(o);
     })
 
     familySelect.addEventListener('change', e => {
       this.selectedFamily = familySelect.value;
       this.monsterCards.forEach(c => {
-        c.card.cached.style.display = 'inline-block';
-        if(this.selectedFamily != 'all' && c.monster.bio.family != this.selectedFamily) {
-          c.card.cached.style.display = 'none';
+        c.cached.style.display = 'inline-block';
+        if(this.selectedFamily != 'all' && c.item.bio.family != this.selectedFamily) {
+          c.cached.style.display = 'none';
         }
       })
     })
@@ -160,41 +70,11 @@ class TeamSelect  {
       {
         text: 'Share',
         hidden: true,
-        fn: () => {
-          let units = this.monsters.map(m => {
-            return {
-              templateId: m.template.id,
-              stacks: m.stacks
-            }
-          });
-          let name = window.prompt('Name:');
-          let team = {name, units};
-          console.log(JSON.stringify(team));
-          console.log(guid());
-        }
+        fn: () => this.share()
       },
       {
         text: 'Done',
-        fn: () => {
-          if(!this.monsters.length) {
-            window.alert('You need to select at least one unit.');
-            return;
-          }
-          var i = this.teams.push(this.monsters);
-          this.teams[i-1].forEach(m => m.ai = true)
-          if(this.teams.length == this.maxTeams) {
-            if(typeof done !== 'function') return;
-            if(this.maxTeams == 1) {
-              return done(Team.fromMonsters(this.teams[i-1]));
-            }
-            if(this.maxTeams == 2) {
-              return done(Team.fromMonsters(this.teams[0]), Team.fromMonsters(this.teams[1]));
-            }
-          }
-          this.monsters = [];
-          this.spent = 0;
-          this.render();
-        }
+        fn: () => this.done()
       },
       {
         text: 'Back to Lobby',
@@ -204,6 +84,109 @@ class TeamSelect  {
     ]);
     this.container.appendChild(menu.render());
     this.container.appendChild(familySelect);
+    this.monsterCards = this.items.map(item => {
+      var monster = new Monster(item);
+      var card = new MonsterCard(monster);
+      var c = document.createElement('div');
+      c.style.display = 'inline-block';
+      card.state = 'big';
+      card.render(c, true);
+      c.addEventListener('click', (e) => this.buy(e, item, monster));
+      c.addEventListener('mouseover', () => {
+        c.style.backgroundColor = 'pink';
+      })
+      c.addEventListener('mouseout', () => {
+        c.style.backgroundColor = 'transparent';
+      })
+      this.container.appendChild(c);
+      return card;
+    })
+  }
+
+  done() {
+    if(!this.monsters.length) {
+      window.alert('You need to select at least one unit.');
+      return;
+    }
+    var i = this.teams.push(this.monsters);
+    if(this.teams.length == this.maxTeams) {
+      if(typeof this.onDone !== 'function') return;
+      if(this.maxTeams == 1) {
+        let name = this.teamNames[i];
+        return this.onDone(Team.fromMonsters(name, this.teams[0]));
+      }
+      if(this.maxTeams == 2) {
+        let name1 = this.teamNames[0];
+        let name2 = this.teamNames[1];
+        return this.onDone(Team.fromMonsters(name1, this.teams[0]), Team.fromMonsters(name2, this.teams[1]));
+      }
+    }
+    this.teamName.value = this.teamNames[i];
+    this.monsters = [];
+    this.spent = 0;
+    this.render();
+  }
+
+  share() {
+    let units = this.monsters.map(m => {
+      return {
+        templateId: m.template.id,
+        stacks: m.stacks
+      }
+    });
+    let name = window.prompt('Name:');
+    let team = {name, units};
+    console.log(JSON.stringify(team));
+    console.log(guid());
+  }
+
+  sell(e) {
+    let split = e.ctrlKey;
+    let removeAll = e.shiftKey;
+    let i = Math.floor(e.offsetX / this.tw);
+    let item = this.monsters[i];
+    let c = item.bio.cost;
+    if(split) {
+      if(this.monsters.length < this.max) {
+        let b = Math.floor(item.stacks/2);
+        item.addStack(-b);
+        this.monsters.push(new Monster(item.template, b));
+      }
+    } else
+    if(removeAll) {
+      c = item.stacks * item.bio.cost;
+      this.spent -= c;
+      this.monsters.splice(i, 1);
+    } else
+    if(item.stacks > 1) {
+      this.spent -= c;
+      item.addStack(-1);
+    } else {
+      this.spent -= c;
+      this.monsters.splice(i, 1);
+    }
+
+    this.render();
+  }
+
+  buy(e, item, monster) {
+    let cost = parseInt(item.bio.cost);
+    if(cost + this.spent <= this.cash && this.monsters.length < this.max) {
+      let existingMonster = this.hasStackableMonster(item);
+      let currentStack = existingMonster ? existingMonster.stacks : 0;
+      let stacks = e.shiftKey ? item.bio.maxStacks - currentStack : 1;
+      if(cost * stacks > this.left) {
+        stacks = Math.floor(this.left / cost);
+      }
+      if(existingMonster) {
+        existingMonster.addStack(stacks);
+      } else {
+        this.monsters.push(new Monster(monster.template, stacks));
+
+      }
+      this.spent += cost * stacks;
+      this.render();
+    }
   }
 
   get left() {

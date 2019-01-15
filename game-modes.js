@@ -4,6 +4,7 @@ const Monster = require('Monster.js');
 const Battle = require('Battle.js');
 const Arena = require('Arena.js');
 const UnitPlacement = require('UnitPlacement.js');
+const Team = require('Team.js');
 const arenas = require('arenas.js');
 const monsters = require('monsters.js');
 const tw = 42;
@@ -25,20 +26,16 @@ function createRNG(seed) {
   return generator;
 }
 
-function placeUnits(arenaTpl, team, teamName, viewer) {
+function placeUnits(arenaTpl, team, side, viewer) {
   return new Promise((resolve, reject) => {
     let arena = new Arena(arenas[1], tw, th);
     let canvas = arena.render();
     viewer.container.appendChild(canvas);
-    let up = new UnitPlacement(arena, team.monsters, teamName);
+    let up = new UnitPlacement(arena, team, side);
     up.initPos();
+
     up.onDone = () => {
       viewer.container.removeChild(canvas);
-      up.units.forEach(m => {
-        let u = team.find(t => t.templateId == m.template.id);
-        u.x = m.x;
-        u.y = m.y;
-      })
       resolve(team);
     };
     up.render(document.body);
@@ -53,15 +50,15 @@ function placeUnits(arenaTpl, team, teamName, viewer) {
 
 gameModes.humanVSAI = function(lobby, viewer) {
   lobby.on('human vs ai game', (aiteam, aiLevel = 1) => {
-    console.log('aiteam', aiteam)
+    aiteam = Team.create(aiteam);
     var generator = createRNG();
     viewer.showTeamSelect();
     var onDone = (team) => {
       viewer.hideTeamSelect();
 
-      placeUnits(arenas[1], team, 'team1', viewer)
+      placeUnits(arenas[1], team, 'left', viewer)
       .then(team => {
-        var battle = new Battle(team, aiteam.units, tw, th, viewer.container);
+        var battle = new Battle(team, aiteam, tw, th, viewer.container);
         battle.team2.forEach(m => m.addAI(aiLevel));
         battle.onGameEnd = (o) => {
           o.results.winningTeam(o.winningTeam == 'team1' ? 'You' : 'AI');
@@ -80,17 +77,18 @@ gameModes.humanVSAI = function(lobby, viewer) {
       viewer.reset();
       lobby.show();
     };
-    var teamSelect = new TeamSelect(monsters, viewer.selectContainer, tw, th, cash, 1, onDone, viewer.backToLobby, viewer.backToLobby);
+    var teamSelect = new TeamSelect(monsters, viewer.selectContainer, tw, th, cash, ['team1'], onDone, viewer.backToLobby);
     teamSelect.render();
   });
 };
 
 gameModes.AIVSAI = function(lobby, viewer) {
   lobby.on('ai vs ai game', (team1, team2, aiLevel = 1) => {
-    console.log('ai vs ai', team1, team2, aiLevel)
+    team1 = Team.create(team1);
+    team2 = Team.create(team2);
     var generator = createRNG();
     viewer.hideTeamSelect();
-    var battle = new Battle(team1.units, team2.units, tw, th, viewer.container);
+    var battle = new Battle(team1, team2, tw, th, viewer.container);
     battle.team1.forEach(m => m.addAI(aiLevel));
     battle.team2.forEach(m => m.addAI(aiLevel));
     battle.onGameEnd = (o) => {
@@ -113,9 +111,9 @@ gameModes.localMultiplayer = function(lobby, viewer) {
     viewer.showTeamSelect();
     var onDone = (team1, team2) => {
       viewer.hideTeamSelect();
-      placeUnits(arenas[1], team1, 'team1', viewer)
+      placeUnits(arenas[1], team1, 'left', viewer)
       .then(team1 => {
-        return placeUnits(arenas[1], team2, 'team2', viewer)
+        return placeUnits(arenas[1], team2, 'right', viewer)
         .then(team2 => {
           var battle = new Battle(team1, team2, tw, th, viewer.container);
           battle.onGameEnd = (o) => {
@@ -133,7 +131,7 @@ gameModes.localMultiplayer = function(lobby, viewer) {
         })
       });
     }
-    var teamSelect = new TeamSelect(monsters, viewer.selectContainer, tw, th, cash, 2, onDone, viewer.backToLobby)
+    var teamSelect = new TeamSelect(monsters, viewer.selectContainer, tw, th, cash, ['team1', 'team2'], onDone, viewer.backToLobby)
 
     teamSelect.render();
   });
@@ -141,14 +139,13 @@ gameModes.localMultiplayer = function(lobby, viewer) {
 
 gameModes.spectate = function(lobby, viewer) {
   lobby.on('start spectate', game => {
-    console.log('start spectate mode', game)
     lobby.hide();
     var generator = createRNG(game.seed);
     let team1 = assembleTeam(game.teams[0].team);
     let team2 = assembleTeam(game.teams[1].team);
     var battle = new Battle(team1, team2, tw, th, viewer.container);
     battle.onAction = (action, team) => {
-      console.log('battle.onAction', action)
+
     };
 
     battle.onGameEnd = (o) => {
@@ -159,7 +156,6 @@ gameModes.spectate = function(lobby, viewer) {
 
 
     lobby.on('battle action confirmed', (data) => {
-      console.log('battle action confirmed', data);
       let a = battle.createAction(data.action);
       battle.addAction(a, true);
     })
@@ -176,21 +172,17 @@ gameModes.spectate = function(lobby, viewer) {
 
 gameModes.liveMultiplayer = function(lobby, viewer) {
   lobby.on('remote game', (game) => {
-    console.log(game)
     var generator = createRNG(game.seed);
-    console.log('remote game', game);
     lobby.hide();
     viewer.showTeamSelect();
     var onDone = (team) => {
-      console.log('team selected', team);
       viewer.hideTeamSelect();
-      let teamName = game.owner.id == lobby.localUser.id ? 'team1' : 'team2';
-      placeUnits(arenas[1], team, teamName, viewer)
+      let side = game.owner.id == lobby.localUser.id ? 'left' : 'right';
+      placeUnits(arenas[1], team, side, viewer)
       .then(selected => {
         lobby.selectTeam(game, selected);
         lobby.on('game ready', (game) => {
           viewer.hideTeamSelect();
-          console.log('battle can start', game);
           let localTeam = game.teams.find(t => t.user.id == lobby.localUser.id);
           let remoteTeam = game.teams.find(t => t.user.id != lobby.localUser.id);
           let firstTeam = game.owner.id == lobby.localUser.id ? localTeam.team : remoteTeam.team;
@@ -210,7 +202,6 @@ gameModes.liveMultiplayer = function(lobby, viewer) {
 
           battle.onAction = (action, team) => {
             if(team != localTeam) return;
-            console.log('battle.onAction', action)
             lobby.battleAction(game, action);
           };
           battle.onGameEnd = (o) => {
@@ -229,7 +220,6 @@ gameModes.liveMultiplayer = function(lobby, viewer) {
 
           };
           lobby.on('battle action confirmed', (data) => {
-            console.log('battle action confirmed', data);
             let a = battle.createAction(data.action);
             battle.addAction(a, true);
           })
@@ -239,7 +229,8 @@ gameModes.liveMultiplayer = function(lobby, viewer) {
         })
       })
     }
-    var teamSelect = new TeamSelect(monsters, viewer.selectContainer, tw, th, cash, 1, onDone, viewer.backToLobby);
+
+    var teamSelect = new TeamSelect(monsters, viewer.selectContainer, tw, th, cash, [lobby.localUser.name], onDone, viewer.backToLobby);
 
 
   });
@@ -264,7 +255,6 @@ gameModes.playByPost = function(lobby, viewer) {
         localTeam = 'team2';
       }
       var battle = new Battle(firstTeam, secondTeam, tw, th, viewer.container);
-      console.log(battle.team1, battle.team2)
       battle.onAction = (action, team) => {
         if(team != localTeam) return;
         lobby.battleAction(game, action);
@@ -294,22 +284,19 @@ gameModes.playByPost = function(lobby, viewer) {
       console.log('team has been selected. waiting for other player to select team');
       viewer.hideTeamSelect();
     } else {
-      console.log('CHOOSE TEAM')
       lobby.hide();
       viewer.showTeamSelect();
       var onDone = (team) => {
-        console.log('selected team', team)
         viewer.hideTeamSelect();
-        let teamName = game.owner.id == lobby.localUser.id ? 'team1' : 'team2';
-        placeUnits(arenas[1], team, teamName, viewer)
+        let side = game.owner.id == lobby.localUser.id ? 'left' : 'right';
+        placeUnits(arenas[1], team, side, viewer)
         .then(team => {
           lobby.selectTeam(game, team);
-          console.log(team);
           viewer.reset();
           lobby.show();
         });
       }
-      var teamSelect = new TeamSelect(monsters, viewer.selectContainer, tw, th, cash, 1, onDone, viewer.backToLobby);
+      var teamSelect = new TeamSelect(monsters, viewer.selectContainer, tw, th, cash, ['team1'], onDone, viewer.backToLobby);
     }
   })
 }

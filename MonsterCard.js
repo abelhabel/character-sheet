@@ -69,6 +69,10 @@ class MonsterCard {
             ${abilities.join(', ')}
           </div>
           <div class='stats-left'>
+            <div class='card-stat cost'>
+              ${item.bio.cost}
+              <span>Cost</span>
+            </div>
             <div class='card-stat spell-resistance'>
               ${item.totalStat('initiative')}
               <span>Initiative</span>
@@ -125,8 +129,10 @@ class MonsterCard {
     return `
     #monster-cards {
       text-align: center;
+      position: relative;
     }
     .card-outer {
+      box-sizing: border-box;
       user-select: none;
       position: relative;
       top: 0px;
@@ -160,6 +166,7 @@ class MonsterCard {
       background-color: brown;
     }
     .card-inner {
+      box-sizing: border-box;
       border-radius: 10px;
       border: 1px solid thistle;
       width: 100%;
@@ -268,6 +275,10 @@ class MonsterCard {
     }
     .attack, .damage {
       background-color: purple;
+    }
+
+    .cost {
+      background-color: #b19500;
     }
 
     .card-abilities {

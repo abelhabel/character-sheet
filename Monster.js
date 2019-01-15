@@ -219,7 +219,7 @@ class Monster {
   }
 
   get canvas() {
-    return this.template.canvases ? this.template.canvases[this.orientation] : this.template.canvas;
+    return this.template.canvases ? this.template.canvases[this.orientation] : (this.template.canvas || this.sprite.canvas);
   }
 
   resetMovement() {
