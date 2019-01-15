@@ -176,6 +176,10 @@ class TeamSelect  {
       {
         text: 'Done',
         fn: () => {
+          if(!this.monsters.length) {
+            window.alert('You need to select at least one unit.');
+            return;
+          }
           var i = this.teams.push(this.monsters);
           this.teams[i-1].forEach(m => m.ai = true)
           if(this.teams.length == this.maxTeams) {
