@@ -90,11 +90,9 @@ gameModes.AIVSAI = function(lobby, viewer) {
     console.log('ai vs ai', team1, team2, aiLevel)
     var generator = createRNG();
     viewer.hideTeamSelect();
-    team1 = assembleTeam(team1.units);
-    team2 = assembleTeam(team2.units);
-    var battle = new Battle(team1, team2, tw, th, viewer.container);
-    team1.forEach(m => m.addAI(aiLevel));
-    team2.forEach(m => m.addAI(aiLevel));
+    var battle = new Battle(team1.units, team2.units, tw, th, viewer.container);
+    battle.team1.forEach(m => m.addAI(aiLevel));
+    battle.team2.forEach(m => m.addAI(aiLevel));
     battle.onGameEnd = (o) => {
       o.results.winningTeam(o.winningTeam);
       let report = o.results.report(() => {

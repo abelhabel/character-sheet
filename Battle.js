@@ -1153,7 +1153,15 @@ class Battle {
       width: '45px',
       height: '45px'
     });
-    toggle.textContent = this.tr.currentRound + 1;
+    let round = this.tr.currentRound;
+    let team = this.currentActor ? this.currentActor.team : '';
+    let actor = this.currentActor ? this.currentActor.bio.name : '';
+    let info = html`<div>
+      Round: ${round}<br>
+      Team: ${team}<br>
+      Actor: ${actor}
+    </div>`;
+    toggle.appendChild(info);
     container.appendChild(toggle);
     let divider = document.createElement('div');
     Object.assign(divider.style, {
