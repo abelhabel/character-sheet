@@ -89,7 +89,7 @@ class Menu {
       .menu {
         width: 300px;
         position: absolute;
-        right: 10px;
+        left: 10px;
         bottom: 10px;
         background: url(sheet_of_old_paper_horizontal.png);
         z-index: 1002;

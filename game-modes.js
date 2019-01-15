@@ -56,7 +56,7 @@ gameModes.humanVSAI = function(lobby, viewer) {
     console.log('aiteam', aiteam)
     var generator = createRNG();
     viewer.showTeamSelect();
-    var teamSelect = new TeamSelect(monsters, viewer.selectContainer, tw, th, cash, 1, (team) => {
+    var onDone = (team) => {
       viewer.hideTeamSelect();
 
       placeUnits(arenas[1], team, 'team1', viewer)
@@ -74,11 +74,13 @@ gameModes.humanVSAI = function(lobby, viewer) {
         };
         battle.start();
         window.battle = battle;
-
-      })
-
-    });
-
+      });
+    }
+    var onExit = () => {
+      viewer.reset();
+      lobby.show();
+    };
+    var teamSelect = new TeamSelect(monsters, viewer.selectContainer, tw, th, cash, 1, onDone, viewer.backToLobby, viewer.backToLobby);
     teamSelect.render();
   });
 };
@@ -111,7 +113,7 @@ gameModes.localMultiplayer = function(lobby, viewer) {
   lobby.on('local game', (game) => {
     var generator = createRNG();
     viewer.showTeamSelect();
-    var teamSelect = new TeamSelect(monsters, viewer.selectContainer, tw, th, cash, 2, (team1, team2) => {
+    var onDone = (team1, team2) => {
       viewer.hideTeamSelect();
       placeUnits(arenas[1], team1, 'team1', viewer)
       .then(team1 => {
@@ -131,8 +133,9 @@ gameModes.localMultiplayer = function(lobby, viewer) {
           window.battle = battle;
 
         })
-      })
-    });
+      });
+    }
+    var teamSelect = new TeamSelect(monsters, viewer.selectContainer, tw, th, cash, 2, onDone, viewer.backToLobby)
 
     teamSelect.render();
   });
@@ -180,7 +183,7 @@ gameModes.liveMultiplayer = function(lobby, viewer) {
     console.log('remote game', game);
     lobby.hide();
     viewer.showTeamSelect();
-    var teamSelect = new TeamSelect(monsters, viewer.selectContainer, tw, th, cash, 1, (team) => {
+    var onDone = (team) => {
       console.log('team selected', team);
       viewer.hideTeamSelect();
       let teamName = game.owner.id == lobby.localUser.id ? 'team1' : 'team2';
@@ -236,9 +239,10 @@ gameModes.liveMultiplayer = function(lobby, viewer) {
           window.battle = battle;
 
         })
-      });
-
       })
+    }
+    var teamSelect = new TeamSelect(monsters, viewer.selectContainer, tw, th, cash, 1, onDone, viewer.backToLobby);
+
 
   });
 };
@@ -295,7 +299,7 @@ gameModes.playByPost = function(lobby, viewer) {
       console.log('CHOOSE TEAM')
       lobby.hide();
       viewer.showTeamSelect();
-      var teamSelect = new TeamSelect(monsters, viewer.selectContainer, tw, th, cash, 1, (team) => {
+      var onDone = (team) => {
         console.log('selected team', team)
         viewer.hideTeamSelect();
         let teamName = game.owner.id == lobby.localUser.id ? 'team1' : 'team2';
@@ -306,7 +310,8 @@ gameModes.playByPost = function(lobby, viewer) {
           viewer.reset();
           lobby.show();
         });
-      });
+      }
+      var teamSelect = new TeamSelect(monsters, viewer.selectContainer, tw, th, cash, 1, onDone, viewer.backToLobby);
     }
   })
 }

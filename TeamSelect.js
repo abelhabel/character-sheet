@@ -1,4 +1,5 @@
 const Monster = require('Monster.js');
+const Menu = require('Menu.js');
 const MonsterCard = require('MonsterCard.js');
 const Team = require('Team.js');
 function guid() {
@@ -10,7 +11,8 @@ function guid() {
   return s4() + s4() + '-' + s4() + '-' + s4() + '-' + s4() + '-' + s4() + s4() + s4();
 }
 class TeamSelect  {
-  constructor(items, container, tw, th, cash, maxTeams, done) {
+  constructor(items, container, tw, th, cash, maxTeams, done, onExit) {
+    this.onExit = onExit;
     this.items = items.filter(m => !m.bio.summonOnly);
     this.tw = tw;
     this.th = th;
@@ -153,49 +155,50 @@ class TeamSelect  {
         }
       })
     })
-    this.shareButton = document.createElement('button');
-    this.shareButton.textContent = 'Share';
-    this.shareButton.style.display = 'block';
-    this.shareButton.style.position = 'fixed';
-    this.shareButton.style.left = '10px';
-    this.shareButton.style.top = '120px';
-    this.shareButton.addEventListener('click', e => {
-      let units = this.monsters.map(m => {
-        return {
-          templateId: m.template.id,
-          stacks: m.stacks
-        }
-      });
-      let name = window.prompt('Name:');
-      let team = {name, units};
-      console.log(JSON.stringify(team));
-      console.log(guid());
-    })
-    this.doneButton = document.createElement('button');
-    this.doneButton.textContent = 'Done';
-    this.doneButton.style.display = 'block';
-    this.doneButton.style.position = 'fixed';
-    this.doneButton.style.left = '10px';
-    this.doneButton.style.top = '100px';
-    this.doneButton.addEventListener('click', () => {
-      var i = this.teams.push(this.monsters);
-      this.teams[i-1].forEach(m => m.ai = true)
-      if(this.teams.length == this.maxTeams) {
-        if(typeof done !== 'function') return;
-        if(this.maxTeams == 1) {
-          return done(Team.fromMonsters(this.teams[i-1]));
-        }
-        if(this.maxTeams == 2) {
-          return done(Team.fromMonsters(this.teams[0]), Team.fromMonsters(this.teams[1]));
-        }
-      }
-      this.monsters = [];
-      this.spent = 0;
-      this.render();
-    });
 
-    this.container.appendChild(this.doneButton);
-    this.container.appendChild(this.shareButton);
+    let menu = new Menu([
+      {
+        text: 'Share',
+        hidden: true,
+        fn: () => {
+          let units = this.monsters.map(m => {
+            return {
+              templateId: m.template.id,
+              stacks: m.stacks
+            }
+          });
+          let name = window.prompt('Name:');
+          let team = {name, units};
+          console.log(JSON.stringify(team));
+          console.log(guid());
+        }
+      },
+      {
+        text: 'Done',
+        fn: () => {
+          var i = this.teams.push(this.monsters);
+          this.teams[i-1].forEach(m => m.ai = true)
+          if(this.teams.length == this.maxTeams) {
+            if(typeof done !== 'function') return;
+            if(this.maxTeams == 1) {
+              return done(Team.fromMonsters(this.teams[i-1]));
+            }
+            if(this.maxTeams == 2) {
+              return done(Team.fromMonsters(this.teams[0]), Team.fromMonsters(this.teams[1]));
+            }
+          }
+          this.monsters = [];
+          this.spent = 0;
+          this.render();
+        }
+      },
+      {
+        text: 'Back to Lobby',
+        hidden: !this.onExit,
+        fn: this.onExit
+      }
+    ]);
+    this.container.appendChild(menu.render());
     this.container.appendChild(familySelect);
   }
 

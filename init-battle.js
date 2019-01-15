@@ -260,6 +260,10 @@ Module.onLoad(['DungeonCrawl_ProjectUtumnoTileset.png', 'Hell2.jpg', 'guid.js',
       container.innerHTML = '';
       selectContainer.innerHTML = '';
       window.battle = null;
+    },
+    backToLobby() {
+      viewer.reset();
+      lobby.show();
     }
   };
 
