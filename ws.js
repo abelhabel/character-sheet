@@ -20,10 +20,6 @@ module.exports = function(server) {
   class Team {
     constructor(user, team) {
       this.user = user;
-      team.forEach(m => {
-        if(m.suuid) return;
-        m.suuid = guid();
-      });
       this.team = team;
     }
   }
@@ -275,6 +271,7 @@ module.exports = function(server) {
           return;
         }
         game.addTeam(user, team);
+        console.log('added team', game)
         if(game.type == 'play by post') {
           game.save()
           .then(() => console.log('game save success'))

@@ -254,6 +254,7 @@ gameModes.playByPost = function(lobby, viewer) {
         secondTeam = localTeam.team;
         localTeam = 'team2';
       }
+      console.log(firstTeam, secondTeam)
       var battle = new Battle(firstTeam, secondTeam, tw, th, viewer.container);
       battle.onAction = (action, team) => {
         if(team != localTeam) return;
