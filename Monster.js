@@ -588,12 +588,21 @@ class Monster {
         display: inline-block;
         vertical-align: top;
       }
+      #close {
+        position: absolute;
+        right: 0px;
+        top: -18px;
+        font-weight: bold;
+        font-size: 14px;
+        cursor: pointer;
+      }
     </style>`;
     if(!document.getElementById('monster-cs-style')) {
       document.head.appendChild(style);
     }
     let tag = html`<div class='outer'>
       <section>
+        <div id='close'>Close</div>
         <div class='bio' id='monster-image'></div>
         <div class='bio'>
           <span id='monster-name'>${m.bio.name}</span><br>
@@ -676,7 +685,9 @@ class Monster {
     tag.querySelector('.stat-img.apr').appendChild(apr.canvas);
     tag.querySelector('.stat-img.tpr').appendChild(tpr.canvas);
     tag.querySelector('.stat-img.damage').appendChild(damage.canvas);
-
+    tag.querySelector('#close').addEventListener('click', e => {
+      this.battle.toggleAbilityBook();
+    })
     m.actives.forEach(a => {
       var c = a.sprite.canvas.clone();
       c.addEventListener('click', e => {
@@ -758,7 +769,7 @@ class Monster {
       range, effect, duration, ailment, vigor
     } = a.stats;
     tag.style.whiteSpace = 'pre-line';
-    let {activation, type, name} = a.bio;
+    let {activation, type, name, condition} = a.bio;
     let stat = source == 'blessing' || source == 'curse' ? attribute : 'health';
     attribute = source == 'spell' || source == 'attack' ? 'health' : attribute;
     let time = type == 'passive' ? 'permanent' : `${e.rounds}/${duration} rounds`;
@@ -780,10 +791,11 @@ class Monster {
     tag.style.whiteSpace = 'pre-line';
     let {activation, type, name, description, condition} = a.bio;
     let stat = source == 'blessing' || source == 'curse' ? attribute : 'health';
-    let act = type == 'trigger' ? `\n<span class='bold'>Triggers</span>: ${activation}` : '';
+    let act = type == 'trigger' ? `\n<span class='bold'>Trigger</span>: ${activation}` : '';
+    let con = condition ? '\nCondition: ' + condition : '';
     var text = `<span class='bold'>Name</span>: ${name}
-    <span class='bold'>Targets</span>: ${target}/${targetFamily}
-    <span class='bold'>Type</span>: ${type}${act}
+    <span class='bold'>Target</span>: ${target}/${targetFamily}
+    <span class='bold'>Type</span>: ${type}${act}${con}
     <span class='bold'>Shape</span>: ${shape}
     <span class='bold'>Radius</span>: ${radius}
     <span class='bold'>Source</span>: ${source}
@@ -795,7 +807,7 @@ class Monster {
       text += `\n<span class='bold'>Condition</span>: ${condition}`
     }
     if(multiplier) {
-      text += `\n<span class='bold'>Effects</span>: (${minPower}-${maxPower}) * ${multiplier}% to ${stat}${time} (max stacks: ${stacks})`;
+      text += `\n<span class='bold'>Power</span>: (${minPower}-${maxPower}) * ${multiplier}% to ${stat}${time} (max stacks: ${stacks})`;
       if(effect) {
         let {source, attribute, minPower, maxPower, multiplier, duration, stacks} = effect.stats;
         let stat = source == 'blessing' || source == 'curse' ? attribute : 'health';

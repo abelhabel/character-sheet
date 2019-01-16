@@ -1,0 +1,252 @@
+<html DOCTYPE='html'>
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <style>
+    body {
+      font-family: Tahoma, sans-serif;
+    }
+    section section {
+      margin-left: 10px;
+    }
+  </style>
+</head>
+<body>
+  <header>
+    <h1>Rules</h1>
+  </header>
+  <section id='introduction'>
+    <h2>Introduction</h2>
+    <p>
+      Fangalia is a tactical turned based game where two teams start on either side
+      of a battle field and fight against each other until only one team is left.
+    </p>
+    <p>
+      A team is a composition of different monsters, which you pick before a battle starts. Each
+      monster has stats and a set of abilities. These stats and abilities together make each monster unique.
+      It is, then, a matter of picking monsters so that they together as a team
+      enables a game tactic that suits you and that you think will bring victory to you.
+    </p>
+    <p>
+      Battle is done through four separate actions: moving, defending, waiting and/or using abilities.
+      These actions are all actions that can be done in a monster's turn and are not exclusive to each other.
+      It is possible, for example, to first move then use an ability.
+    </p>
+    <p>
+      These are only some high level concepts about the game and its rules but not all game concepts
+      and terms have been introduced here, so please continue reading to learn more about specific concepts
+    </p>
+  </section>
+
+  <section id='basics'>
+    <h2>Basics</h2>
+    <section id='turn'>
+      <h3>Turn</h3>
+      <p>
+        During combat, each monster in either team gets to act when it is their turn to act. When a monster gets to
+        act is dependent on the monster's Initiative stat. The higher a monster's Initiative the earlier it gets to
+        act. More on that in the Initiative section.
+      </p>
+      <p>
+        When all monsters have used their turn a new Round starts.
+      </p>
+    </section>
+
+    <section id='round'>
+      <h3>Round</h3>
+      <p>
+        A round consists of many turns. Specifically, at the start of each round each monster gets a number of turns
+        in that round based on their Inititive stat. It is possible for one monster to get more than one turn in a round.
+      </p>
+      <p>
+        A round is a measure of how long a battle has been going on but has not other significant impacts on the game.
+      </p>
+    </section>
+  </section>
+
+  <section id='abilities'>
+    <h2>Abilities</h2>
+    <p>
+      Monsters use abilities in order to deal damage or provide bonuses and penalties to a monster's stats.
+    </p>
+    <section id='type'>
+      <h3>Type</h3>
+      <p>
+        There are three types of abilities: Active, Passive, and Trigger.
+      </p>
+      <section id='active'>
+        <h4>Active</h4>
+        <p>
+          An active ability requires you to first select the ability and then activate the ability
+          on the battle field. Activating an active ability is different depending on the ability's
+          Target stat.
+        </p>
+      </section>
+      <section id='passive'>
+        <h4>Passive</h4>
+        <p>
+          A passive ability is always in effect (unless it's condition is not met). A passive ability
+          can either effect yourself or other monsters around the monster that has the passive ability.
+          This is controlled by an ability's Shape, Radius, and Target stats.
+        </p>
+        <p>
+          A passive ability that an area of effect is called an Aura.
+        </p>
+      </section>
+      <section id='trigger'>
+        <h4>Trigger</h4>
+        <p>
+          A trigger ability cannot be selected to be used and is not active all the time. Instead
+          a trigger activates when a certain event happens. The type of event is decided by the ability's
+          Activation stat.
+        </p>
+        <p>
+          These are the types of events that can trigger a trigger ability:<br>
+          when attack hits, when self is hit, when adjacent ally is hit, when nearby ally is hit, when ally is hit, when adjacent enemy is hit, when nearyby enemy is hit, when enemy is hit, when adjacent enemy is slain, when enemy is slain by self,/p>
+        </p>
+      </section>
+    </section>
+
+    <section id='condition'>
+      <h3>Condition</h3>
+      <p>
+        Some abilities require a condition to be met for the ability to be in effect.
+      </p>
+      <p>
+        These conditions are: flanked, flanking, wounded, near death, full health
+      </p>
+    </section>
+
+    <section id='shape'>
+      <h3>Shape</h3>
+      <p>
+        The shape of an ability determines how it distributes over many tiles on the battle field.
+      </p>
+      <p>
+        These are the shapes an ability can have: point, line, cone, circle, square.
+      </p>
+    </section>
+
+    <section id='radius'>
+      <h3>Radius</h3>
+      <p>
+        The radius of an ability determines how far it's shape reaches. In the case when
+        an ability's shape is set to Line the radius determines the length of the line.
+      </p>
+    </section>
+
+    <section id='target'>
+      <h3>Target</h3>
+      <p>
+        The target consists of two pieces of information. The first, determines if you need to
+        target a monster or if you need to target a tile, when you activate the ability on
+        the battle field. The second piece of information determines what targets that will be hit.
+      </p>
+      <p>
+        Targets that can be hit are one of these: allies, enemies, self, or all.
+      </p>
+      <p>
+        The formatting of the target stat will look like this ground/enemies, or actor/allies
+      </p>
+    </section>
+
+    <section id='range'>
+      <h3>Range</h3>
+      <p>
+        The range of an ability decides how many tiles away from the monster that is using the
+        ability you can target. A range of 5 will let you target 5 tiles away in a square fashion, ie tiles
+        diagonal to the monster counts as one tile away.
+      </p>
+      <p>
+        An ability's shape has its origin where you target on the battle field. This means that if an
+        ability has a range of 5, a shape of circle, and radius 3, the ability's area of effect will originate
+        up to 5 tiles away in a circle with radius 3.
+      </p>
+    </section>
+
+    <section id='duration'>
+      <h3>Duration</h3>
+      <p>
+        When an ability has a duration longer than 1, it will create en Effect. The Effect will then last
+        for Turns equal to the duration. If the ability deals damage (Spell or Attack), then the damage will also be dealt
+        at all subsequent rounds. If the ability affects a monster's stat, the effect will remain until the duration ends, ie
+        the effect will not be reapplied on subsequent turns as is the case when the ability deals damage.
+      </p>
+    </section>
+
+    <section id='cost'>
+      <h3>Cost</h3>
+      <p>
+        Some abilities has a resource cost. It is either Mana or Health. If an ability cost 4 Mana but the monster
+        only has 3 Mana available, then the ability cannot be used. The same logic applies if the resource is health.
+      </p>
+    </section>
+
+    <section id='power'>
+      <h3>Power</h3>
+      <p>
+        The power of an ability is what determines how much damage it does in the case of Attacks and Spells, or
+        how much the bonus is in case of Blessings, or how much the penalty is in the case of Curses.
+      </p>
+      <p>
+        The power consists of a minimum and maximum and a value between these two is then randomly chosen when the ability
+        is used. This value is then also multiplied by the abilities multiplier. All these values are listed on all abilities.
+      </p>
+      <p>
+        The monster's Damage stat is always added to the minimum and maximum power of an ability when the ability is
+        an Attack or a Spell.
+      </p>
+    </section>
+
+    <section id='stacks'>
+      <h3>Stacks</h3>
+      <p>
+        Stacking occurs when more than one of the same effect is applied at one time.
+        However, there are specific rules for when effects stack and when they don't.
+      </p>
+      <p>
+        Effects stack during the following conditions:
+        <ul>
+          <li>
+            If the effect is a Spell or an Attack AND they have different sources.
+            Example: Fire Ball and Dragon Fire, Flaming Arrow and Blizzard
+          </li>
+          <li>
+            If the effects are from the same source AND
+            the source is able to stack with itself. Example: Weakening Bite, Decaying Shot
+          </li>
+        </ul>
+      </p>
+      <p>
+        Effects do not stack during the following conditions:
+        <ul>
+          <li>
+            If the effect is a Blessing or a Curse AND they are from different sources.
+            Example: Aura of Corrotion and Corrode, Shield Wall and Armoured
+          </li>
+        </ul>
+      </p>
+    </section>
+
+    <section id='source'>
+      <h3>Source</h3>
+      <p>
+        There are four different sources an ability can have: Attack, Spell, Blessing, Curse
+      </p>
+      <p>
+        Attacks usually deal damage which is determined by a Damage Roll.
+      </p>
+      <p>
+        Spells usually deal damage but can also have some special effect, such as teleport.
+        Spell damage is determined byt a Spell Roll.
+      </p>
+      <p>
+        Blessings always gives a bonus to a monster's stat.
+      </p>
+      <p>
+        Curses always gives a penalty to a monster's stat.
+      </p>
+    </section>
+  </section>
+</body>
+</html>

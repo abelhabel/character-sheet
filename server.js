@@ -76,6 +76,7 @@ loadFile('team-tpl.js');
 loadFile('leader-tpl.js');
 loadFile('pathfinding.js');
 loadFile('index.html');
+loadFile('rules.html');
 loadFile('battle.html');
 loadFile('animation.html');
 loadFile('arena.html');
@@ -122,6 +123,7 @@ const server = http.createServer(function(req, res) {
   var url = new URL('http://home.com' + req.url);
   var name = url.pathname.replace('/', '');
   if(!name) name = 'index.html';
+  if(name == 'rules') name = 'rules.html';
   if(files[name]) {
     if(typeof files[name] == 'function') {
       return res.end(files[name]());

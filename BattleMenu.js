@@ -16,6 +16,7 @@ class BattleMenu {
     this.tw = 32;
     this.th = 32;
     this.selected = null;
+    this.toolTip = null;
   }
 
   setActor(actor) {
@@ -33,6 +34,7 @@ class BattleMenu {
   }
 
   drawAbilities(abilities) {
+    this.removeToolTip();
     this.tags.abilities.innerHTML = '';
     abilities.forEach((a, i) => {
       let canvas = a.canvas.clone();
@@ -42,16 +44,21 @@ class BattleMenu {
       } else {
         canvas.style.border = 'none';
       }
-      this.addTollTip(canvas, a.bio.name);
+      this.addToolTip(canvas, a.bio.name);
       this.tags.abilities.appendChild(canvas);
     })
   }
 
-  addTollTip(canvas, tip) {
-    let t;
+  removeToolTip() {
+    if(!this.toolTip) return;
+    this.toolTip.parentNode.removeChild(this.toolTip);
+    this.toolTip = null;
+  }
+
+  addToolTip(canvas, tip) {
     canvas.addEventListener('mouseenter', e => {
       let bb = canvas.getBoundingClientRect();
-      t = html`<div style='
+      this.toolTip = html`<div style='
         position: fixed;
         top: ${bb.y + 3}px;
         left: ${bb.x + this.tw + 2}px;
@@ -68,32 +75,30 @@ class BattleMenu {
       >
         ${tip}
       </div>`;
-      document.body.appendChild(t);
+      document.body.appendChild(this.toolTip);
     });
     canvas.addEventListener('mouseout', e => {
-      t && document.body.removeChild(t);
-      t = null;
+      this.removeToolTip();
     })
     canvas.addEventListener('mousedown', e => {
-      t && document.body.removeChild(t);
-      t = null;
+      this.removeToolTip();
     })
   }
 
   render() {
     let ability = new Sprite(_ability.bio.sprite);
-    this.addTollTip(ability.canvas, 'Character Sheet');
+    this.addToolTip(ability.canvas, 'Character Sheet');
     ability.canvas.addEventListener('click', () => {
       this.battle.toggleAbilityBook();
     });
     let defend = new Sprite(_defend.bio.sprite);
-    this.addTollTip(defend.canvas, 'Defend');
+    this.addToolTip(defend.canvas, 'Defend');
     defend.canvas.addEventListener('click', e => {
       let action = this.battle.createAction({type: 'defend'});
       this.battle.addAction(action);
     });
     let wait = new Sprite(_wait.bio.sprite);
-    this.addTollTip(wait.canvas, 'Wait');
+    this.addToolTip(wait.canvas, 'Wait');
     wait.canvas.addEventListener('click', e => {
       let action = this.battle.createAction({type: 'wait'});
       this.battle.addAction(action);

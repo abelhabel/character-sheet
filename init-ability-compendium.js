@@ -137,9 +137,9 @@ Module.onLoad(['DungeonCrawl_ProjectUtumnoTileset.png', 'sheet_of_old_paper.png'
       tag.style.whiteSpace = 'pre-line';
       let {activation, type, name, description} = a.bio;
       let stat = source == 'blessing' || source == 'curse' ? attribute : 'health';
-      let act = type == 'trigger' ? `\n<span class='bold'>Triggers</span>: ${activation}` : '';
+      let act = type == 'trigger' ? `\n<span class='bold'>Trigger</span>: ${activation}` : '';
       var text = `<span class='bold'>Name</span>: ${name}
-      <span class='bold'>Targets</span>: ${target}/${targetFamily}
+      <span class='bold'>Target</span>: ${target}/${targetFamily}
       <span class='bold'>Type</span>: ${type}${act}
       <span class='bold'>Shape</span>: ${shape}
       <span class='bold'>Radius</span>: ${radius}
@@ -149,7 +149,7 @@ Module.onLoad(['DungeonCrawl_ProjectUtumnoTileset.png', 'sheet_of_old_paper.png'
       <span class='bold'>Range</span>: ${range}`;
       let time = duration ? ` for ${duration} rounds` : '';
       if(multiplier) {
-        text += `\n<span class='bold'>Effects</span>: (${minPower}-${maxPower}) * ${multiplier}% to ${stat}${time} (max stacks: ${stacks})`;
+        text += `\n<span class='bold'>Power</span>: (${minPower}-${maxPower}) * ${multiplier}% to ${stat}${time} (max stacks: ${stacks})`;
         if(effect && effect.stats) {
           let {source, attribute, minPower, maxPower, multiplier, duration, stacks} = effect.stats;
           let stat = source == 'blessing' || source == 'curse' ? attribute : 'health';
