@@ -471,6 +471,10 @@ class Lobby {
       {
         text: 'Ability Compendium',
         link: '/ability-compendium.html'
+      },
+      {
+        text: 'Rules',
+        link: '/rules'
       }
     ]);
 

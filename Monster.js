@@ -787,7 +787,8 @@ class Monster {
   drawAbilityStats(a, tag) {
     let {source, attribute, element, minPower, shape, radius,
       maxPower, multiplier, resourceCost, resourceType,
-      range, effect, duration, target, targetFamily, stacks
+      range, effect, duration, target, targetFamily, stacks,
+      ailment, vigor
     } = a.stats;
     tag.style.whiteSpace = 'pre-line';
     let {activation, type, name, description, condition} = a.bio;
@@ -803,6 +804,12 @@ class Monster {
     <span class='bold'>Element</span>: ${element}
     <span class='bold'>Cost</span>: ${resourceCost} ${resourceType}
     <span class='bold'>Range</span>: ${range}`;
+    if(ailment) {
+      text += `\n<span class='bold'>Ailment</span>: ${ailment}`;
+    }
+    if(vigor) {
+      text += `\n<span class='bold'>Vigor</span>: ${vigor}`;
+    }
     let time = duration ? ` for ${duration} rounds` : '';
     if(condition) {
       text += `\n<span class='bold'>Condition</span>: ${condition}`

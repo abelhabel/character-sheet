@@ -5,9 +5,16 @@
   <style>
     body {
       font-family: Tahoma, sans-serif;
+      background-image: url(sheet_of_old_paper_horizontal.png);
+      background-size: contain;
+      padding: 20px;
     }
     section section {
       margin-left: 10px;
+    }
+    a {
+      font-weight: bold;
+      text-decoration: none;
     }
   </style>
 </head>
@@ -62,6 +69,50 @@
         A round is a measure of how long a battle has been going on but has not other significant impacts on the game.
       </p>
     </section>
+
+    <section id='movement'>
+      <h3>Movement</h3>
+      <p>
+        On a monster's turn if it has a Movement stat above zero, the monster can move. The monster can move
+        a number of tiles equal to its Movement stat. A move cannot be diagonal, meaning that if you want to move
+        to an adjacent diagonal tile it will cost two movement.
+      </p>
+      <p>
+        On any move you are using the monster's movement as a resource, so moving one tile has used one movement that turn.
+        This resource is replenished to full at the start of a monster's turn.
+      </p>
+      <p>
+        Moving does not end your turn. You can also make many small movements just as you can make one long movement in a turn,
+        as long as you have not used up all your movement in that turn.
+      </p>
+    </section>
+    <section id='use-ability'>
+      <h3>Use Ability</h3>
+      <p>
+        A monster can use as many abilities as their APT (Actions Per Turn) stat allows. Meaning that if a monster has an APT stat
+        of 2, it can use two abilities (or one ability twice) in one turn.
+      </p>
+      <p>
+        Once a monster has used abilities equal to its APT stat, the monster's turn end.
+      </p>
+    </section>
+    <section id='defend'>
+      <h3>Defend</h3>
+      <p>
+        At any point during a monster's turn, it can defend. Defending immediately ends the turn and adds a
+        circumstantial bonus to the monster's Defense stat. If the monster has moved that turn, the bonus will be less.
+        Defending always gives a Defense bonus of at least 2. This bonus stacks with other effects.
+      </p>
+    </section>
+    <section id='wait'>
+      <h3>Wait</h3>
+      <p>
+        Waiting delays a monster's turn to later in the same round. This can be tactically useful if a monster
+        has no targets within range, allowing for enemies to move within range or allies to make the monster's turn
+        more favorable when acting later. A monster can only wait once per round. If a monster has performed any other action
+        in that turn it cannot wait.
+      </p>
+    </section>
   </section>
 
   <section id='abilities'>
@@ -102,7 +153,7 @@
         </p>
         <p>
           These are the types of events that can trigger a trigger ability:<br>
-          when attack hits, when self is hit, when adjacent ally is hit, when nearby ally is hit, when ally is hit, when adjacent enemy is hit, when nearyby enemy is hit, when enemy is hit, when adjacent enemy is slain, when enemy is slain by self,/p>
+          when attack hits, when self is hit, when adjacent ally is hit, when nearby ally is hit, when ally is hit, when adjacent enemy is hit, when nearyby enemy is hit, when enemy is hit, when adjacent enemy is slain, when enemy is slain by self
         </p>
       </section>
     </section>
@@ -238,7 +289,7 @@
       </p>
       <p>
         Spells usually deal damage but can also have some special effect, such as teleport.
-        Spell damage is determined byt a Spell Roll.
+        Spell damage is determined by a Spell Roll.
       </p>
       <p>
         Blessings always gives a bonus to a monster's stat.
@@ -246,6 +297,82 @@
       <p>
         Curses always gives a penalty to a monster's stat.
       </p>
+    </section>
+
+    <section id='ailment'>
+      <h3>Ailment</h3>
+      <p>
+        An ailment is a special condition that applies to a monster and they are always negative.
+        These are the ailments: stunned, held, overwhelmed, meekend, exposed, rushed.
+      </p>
+      <section id='stunned'>
+        <h4>Ailment</h4>
+        <p>
+          A monster that is stunned is unable to take any action, making it automatically lose its turn.
+        </p>
+      </section>
+      <section id='held'>
+        <h4>Held</h4>
+        <p>
+          A monster that is held is unable to move, regardless of any bonuses to Movement stat.
+        </p>
+      </section>
+      <section id='overwhelmed'>
+        <h4>Overwhelmed</h4>
+        <p>
+          A monster that is overwhelmed takes 25% increased damage from monsters that are adjacent.
+        </p>
+      </section>
+      <section id='meekend'>
+        <h4>Meekend</h4>
+        <p>
+          A monster that is meekend deals 25% reduced damage to targets that are adjacent.
+        </p>
+      </section>
+      <section id='exposed'>
+        <h4>Exposed</h4>
+        <p>
+          A monster that is exposed takes 25% increased damage from monsters that are far away.
+        </p>
+      </section>
+      <section id='rushed'>
+        <h4>Rushed</h4>
+        <p>
+          A monster that is rushed deals 25% reduced damage to targets that are far away.
+        </p>
+      </section>
+    </section>
+
+    <section id='vigor'>
+      <h3>Vigor</h3>
+      <p>
+        A vigor is a special condition that applies to a monster and they are always positive.
+        These are the vigors: intimidating, prepared, precise, hidden
+      </p>
+      <section id='intimidating'>
+        <h4>Intimidating</h4>
+        <p>
+          A monster that is intimidating deals 25% increased damage to monsters that are adjacent.
+        </p>
+      </section>
+      <section id='prepared'>
+        <h4>Prepared</h4>
+        <p>
+          A monster that is prepared takes 25% reduced damage from targets that are adjacent.
+        </p>
+      </section>
+      <section id='precise'>
+        <h4>Precise</h4>
+        <p>
+          A monster that is precise deals 25% increased damage to monsters that are far away.
+        </p>
+      </section>
+      <section id='hidden'>
+        <h4>Hidden</h4>
+        <p>
+          A monster that is rushed takes 25% reduced damage from targets that are far away.
+        </p>
+      </section>
     </section>
   </section>
 </body>

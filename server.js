@@ -27,11 +27,33 @@ const files = {
   'init-bestiary.js': fs.readFileSync(__dirname + '/init-bestiary.js'),
 }
 // console.log(files['abilities.js'])
-function loadFile(name) {
+var ruleLinks = [
+  [[' (ability)', ' (abilities)'], 'abilities'],
+  [[' (turns)', ' (turn)'], 'turn'],
+  [[' (rounds)', ' (round)'], 'round'],
+  [[' (passives)', ' (passive)'], 'passive'],
+  [[' (triggers)', ' (trigger)'], 'trigger'],
+  [[' (shapes)', ' (shape)'], 'shape'],
+];
+
+function addRuleLinks(html) {
+  let out = html.toString();
+  ruleLinks.forEach(rl => {
+    rl[0].forEach(word => {
+      let test = new RegExp(word, 'g');
+      out = out.replace(test, ` <a href='#${rl[1]}'>$1</a>`);
+    })
+  })
+  return out;
+}
+function loadFile(name, transform) {
   if(name.match('.js')) {
     files[name] = wrap.pre() + fs.readFileSync(__dirname + '/' + name) + wrap.post(name);
   } else {
     files[name] = fs.readFileSync(__dirname + '/' + name);
+    if(transform) {
+      files[name] = transform(files[name]);
+    }
   }
 }
 
@@ -76,7 +98,7 @@ loadFile('team-tpl.js');
 loadFile('leader-tpl.js');
 loadFile('pathfinding.js');
 loadFile('index.html');
-loadFile('rules.html');
+loadFile('rules.html', addRuleLinks);
 loadFile('battle.html');
 loadFile('animation.html');
 loadFile('arena.html');
@@ -89,6 +111,8 @@ loadFile('sheet_of_old_paper_horizontal.png');
 loadFile('spellbookForFlare.png');
 loadFile('Hell2.jpg');
 loadFile('Aclonica.ttf');
+
+
 
 function saveData(req, res, folder, url) {
   let id = url.searchParams.get('id') ||  guid();
