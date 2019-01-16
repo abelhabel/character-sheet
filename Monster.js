@@ -280,6 +280,7 @@ class Monster {
   }
 
   addEffect(source, ability, power, triggered, triggeredPower, positions, special) {
+    if(power < 1) return;
     let e = this.effects.filter(e => e.ability.bio.name == ability.bio.name);
     if(e && e.length >= ability.stats.stacks ) {
       e[0].rounds = 0;
