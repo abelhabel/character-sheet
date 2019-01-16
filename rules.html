@@ -16,6 +16,9 @@
       font-weight: bold;
       text-decoration: none;
     }
+    pre {
+      white-space: pre-line;
+    }
   </style>
 </head>
 <body>
@@ -25,7 +28,7 @@
   <section id='introduction'>
     <h2>Introduction</h2>
     <p>
-      Fangalia is a tactical turned based game where two teams start on either side
+      Fangalia is a tactical turn based game where two teams start on either side
       of a battle field and fight against each other until only one team is left.
     </p>
     <p>
@@ -70,8 +73,8 @@
       </p>
     </section>
 
-    <section id='movement'>
-      <h3>Movement</h3>
+    <section id='moving'>
+      <h3>Moving</h3>
       <p>
         On a monster's turn if it has a Movement stat above zero, the monster can move. The monster can move
         a number of tiles equal to its Movement stat. A move cannot be diagonal, meaning that if you want to move
@@ -111,6 +114,80 @@
         has no targets within range, allowing for enemies to move within range or allies to make the monster's turn
         more favorable when acting later. A monster can only wait once per round. If a monster has performed any other action
         in that turn it cannot wait.
+      </p>
+    </section>
+
+  </section>
+
+  <section id='battle'>
+    <h2>Battle</h2>
+    <section id='flanking'>
+      <h3>Flanking</h3>
+      <p>
+        A monster is considered flanked when two or more enemies are adjacent to it. For each adjacent enemy
+        above one increases the damage taken by 20% when hit by attacks. It does not provide a damage bonus for spells.
+      </p>
+      <p>
+        Example 1:<br>
+        A monster that is hit by an attack while 2 enemies are adjacent takes: (2 - 1) * 20% = 20%, extra damage.
+      </p>
+      <p>
+        Example 2:<br>
+        A monster that is hit by an attack while 5 enemies are adjacent takes: (5 - 1) * 20% = 80%, extra damage.
+      </p>
+    </section>
+    <section id='attack-roll'>
+      <h3>Attack Roll</h3>
+      <p>
+        <pre>
+          <code>
+            stacks = number of stacks of the attacker
+            attack = attackers Attack stat
+            defense = defenders Defense stat
+
+            if(attack > defense)
+              multiplier = 1 + (attack - defense)/10;
+            else
+              multiplier = max(0.1, 1 + (attack - defense)/20);
+
+            flanking multiplier = number of adjacent enemies - 1
+            bonus damage = attackers Damage stat
+            ailment multiplier = ailments on defender and attacker added together
+            vigor multiplier = vigors on defender and attacker added together
+            ability minimum damage = ability minimum power + bonus damage
+            ability maximum damage = ability maximum power + bonus damage
+            ability multiplier = ability power multiplier
+            ability damage = random(ability minimum damage, ability maximum damage) * ability multiplier
+            ------------------------------------
+            total damage = ability damage * stacks * multiplier * flanking multiplier * vigor multiplier * ailment multiplier
+          </code>
+        </pre>
+      </p>
+    </section>
+    <section id='spell-roll'>
+      <h3>Spell Roll</h3>
+      <p>
+        <pre>
+          <code>
+            spell resistance = defenders Spell Resistance stat
+            resist roll = random(1, 100)
+            if(resist roll < spell resistance)
+              spell is resisted
+            else
+
+            stacks = number of stacks of the attacker
+            spell power multipler = 1 + (attackers Spell Power stat / 10)
+            bonus damage = attackers Damage stat
+            ailment multiplier = ailments on defender and attacker added together
+            vigor multiplier = vigors on defender and attacker added together
+            ability minimum damage = ability minimum power + bonus damage
+            ability maximum damage = ability maximum power + bonus damage
+            ability multiplier = ability power multiplier
+            ability damage = random(ability minimum damage, ability maximum damage) * ability multiplier
+            ------------------------------------
+            total damage = ability damage * stacks * spell power multipler * vigor multiplier * ailment multiplier
+          </code>
+        </pre>
       </p>
     </section>
   </section>
@@ -194,10 +271,14 @@
         the battle field. The second piece of information determines what targets that will be hit.
       </p>
       <p>
-        Targets that can be hit are one of these: allies, enemies, self, or all.
+        Targets that can be selected are one of these: actor, ground, or self.
       </p>
       <p>
-        The formatting of the target stat will look like this ground/enemies, or actor/allies
+        Targets that can be hit by the ability are one of these: allies, enemies, self, or all.
+      </p>
+      <p>
+        The formatting of the target stat will look like this ground/enemies, or actor/allies. Or more generally put:
+        [what to select]/[who the ability will hit]
       </p>
     </section>
 
@@ -225,12 +306,70 @@
       </p>
     </section>
 
-    <section id='cost'>
-      <h3>Cost</h3>
+    <section id='resource-cost'>
+      <h3>Resource Cost</h3>
       <p>
         Some abilities has a resource cost. It is either Mana or Health. If an ability cost 4 Mana but the monster
         only has 3 Mana available, then the ability cannot be used. The same logic applies if the resource is health.
       </p>
+    </section>
+
+    <section id='element'>
+      <h3>Element</h3>
+      <p>
+        There are seven types of elements: force, fire, water, air, earth, vitality, rot
+      </p>
+
+      <section id='force'>
+        <h4>Force</h4>
+        <p>
+          The force element represent slashing, bludgening, will. The associated monster stats are: Attack, Damage
+        </p>
+      </section>
+      <section id='fire'>
+        <h4>Fire</h4>
+        <p>
+          The fire element represent heat and burning damage, fury, anger, toughness.
+          The associated monster stats are: Health, APT (Actions Per Turn)
+        </p>
+      </section>
+      <section id='water'>
+        <h4>Water</h4>
+        <p>
+          The water element represent water, ice, rain, tranquility, slowness. The associated monster stats are: Mana, Spell Power
+        </p>
+      </section>
+      <section id='air'>
+        <h4>Air</h4>
+        <p>
+          The air element represent wind, electricity, reflexes, quickness. The associated monster stats are: Movement, Initiative, TPT (Triggers Per Turn)
+        </p>
+      </section>
+      <section id='earth'>
+        <h4>Earth</h4>
+        <p>
+          The earth element represent acid, poison, corrotion, roughness. The associated monster stats are: Defense, Spell Resistance,
+        </p>
+      </section>
+      <section id='vitality'>
+        <h4>Vitality</h4>
+        <p>
+          The vitality element represent life, divinity, hope, rejuvenation.
+        </p>
+        <p>
+          Vitality damage always heals monsters rather than damaging them, except for the Undead.
+        </p>
+      </section>
+      <section id='rot'>
+        <h4>Rot</h4>
+        <p>
+          The rot element represent decay, death, revulsion.
+        </p>
+        <p>
+          Rot heals the Undead but deals damage as the other elements to all other monster families.
+        </p>
+      </section>
+
     </section>
 
     <section id='power'>
@@ -375,5 +514,176 @@
       </section>
     </section>
   </section>
+
+  <section id='monsters'>
+    <h2>Monsters</h2>
+    <p>
+      A monster is the central game mechanic, much like a chess piece is central to chess.
+      Likewise, just as there are different chess pieces there are different monsters.
+    </p>
+    <p>
+      Each monster is unique in the sense that the combination of its stats and its abilities make them unique.
+      Some monsters can stack.
+    </p>
+
+    <section id='family'>
+      <h3>Family</h3>
+      <p>
+        A monster belongs to a family. You can think of this as a faction, group etc. A family of monsters represents
+        a theme of both flavor and tactics. Outlaws focus on attacks but Demons focus more on spells, for example.
+      </p>
+    </section>
+    <section id='cost'>
+      <h3>Cost</h3>
+      <p>
+        When selecting a team to do battle with, you have a maximum amount of cash to spend. Each monster has
+        a cost which is then subtracted from your available cash if you add it to your team. The cost
+        represent one unit of that monster.
+      </p>
+    </section>
+    <section id='max-stacks'>
+      <h3>Max Stacks</h3>
+      <p>
+        Some monsters can stack together to form one battle unit made of multiple of the same monster. The
+        max stacks says what the maximum any given monster can stack up to.
+      </p>
+      <p>
+        The Bronze Dragon has a max stack of 1, so you can never have more than one Bronze Dragon in a battle unit.
+        The Imp, can however stack up to 20 times, meaning that one battle unit can consist of up to 20 Imps.
+      </p>
+    </section>
+    <section id='health'>
+      <h3>Health</h3>
+      <p>
+        The health of a monster determines how much damage can receive before it dies. A monster is dead if it has
+        zero or lower health.
+      </p>
+    </section>
+    <section id='mana'>
+      <h3>Mana</h3>
+      <p>
+        Mana is the main resource a monster use for using abilities. If a monster does not have any mana it cannot
+        use abilities that have a mana cost of 1 or more.
+      </p>
+    </section>
+    <section id='attack'>
+      <h3>Attack</h3>
+      <p>
+        When a monster uses an ability with source: attack, the monster uses its attack stat to determine how much damage
+        is done to the target.
+      </p>
+      <p>
+        An attacker's attack stat is always relative to a defenders defense stat when determining how much damage
+        is inflicted on the defender. The higher the attack stat the higher the damage. The damage is calculated by the attack roll.
+      </p>
+    </section>
+    <section id='defense'>
+      <h3>Defense</h3>
+      <p>
+        When a monster is being attacked by an ability with source: attack, the monster uses its defense stat to determine how much damage
+        is done to it.
+      </p>
+      <p>
+        A defenders defense stat is always relative to an attackers attack stat when determining how much damage
+        is inflicted on the defender. The higher the attack stat the higher the damage. The damage is calculated by the attack roll.
+      </p>
+    </section>
+    <section id='spell-power'>
+      <h3>Spell Power</h3>
+      <p>
+        When a monster uses an ability with source: spell, the monster uses its spell power stat to determine how much damage
+        is done to the target. The damage is calculated by the spell roll.
+      </p>
+    </section>
+    <section id='spell-resistance'>
+      <h3>Spell Resistance</h3>
+      <p>
+        When a monster is hit by an ability with source: spell, the monster uses its spell resistance stat to determine
+        if it resists the spell it will resist the spell completely, meaning that the ability will have zero effect.
+      </p>
+      <p>
+        A spell resistance stat of 100 means that the monster is immune to all spells, even beneficial spells.
+      </p>
+    </section>
+    <section id='damage'>
+      <h3>Damage</h3>
+      <p>
+        The damage stat gives bonus to the minimum and maximum damage of attack and spell abilities.
+      </p>
+    </section>
+    <section id='apt'>
+      <h3>APT (Actions Per Turn)</h3>
+      <p>
+        The APT says how many abilities that a monster can use per turn.
+      </p>
+      <p>
+        Even if a monster has more than one turn in a round, it still gets to use an amount of abilities
+        on that turn equal to its APT stat.
+      </p>
+    </section>
+    <section id='tpt'>
+      <h3>TPT (Triggers Per Turn)</h3>
+      <p>
+        The APT says how many abilities that can be triggered per turn.
+      </p>
+      <p>
+        Even if a monster has more than one turn in a round, it still gets to use an amount of triggered abilities
+        on that turn equal to its TPT stat.
+      </p>
+      <p>
+        A triggered ability is counted per target hit, ie if a monster casts a Fire Ball that hits 4 targets but the monster
+        only has a TPT stat of 3, it can only trigger 3 triggered abilities. The abilities themselves, however, can hit
+        as many targets as the ability allows.
+      </p>
+    </section>
+    <section id='movement'>
+      <h3>Movement</h3>
+      <p>
+        The movement stat determines how many tiles a monster can move in a turn.
+      </p>
+    </section>
+    <section id='initiative'>
+      <h3>Initiative</h3>
+      <p>
+        A monster's initiative determines how early a monster gets its turn in a round. When a monster's
+        initiative is greater than 20, the monster will get more than one turn per round in certain rounds.
+      </p>
+      <p>
+        Initiative also determines how manu turns a monster gets over 20 rounds. If a monster has an initiaitve of 31
+        it will get 31 turns over 20 rounds, or initiative of 24 gives 24 turns over 20 rounds. However, a monster always
+        gets at least 1 turn per rounds, so a monster that has an initiative of 4 still gets 1 turn per round,
+        or 20 turns over 20 rounds.
+      </p>
+      <p>
+        It is also possible to calculate when the monster will get those extra turns if the initiative is
+        greater than 20, keeping track of a turn counter with these rules :</br>
+        1. For turn, add (initiative - 20) to the turn counter.<br>
+        2. When the turn counter is greater than 10, gain an extra turn.<br>
+        3. When an extra turn is gained, subtract 20 from the turn counter.<br>
+      </p>
+      <p>
+        Example:<br>
+        Monster initiative is 25.<br>
+        Round 1, Turn 1: turn counter = 0.<br>
+        - Add (25 - 20) to turn counter, turn counter = 0 + 5 = 5.<br>
+        turn counter is less than 10. No extra turn this round.<br>
+        <br>
+        Round 2, Turn 1: turn counter = 5.<br>
+        - Add (25 - 20) to turn counter, turn counter = 5 + 5 = 10.<br>
+        turn counter is less than 10. No extra turn this round.<br>
+        <br>
+        Round 3, Turn 1: turn counter = 10.<br>
+        - Add (25 - 20) to turn counter, turn counter = 10 + 5 = 15.<br>
+        turn counter is more than 10. Gain extra turn!<br>
+        - Subtract 20 from the turn counter, turn counter = 15 - 20 = -5.
+      </p>
+      <p>
+        As can be seen, the monster will gain an extra turn on round 3. If you continue the same logic
+        into future rounds, you can see that the monster will get extra turns on rounds 7, 11, 15, 19 etc.
+      </p>
+    </section>
+
+  </section>
+
 </body>
 </html>

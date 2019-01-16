@@ -73,7 +73,7 @@ class MonsterCard {
               ${item.bio.cost}
               <span>Cost</span>
             </div>
-            <div class='card-stat spell-resistance'>
+            <div class='card-stat initiative'>
               ${item.totalStat('initiative')}
               <span>Initiative</span>
             </div>

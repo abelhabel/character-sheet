@@ -827,6 +827,9 @@ class Battle {
     if(ability.stats.target == 'actor' && !this.grid.get(x, y)) {
       return out;
     }
+    if(ability.stats.target == 'self' && this.grid.get(x, y) != a) {
+      return out;
+    }
     if(ability.stats.range >= this.grid.squareRadius(a.x, a.y, x, y)) {
       if(ability.stats.shape == 'point') {
         out.tiles = [{item: this.grid.get(x, y), x: x, y: y}];
@@ -1384,6 +1387,10 @@ class Battle {
       if(a.bio.activation != event) return;
       if(!target.canTrigger) return;
       var t = a.stats.targetFamily == 'self' ? target : source;
+      if(a.stats.target == 'self') {
+        console.log('trigger on self', event, target, source, power, ability, t)
+        t = target;
+      }
       this.useAbility(target, [t], a, true, power, ability);
       target.triggerCount += 1;
     })
@@ -1474,8 +1481,8 @@ class Battle {
   }
 
   attackRoll(a, b, ability) {
-    let df = b.totalStat('defence');
     let at = a.totalStat('attack');
+    let df = b.totalStat('defence');
     let stacks = a.stacks;
     let bonusDamage = a.totalStat('damage');
     let flanks = this.flanks(b) - 1;

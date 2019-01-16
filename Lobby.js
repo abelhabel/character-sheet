@@ -401,7 +401,6 @@ class Lobby {
           this.enter();
           menu.hide(item);
           menu.show(menu.items[1]);
-          menu.show(menu.items[2].items[2]);
           menu.show(menu.items[2].items[3]);
           menu.show(menu.items[2].items[4]);
         }
@@ -413,7 +412,6 @@ class Lobby {
           this.leave();
           menu.hide(item);
           menu.show(menu.items[0]);
-          menu.hide(menu.items[2].items[2]);
           menu.hide(menu.items[2].items[3]);
           menu.hide(menu.items[2].items[4]);
         }

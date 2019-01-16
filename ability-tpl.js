@@ -123,7 +123,7 @@ var tpl = {
         {
           name: 'Target',
           type: 'select',
-          values: ['actor', 'ground'],
+          values: ['actor', 'ground', 'self'],
           initial: 'actor',
           exportAs: 'target',
         },
