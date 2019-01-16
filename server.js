@@ -34,6 +34,12 @@ var ruleLinks = [
   [[' (passives)', ' (passive)'], 'passive'],
   [[' (triggers)', ' (trigger)'], 'trigger'],
   [[' (shapes)', ' (shape)'], 'shape'],
+  [[' (attack roll)'], 'attack-roll'],
+  [[' (spell roll)'], 'spell-roll'],
+  [[' (flanking)', ' (flanked)', ' (flanks)', ' (flank)'], 'flanking'],
+  [[' (ailments)', ' (ailment)'], 'ailment'],
+  [[' (vigors)', ' (vigor)'], 'vigor'],
+  [[' (Initiative)', ' (initiative)'], 'initiative'],
 ];
 
 function addRuleLinks(html) {
