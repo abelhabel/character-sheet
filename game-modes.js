@@ -180,9 +180,11 @@ gameModes.liveMultiplayer = function(lobby, viewer) {
       let side = game.owner.id == lobby.localUser.id ? 'left' : 'right';
       placeUnits(arenas[1], team, side, viewer)
       .then(selected => {
+        viewer.showWaitingRoom();
         lobby.selectTeam(game, selected);
         lobby.on('game ready', (game) => {
-          viewer.hideTeamSelect();
+          console.log('game is ready');
+          viewer.showBattle();
           let localTeam = game.teams.find(t => t.user.id == lobby.localUser.id);
           let remoteTeam = game.teams.find(t => t.user.id != lobby.localUser.id);
           let firstTeam = game.owner.id == lobby.localUser.id ? localTeam.team : remoteTeam.team;
@@ -238,6 +240,10 @@ gameModes.liveMultiplayer = function(lobby, viewer) {
 
 gameModes.playByPost = function(lobby, viewer) {
   lobby.on('play by post', game => {
+    let hasPickedTeam = game.teams.find(t => t.user.id == lobby.localUser.id);
+    let isFull = game.full;
+    console.log(lobby.localUser, game)
+    if(game.teams.length < 2 && hasPickedTeam) return;
     lobby.hide();
     if(game.teams && game.teams.length == 2) {
       var generator = createRNG(game.seed);
@@ -288,6 +294,7 @@ gameModes.playByPost = function(lobby, viewer) {
       lobby.hide();
       viewer.showTeamSelect();
       var onDone = (team) => {
+        console.log('team', team)
         viewer.hideTeamSelect();
         let side = game.owner.id == lobby.localUser.id ? 'left' : 'right';
         placeUnits(arenas[1], team, side, viewer)
@@ -297,7 +304,7 @@ gameModes.playByPost = function(lobby, viewer) {
           lobby.show();
         });
       }
-      var teamSelect = new TeamSelect(monsters, viewer.selectContainer, tw, th, cash, ['team1'], onDone, viewer.backToLobby);
+      var teamSelect = new TeamSelect(monsters, viewer.selectContainer, tw, th, cash, [lobby.localUser.name], onDone, viewer.backToLobby);
     }
   })
 }

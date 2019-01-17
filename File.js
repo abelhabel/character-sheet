@@ -59,6 +59,15 @@ class File {
     })
   }
 
+  delete() {
+    return new Promise((resolve, reject) => {
+      fs.unlink(this.path, (err) => {
+        if(err) return reject(err);
+        resolve();
+      })
+    })
+  }
+
   get text() {
     return this.content.toString();
   }

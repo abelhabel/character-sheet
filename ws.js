@@ -19,7 +19,7 @@ module.exports = function(server) {
 
   class Team {
     constructor(user, team) {
-      this.user = user;
+      this.user = user && user.short;
       this.team = team;
     }
   }
@@ -28,14 +28,16 @@ module.exports = function(server) {
     constructor(user, type) {
       this.id = guid();
       this.type = type || 'remote';
-      this.owner = user;
-      this.users = [user];
+      this.owner = user && user.short;
+      this.users = [];
       this.max = 2;
       this.teams = [];
-      this.status = 'created';
+      this.status = 'created'; //created, started, completed
       this.seed = Date.now();
       this.actions = [];
       this.spectators = [];
+      this.winner = null;
+      if(this.owner) this.users.push(this.owner);
     }
 
     static create(g) {
@@ -46,6 +48,18 @@ module.exports = function(server) {
 
     start() {
       this.status = 'started';
+    }
+
+    get isComplete() {
+      return this.status == 'completed';
+    }
+
+    complete() {
+      this.status = 'completed';
+    }
+
+    win(user) {
+      this.winner = user.short;
     }
 
     save() {
@@ -65,17 +79,21 @@ module.exports = function(server) {
       })
     }
 
+    deleteFromDisk() {
+      let file = new File('games', `${this.id}.json`);
+      return file.delete();
+    }
+
     spectate(user) {
       this.spectators.push(user);
     }
 
     join(user) {
-      console.log('user joins', this, user)
       if(this.full) {
         return;
       }
       if(this.users.find(u => u.id == user.id)) return;
-      this.users.push(user);
+      this.users.push(user.short);
     }
 
     addTeam(user, team) {
@@ -108,7 +126,7 @@ module.exports = function(server) {
         .then(d => JSON.parse(d))
         .then(data => {
           data.forEach(g => {
-            if(g.status == 'completed') return;
+            if(g.isComplete) return;
             let game = Game.create(g);
             this.games.push(game);
           })
@@ -118,7 +136,7 @@ module.exports = function(server) {
         fileNames.forEach(fn => {
           Game.load(fn.replace('.json', ''))
           .then(game => {
-            if(game.status == 'complete') return;
+            if(game.isComplete) return;
             this.games.push(game);
           })
           .catch(e => {
@@ -231,9 +249,8 @@ module.exports = function(server) {
       user.save()
       .then(() => this.loadGame(gameId))
       .then(game => {
-        console.log('game won', game)
-        game.status = 'complete';
-        game.winner = user;
+        game.complete();
+        game.win(user);
         return this.stopGame(gameId, user);
       })
     }
@@ -244,7 +261,7 @@ module.exports = function(server) {
       user.save()
       .then(() => this.loadGame(gameId))
       .then(game => {
-        game.status = 'complete';
+        game.complete();
         return game.save()
       })
     }
@@ -256,6 +273,16 @@ module.exports = function(server) {
           return resolve(game);
         }
         return Game.load(id).then(resolve, reject);
+      })
+    }
+
+    loadUser(id) {
+      return new Promise((resolve, reject) => {
+        let user = this.users.find(u => u.id == id);
+        if(user) {
+          return resolve(user);
+        }
+        return User.load(id).then(resolve, reject);
       })
     }
 
@@ -271,7 +298,6 @@ module.exports = function(server) {
           return;
         }
         game.addTeam(user, team);
-        console.log('added team', game)
         if(game.type == 'play by post') {
           game.save()
           .then(() => console.log('game save success'))
@@ -294,20 +320,35 @@ module.exports = function(server) {
     stopGame(gameId) {
       this.loadGame(gameId)
       .then(game => {
-        console.log('stopping game', game)
+        let users = game.users.map(u => this.loadUser(u.id));
+        Promise.all(users)
+        .then(us => {
+          us.forEach(u => {
+            u.leaveGame(gameId);
+            u.save();
+          })
+        })
         this.removeGameFromMemory(gameId);
-        game.status = 'complete';
+        game.complete();
         this.cast('game stopped', game);
-        return this.saveGame(game);
+        return game.deleteFromDisk();
       })
+    }
+
+    getGames(user) {
+      this.castToUser(user, 'game list', this.games);
+    }
+
+    getUsers(user) {
+      this.castToUser(user, 'user list', this.users.map(u => u.toSafe()));
     }
 
     enter(user) {
       this.users.push(user);
-      this.cast('user entered', user);
+      this.cast('user entered', user.toSafe());
       this.cast('game list', this.games);
       let socket = sockets.get({playerId: user.id});
-      socket && socket.ship('user list', this.users);
+      socket && socket.ship('user list', this.users.map(u => u.toSafe()));
     }
 
     sendToken(user, token) {
@@ -331,7 +372,6 @@ module.exports = function(server) {
 
     disconnect(user) {
       let index = this.users.findIndex(u => u.id == user.id);
-      console.log('disconnect user index', index)
       if(!~index) {
         return;
       }
@@ -350,7 +390,7 @@ module.exports = function(server) {
       })
       this.cast('user left', user);
       this.cast('game list', this.games);
-      this.cast('user list', this.users);
+      this.cast('user list', this.users.map(u => u.toSafe()));
     }
 
   }
@@ -372,13 +412,12 @@ module.exports = function(server) {
       let p = data.name.split(':');
       let name = p[0];
       let password = p[1];
-      console.log('enter lobby', data)
       User.login(name, password)
       .then(user => {
         let token = user.createToken();
         PLAYERS[user.id] = user;
         sockets.set({playerId: user.id, socketId: socket.id});
-        LOBBY.enter(user.toSafe());
+        LOBBY.enter(user);
         LOBBY.sendToken(user, token.toString());
 
       })
@@ -389,10 +428,9 @@ module.exports = function(server) {
     'login'(socket, data) {
       User.loginWithToken(data.token)
       .then(user => {
-        console.log('user logged in with token', user);
         PLAYERS[user.id] = user;
         sockets.set({playerId: user.id, socketId: socket.id});
-        LOBBY.enter(user.toSafe());
+        LOBBY.enter(user);
       })
       .catch(e => {
         console.log('error logging in user', e);
@@ -401,6 +439,14 @@ module.exports = function(server) {
     'leave lobby'(socket, data) {
       let user = getUser(socket);
       LOBBY.leave(user);
+    },
+    'get games'(socket, data) {
+      let user = getUser(socket);
+      LOBBY.getGames(user);
+    },
+    'get users'(socket, data) {
+      let user = getUser(socket);
+      LOBBY.getUsers(user);
     },
     'win game'(socket, data) {
       let user = getUser(socket);

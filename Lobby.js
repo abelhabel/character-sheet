@@ -14,13 +14,17 @@ class User {
   static create(data) {
     return new User(data.name, data.id, data.activeGames, data.wins, data.losses);
   }
+
+  inGame(gameId) {
+    return ~this.activeGames.indexOf(gameId);
+  }
 }
 
 class Game {
-  constructor(user, type, id, status, max, seed, actions, teams) {
+  constructor(owner, type, id, status, max, seed, actions, teams) {
     this.type = type;
-    this.owner = user;
-    this.users = [user];
+    this.owner = owner;
+    this.users = [owner];
     this.id = id;
     this.status = status;
     this.max = max;
@@ -30,15 +34,37 @@ class Game {
   }
 
   static create(g) {
-    return new Game(g.owner, g.type, g.id, g.status, g.max, g.seed, g.actions, g.teams);
+    console.log('createGame', g)
+    let game = new Game(g.owner, g.type, g.id, g.status, g.max, g.seed, g.actions, g.teams);
+    if(g.users && g.users.length) {
+      game.users = g.users.map(u => User.create(u));
+    }
+    console.log('created game', game)
+    return game;
+  }
+
+  hasTeam(userId) {
+    return this.teams.find(t => t.user.id == userId);
   }
 
   start() {
-    console.log('started game')
+    this.status = 'started';
   }
 
   update(o) {
 
+  }
+
+  get started() {
+    return this.status == 'started';
+  }
+
+  get isComplete() {
+    return this.status == 'completed';
+  }
+
+  complete() {
+    this.status = 'completed';
   }
 
   join(user) {
@@ -51,6 +77,10 @@ class Game {
 
   get full() {
     return this.users.length >= this.max;
+  }
+
+  get ready() {
+    return this.full && this.teams.length >= this.max;
   }
 }
 
@@ -77,12 +107,22 @@ class Lobby {
     this.cursor = new Sprite(icons.find(i => i.bio.name == 'Ability Cursor').bio.sprite);
   }
 
+  getUsers() {
+    socket.emit('get users', {});
+  }
+
+  getGames() {
+    socket.emit('get games', {});
+  }
+
   hide() {
     this.tags.container.style.display = 'none';
   }
 
   show() {
     this.tags.container.style.display = 'block';
+    this.getGames();
+    this.getUsers();
   }
 
   on(event, fn) {
@@ -118,7 +158,12 @@ class Lobby {
     console.log('team selected and game updated')
   }
 
-  gameIsReady(game) {
+  gameIsReady(data) {
+    let game = this.games.find(g => g.id == data.id);
+    if(!game) return;
+    console.log('gameIsReady gameIsReady');
+    game.start();
+    this.update();
     this.trigger('game ready', game);
   }
 
@@ -145,27 +190,38 @@ class Lobby {
   }
 
   addUsers(users) {
-    let list = users.filter(u => !this.users.find(b => b.id == u.id));
-    list.forEach(u => {
-      this.users.push(User.create(u));
+    users.forEach((u, i) => {
+      let index = this.users.findIndex(u2 => u2.id == u.id);
+      let user = null;
+      if(~index) {
+        user = User.create(u);
+        this.users[index] = user;
+      } else {
+        user = User.create(u);
+        this.users.push(user);
+      }
+      if(u.id == this.localUser.id) {
+        this.localUser = user;
+      }
     });
     this.update();
   }
 
   addGames(games) {
-    let list = games.filter(u => !this.games.find(b => b.id == u.id));
-    list.forEach(g => {
-      let game = Game.create(g);
-      g.users.forEach(u => {
-        if(!u) return;
-        if(u.id == g.owner.id) return;
-        let user = User.create(u)
-        game.users.push(user);
-      });
-      if(!g.users.length) {
-        return this.stopGame(game);
+    console.log('adding games', games)
+    games.forEach(g => {
+      let index = this.games.findIndex(g2 => g2.id == g.id);
+      console.log('index', index)
+      if(~index) {
+        this.games[index] = Game.create(g);
+        console.log('replacing existing game', this.games[index])
+      } else {
+        let game = Game.create(g);
+        if(!g.users.length) {
+          return this.stopGame(game);
+        }
+        this.games.push(game);
       }
-      this.games.push(game);
     });
     this.update();
   }
@@ -183,6 +239,10 @@ class Lobby {
       this.localUser = user;
     }
     this.update();
+  }
+
+  updateLocalUser(data) {
+
   }
 
   setToken(data) {
@@ -269,8 +329,7 @@ class Lobby {
     console.log('didJoinGame', data)
     let game = this.games.find(g => g.id == data.game.id);
     let user = this.users.find(u => u.id == data.user.id);
-    game.users.push(user);
-    game.teams = data.game.teams;
+    game.join(user);
     if(game.full && game.type == 'play by post' && game.users.find(u => u.id == this.localUser.id)) {
       console.log('game full');
       this.trigger('play by post', game);
@@ -315,26 +374,35 @@ class Lobby {
   }
 
   renderGame(game) {
+    if(!this.localUser) return '';
     console.log('render game', game)
     let c = document.createElement('div');
-    c.className = 'game'
-    if(~this.localUser.activeGames.indexOf(game.id)) {
-      let cont = document.createElement('button');
-      cont.textContent = 'Continue Game';
-      cont.addEventListener('click', () => this.continueGame(game));
-      c.appendChild(cont);
+    c.className = 'game';
+    if(game.type == 'play by post') {
+      // show continue if:
+      // the game belongs to the locol user
+      // and if the local user has not picked a team
+      // or both users have picked teams
+      if(this.localUser.inGame(game.id) && (!game.hasTeam(this.localUser.id) || game.ready)) {
+        let cont = document.createElement('button');
+        cont.textContent = 'Continue Game';
+        cont.addEventListener('click', () => this.continueGame(game));
+        c.appendChild(cont);
+      }
     } else
-    if(game.full && game.owner.id == this.localUser.id) {
-      let startGame = document.createElement('button');
-      startGame.textContent = 'Start Game';
-      startGame.addEventListener('click', () => this.startRemoteGame(game));
-      c.appendChild(startGame);
-    } else
-    if(game.owner.id !== this.localUser.id) {
-      let spectate = document.createElement('button');
-      spectate.textContent = 'Spectate';
-      spectate.addEventListener('click', () => this.spectate(game));
-      c.appendChild(spectate);
+    if(game.type == 'remote') {
+      if(game.full && game.owner.id == this.localUser.id) {
+        let startGame = document.createElement('button');
+        startGame.textContent = 'Start Game';
+        startGame.addEventListener('click', () => this.startRemoteGame(game));
+        c.appendChild(startGame);
+      } else
+      if(game.owner.id !== this.localUser.id && game.started) {
+        let spectate = document.createElement('button');
+        spectate.textContent = 'Spectate';
+        spectate.addEventListener('click', () => this.spectate(game));
+        c.appendChild(spectate);
+      }
     }
     if(!game.full && game.owner.id != this.localUser.id) {
       let joinGame = document.createElement('button');
@@ -375,7 +443,7 @@ class Lobby {
         console.log('do not render game', g)
         return false;
       }
-      if(g.status == 'complete') return false;
+      if(g.isComplete) return false;
       return true;
     })
     .forEach(g => {

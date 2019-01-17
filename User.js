@@ -48,6 +48,10 @@ class User {
     this.losses = losses || 0;
   }
 
+  get short() {
+    return {id: this.id, name: this.name, wins: this.wins, losses: this.losses};
+  }
+
   static create(name, password) {
     return new User(guid(), name, password);
   }
@@ -58,8 +62,9 @@ class User {
 
   leaveGame(gameId) {
     let i = this.activeGames.indexOf(gameId);
-    if(~i) return;
+    if(!~i) return;
     this.activeGames.splice(i, 1);
+    this.save();
   }
 
   toSafe() {
@@ -79,6 +84,10 @@ class User {
       let file = new File('users', this.name);
       return file.write(this.id);
     });
+  }
+
+  inGame(gameId) {
+    return ~this.activeGames.indexOf(gameId);
   }
 
   static load(id) {

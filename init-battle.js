@@ -126,6 +126,7 @@ Module.onLoad(['DungeonCrawl_ProjectUtumnoTileset.png', 'Hell2.jpg', 'guid.js',
   const aiTeams = require('teams.js');
   const Lobby = require('Lobby.js');
   const lobby = new Lobby();
+  window.lobby = lobby;
   lobby.render();
 
   socket.on('user entered', (user) => {
@@ -246,7 +247,19 @@ Module.onLoad(['DungeonCrawl_ProjectUtumnoTileset.png', 'Hell2.jpg', 'guid.js',
 
   })
   document.body.appendChild(container);
-
+  const waitingRoom = html`<div
+    style='
+      position: relative;
+      left: 50%;
+      top: 50%;
+      transform: translate(-50%, -50%);
+      font-size: 48px;
+      display: none;
+    '
+  >
+    Waiting for the other player to pick a team...
+  </div>`;
+  document.body.appendChild(waitingRoom);
   const viewer = {
     selectContainer,
     container,
@@ -264,6 +277,18 @@ Module.onLoad(['DungeonCrawl_ProjectUtumnoTileset.png', 'Hell2.jpg', 'guid.js',
     backToLobby() {
       viewer.reset();
       lobby.show();
+    },
+    showWaitingRoom() {
+      waitingRoom.style.display = 'block';
+    },
+    hideWaitingRoom() {
+      waitingRoom.style.display = 'none';
+    },
+    showBattle() {
+      viewer.hideWaitingRoom();
+      viewer.hideTeamSelect();
+      lobby.hide();
+      container.style.display = 'block';
     }
   };
 

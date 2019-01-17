@@ -112,7 +112,7 @@ class TeamSelect  {
     if(this.teams.length == this.maxTeams) {
       if(typeof this.onDone !== 'function') return;
       if(this.maxTeams == 1) {
-        let name = this.teamNames[i];
+        let name = this.teamNames[0];
         return this.onDone(Team.fromMonsters(name, this.teams[0]));
       }
       if(this.maxTeams == 2) {
