@@ -24,6 +24,10 @@ class File {
     })
   }
 
+  deleteRemote() {
+    return backup.del(this.folder, this.name);
+  }
+
   read() {
     if(remote) return this.readRemote();
     return new Promise((resolve, reject) => {
@@ -60,6 +64,7 @@ class File {
   }
 
   delete() {
+    if(remote) return this.deleteRemote();
     return new Promise((resolve, reject) => {
       fs.unlink(this.path, (err) => {
         if(err) return reject(err);

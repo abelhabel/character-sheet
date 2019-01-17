@@ -414,7 +414,10 @@ class Battle {
     this.originalTeam1.units.forEach(u => {
       let m = this.team1.find(m => m.suuid == u.suuid);
       if(!isNaN(u.x) && !isNaN(u.y)) {
-        this.grid.remove(m.x, m.y);
+        let currentMonster = this.grid.get(m.x, m.y);
+        if(currentMonster && currentMonster.suuid == u.suuid) {
+          this.grid.remove(m.x, m.y);
+        }
         m.x = Number(u.x);
         m.y = Number(u.y);
         this.grid.setItem(m);
@@ -424,7 +427,10 @@ class Battle {
     this.originalTeam2.units.forEach(u => {
       let m = this.team2.find(m => m.suuid == u.suuid);
       if(!isNaN(u.x) && !isNaN(u.y)) {
-        this.grid.remove(m.x, m.y);
+        let currentMonster = this.grid.get(m.x, m.y);
+        if(currentMonster && currentMonster.suuid == u.suuid) {
+          this.grid.remove(m.x, m.y);
+        }
         m.x = Number(u.x);
         m.y = Number(u.y);
         this.grid.setItem(m);

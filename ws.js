@@ -168,6 +168,7 @@ module.exports = function(server) {
     }
 
     castToUser(user, channel, data) {
+      if(!user) return;
       let socket = sockets.get({playerId: user.id});
       socket && socket.ship(channel, data);
     }
