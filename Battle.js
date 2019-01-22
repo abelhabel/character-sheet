@@ -46,8 +46,9 @@ class TurnOrder extends Array {
 }
 
 class R extends Array {
-  constructor() {
+  constructor(battle) {
     super();
+    this.battle = battle;
     this.current = {
       hasActed: [],
       willAct: [],
@@ -179,7 +180,6 @@ class R extends Array {
   }
 
   nextRound() {
-    this.current.willAct = Array.from(this.current.hasActed);
   }
 
   nextTurn() {
@@ -202,6 +202,7 @@ class R extends Array {
       this.current.waiting = [];
       this.currentRound += 1;
       logger.log("New Round:", this.currentRound);
+      this.nextRound();
     }
     this.waited = false;
     this._actor = this.current.willAct[0] || this.current.waiting[this.current.waiting.length -1];
@@ -314,15 +315,16 @@ class Turn {
 
 class Action {
   constructor(type, positions, abilityId) {
-    this.type = type || 'move';
+    this.type = type || 'move'; // move, defende, wait, surrender, use ability
     this.positions = positions || [{x: 0, y: 0}];
     this.abilityId = abilityId || '';
   }
 }
 
 class Battle {
-  constructor(team1, team2, tw, th, container, arena) {
+  constructor(team1, team2, tw, th, container, arena, mode) {
     this.container = container;
+    this.mode = mode || 'standard';
     this.mouse = {
       x: 0,
       y: 0
@@ -331,27 +333,18 @@ class Battle {
     this.originalTeam2 = team2;
     this.team1 = [];
     this.team2 = [];
-
-    // this.team1.forEach(m => {
-    //   m.team = 'team1';
-    //   m.battle = this;
-    // });
-    // this.team2.forEach(m => {
-    //   m.team = 'team2';
-    //   m.battle = this;
-    // });
     this.teamColors = {
       team1: {
-        aura: 'rgba(22, 88, 110, 0.5)',
-        selected: 'rgba(22, 88, 110, 0.5)'
+        aura: 'rgba(22, 88, 110, 1)',
+        selected: 'rgba(22, 88, 110, 1)'
       },
       team2: {
-        aura: 'rgba(110, 22, 33, 0.5)',
-        selected: 'rgba(110, 22, 33, 0.5)'
+        aura: 'rgba(110, 22, 33, 1)',
+        selected: 'rgba(110, 22, 33, 1)'
       },
       neutral: {
-        aura: 'rgba(110, 110, 22, 0.5)',
-        selected: 'rgba(110, 110, 22, 0.5)'
+        aura: 'rgba(110, 110, 22, 1)',
+        selected: 'rgba(110, 110, 22, 1)'
       }
     };
     this.placeUnits = false;
@@ -377,9 +370,14 @@ class Battle {
       team2: [],
       all: []
     };
-    this.assembleTeams();
+    this.tr = new R(this);
+    if(this.mode == 'standard') {
+      this.assembleTeams();
+    } else
+    if(this.mode == 'portal') {
+      this.setupPortals();
+    }
     [...this.team1, ...this.team2].forEach(m => this.addAuras(m))
-    this.tr = new R();
     this.tr.add([...this.team1, ...this.team2]);
     this.tr.order();
     this.br = new BattleResult();
@@ -390,6 +388,42 @@ class Battle {
   static create(o) {
     var arena = o.arena || arenas[1];
     let b = new Battle(o.team1, o.team2, o.tw, o.th, o.container, arena);
+  }
+
+  static fromMatch(m) {
+    let b = new Battle(
+      m.team1.team,
+      m.team2.team,
+      42,
+      42,
+      m.container,
+      m.arena.arena,
+      m.settings.settings.mode
+    );
+    if(m.team1.actor == 'AI - level 1') {
+      b.team1.forEach(u => u.addAI(1));
+    } else
+    if(m.team1.actor == 'AI - level 2') {
+      b.team1.forEach(u => u.addAI(2));
+    }
+    if(m.team2.actor == 'AI - level 1') {
+      b.team2.forEach(u => u.addAI(1));
+    } else
+    if(m.team2.actor == 'AI - level 2') {
+      b.team2.forEach(u => u.addAI(2));
+    }
+    return b;
+  }
+
+  setupPortals() {
+    this.originalTeam1.addPortal(0, 0);
+    this.originalTeam2.addPortal(this.w-1, this.h-1);
+    let p1 = this.originalTeam1.portal.monster;
+    p1.team = 'team1';
+    let p2 = this.originalTeam2.portal.monster;
+    p2.team = 'team2';
+    this.addMonster(p1);
+    this.addMonster(p2);
   }
 
   assembleTeams() {
@@ -442,6 +476,11 @@ class Battle {
   getEnemyTeam(team) {
     if(team == 'team1') return this.team2;
     return this.team1;
+  }
+
+  get currentTeam() {
+    if(this.currentActor.team == 'team1') return this.originalTeam1;
+    return this.originalTeam2;
   }
 
   createCanvases() {
@@ -553,7 +592,7 @@ class Battle {
       c.removeChild(d);
     }
     let min = ability.stats.source == 'attack' ? this.attackRollMin(a, b, ability) : this.spellRollMin(a, b, ability);
-    let max = ability.stats.source == 'attack' ? this.attackRollMax(a, b, ability) : this.spellRollMin(a, b, ability);
+    let max = ability.stats.source == 'attack' ? this.attackRollMax(a, b, ability) : this.spellRollMax(a, b, ability);
     let tag = html`<div id='board-damage-preview' style='
       position: absolute;
       top: ${p.y}px;
@@ -776,7 +815,7 @@ class Battle {
         display: none;
         position: fixed;
         width: 800px;
-        height: 600px;
+        min-height: 600px;
         top: 50%;
         left: 50%;
         transform: translate(-50%, -50%);
@@ -1712,6 +1751,11 @@ class Battle {
       let position = positions[0];
       let actor = this.currentActor;
       let p;
+      if(type == 'surrender') {
+        let enemyTeam = this.getEnemyTeam(actor.team);
+        this.endGame(enemyTeam[0].team);
+        return Promise.resolve();
+      } else
       if(type == 'wait') {
         let canWait = this.wait(actor)
         if(canWait) {
@@ -1810,7 +1854,6 @@ class Battle {
           if(special && special.when == 'per use') {
             specialResult = special.fn(this, a, b, ability, power, triggeredPower, positions, triggeredBy);
           }
-
           !targets.actors.length && targets.tiles.length &&
           !fromEffect && a.addEffect(a, ability, power, fromEffect, triggeredPower, positions, specialResult);
           if(ability.stats.attribute == 'initiative') {
@@ -1830,8 +1873,12 @@ class Battle {
   }
 
   summon(a, ability, template, tile) {
-    let health = a.stacks * (10 + 10 * a.totalStat('spellPower'));
-    let stacks = Math.min(template.bio.maxStacks, Math.ceil(health / template.stats.health));
+    let c = this.grid.get(tile.x, tile.y);
+    if(c) {
+      tile = this.grid.closestEmpty(tile.x, tile.y);
+    };
+    let health = a && a.stacks * (10 + 10 * a.totalStat('spellPower'));
+    let stacks = a ? Math.min(template.bio.maxStacks, Math.ceil(health / template.stats.health)) : 1;
     let monster = new Monster(template, 1, true);
     monster.addStack(stacks -1);
     monster.harm(health % template.stats.health);
@@ -1845,6 +1892,19 @@ class Battle {
     this.addAuras(monster);
     logger.log(a.bio.name, 'summoned', monster.bio.name)
     this.initiativeChanged('useAbility');
+    return monster;
+  }
+
+  addMonster(monster, tile) {
+    tile = tile || monster;
+    monster.battle = this;
+    monster.x = tile.x;
+    monster.y = tile.y;
+    this.grid.setItem(monster);
+    this.tr.add([monster]);
+    this.addAuras(monster);
+    logger.log('added monster', monster.bio.name)
+    this.initiativeChanged();
     return monster;
   }
 
@@ -1890,6 +1950,15 @@ class Battle {
 
   }
 
+  endGame(winningTeam) {
+    if(typeof this.onGameEnd !== 'function') return;
+    this.onGameEnd({
+      winningTeam,
+      monstersLeft: Array.from(this.tr),
+      results: this.br
+    });
+  }
+
   startTurn() {
     var a = this.tr.actor;
     logger.log('Turn start for', a.bio.name);
@@ -1908,13 +1977,7 @@ class Battle {
     this.battleMenu.setActor(a);
     if(!this.tr.filter(m => m.team != a.team).length) {
       logger.log(a.team, 'won the game!');
-      if(typeof this.onGameEnd == 'function') {
-        this.onGameEnd({
-          winningTeam: a.team,
-          monstersLeft: Array.from(this.tr),
-          results: this.br
-        });
-      }
+      this.endGame(a.team);
     }
   }
 

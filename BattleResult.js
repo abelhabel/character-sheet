@@ -1,5 +1,6 @@
 class BattleResult {
   constructor() {
+    this._winningTeam = '';
     this.items = {
       damage: []
     };
@@ -23,14 +24,14 @@ class BattleResult {
     return Object.keys(this.actors).map(id => this.actors[id])
     .sort((a, b) => {
       return a.damageDone > b.damageDone ? -1 : 1;
-    })[0];
+    })[0] || {name: '', damageDone: 0, damageTaken: 0};
   }
 
   mostDamageTaken() {
     return Object.keys(this.actors).map(id => this.actors[id])
     .sort((a, b) => {
       return a.damageTaken > b.damageTaken ? -1 : 1;
-    })[0];
+    })[0] || {name: '', damageDone: 0, damageTaken: 0};
   }
 
   popup(onClose) {

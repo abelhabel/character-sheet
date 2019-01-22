@@ -3,6 +3,7 @@ const icons = require('icons.js');
 const _ability = icons.find(ic => ic.bio.name == 'Ability Book');
 const _defend = icons.find(ic => ic.bio.name == 'Defend');
 const _wait = icons.find(ic => ic.bio.name == 'Wait');
+const _surrender = icons.find(ic => ic.bio.name == 'Surrender');
 const _cursor = icons.find(ic => ic.bio.name == 'Ability Cursor');
 
 class BattleMenu {
@@ -103,11 +104,18 @@ class BattleMenu {
       let action = this.battle.createAction({type: 'wait'});
       this.battle.addAction(action);
     });
+    let surrender = new Sprite(_surrender.bio.sprite);
+    this.addToolTip(surrender.canvas, 'Surrender');
+    surrender.canvas.addEventListener('click', e => {
+      let action = this.battle.createAction({type: 'surrender'});
+      this.battle.addAction(action);
+    });
     let cursor = new Sprite(_cursor.bio.sprite);
     let top = html`<div style='cursor: url(${cursor.canvas.clone(24, 24).toPNG()}), auto'></div>`;
     top.appendChild(ability.canvas);
     top.appendChild(defend.canvas);
     top.appendChild(wait.canvas);
+    top.appendChild(surrender.canvas);
     let abilities = html`<div style='width: 32px;'></div>`;
     let outer = html`<div></div>`;
     outer.appendChild(top);

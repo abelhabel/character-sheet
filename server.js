@@ -85,6 +85,7 @@ loadFile('TeamSelect.js');
 loadFile('BattleResult.js');
 loadFile('BattleMenu.js');
 loadFile('Menu.js');
+loadFile('Match.js');
 loadFile('DynamicSound.js');
 loadFile('TeamViewer.js');
 loadFile('Team.js');

@@ -28,7 +28,7 @@ function createRNG(seed) {
 
 function placeUnits(arenaTpl, team, side, viewer) {
   return new Promise((resolve, reject) => {
-    let arena = new Arena(arenas[1], tw, th);
+    let arena = new Arena(arenaTpl, tw, th);
     let canvas = arena.render();
     viewer.container.appendChild(canvas);
     let up = new UnitPlacement(arena, team, side);
@@ -46,6 +46,39 @@ function placeUnits(arenaTpl, team, side, viewer) {
     })
     arena.drawObstacles();
   })
+}
+
+gameModes.startMatch = function(lobby, viewer) {
+  lobby.on('start match', match => {
+    viewer.hideTeamSelect();
+    console.log('starting match')
+    createRNG();
+    match.container = viewer.container;
+    let {mode, cash, time, maxMonster} = match.settings.settings;
+    let prep = Promise.resolve();
+    if(mode == 'standard' && match.team1.actor == 'human') {
+      if(match.team1.actor == 'human') {
+        prep = prep.then(() => placeUnits(match.arena.arena, match.team1.team, 'left', viewer));
+      }
+      if(match.team2.actor == 'human') {
+        prep = prep.then(() => placeUnits(match.arena.arena, match.team2.team, 'right', viewer));
+      }
+    }
+    prep.then(() => {
+      let battle = Battle.fromMatch(match);
+      battle.onGameEnd = (o) => {
+        o.results.winningTeam(o.winningTeam == 'team1' ? 'You' : 'AI');
+        let report = o.results.report(() => {
+          battle.destroy();
+          viewer.reset();
+          lobby.show();
+        });
+        document.body.appendChild(report);
+      };
+      battle.start();
+      window.battle = battle;
+    });
+  });
 }
 
 gameModes.humanVSAI = function(lobby, viewer) {
@@ -132,6 +165,31 @@ gameModes.localMultiplayer = function(lobby, viewer) {
       });
     }
     var teamSelect = new TeamSelect(monsters, viewer.selectContainer, tw, th, cash, ['team1', 'team2'], onDone, viewer.backToLobby)
+
+    teamSelect.render();
+  });
+}
+
+gameModes.localMultiplayerPortal = function(lobby, viewer) {
+  lobby.on('local game', (game) => {
+    var generator = createRNG();
+    viewer.showTeamSelect();
+    var onDone = (team1, team2) => {
+      viewer.hideTeamSelect();
+      var battle = new Battle(team1, team2, tw, th, viewer.container, 'portal mayhem');
+      battle.onGameEnd = (o) => {
+        o.results.winningTeam(o.winningTeam);
+        let report = o.results.report(() => {
+          battle.destroy();
+          viewer.reset();
+          lobby.show();
+        });
+        document.body.appendChild(report);
+      };
+      battle.start();
+      window.battle = battle;
+    }
+    var teamSelect = new TeamSelect(monsters, viewer.selectContainer, tw, th, 3500, ['team1', 'team2'], onDone, viewer.backToLobby);
 
     teamSelect.render();
   });

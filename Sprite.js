@@ -15,6 +15,10 @@ class Sprite {
     return this._canvas.canvas;
   }
 
+  get png() {
+    return this.canvas.toDataURL('image/png');
+  }
+
   drawStack(stack) {
     let fs = 12;
     this._canvas.drawRect(this.w -fs,this.h-fs, fs, fs);

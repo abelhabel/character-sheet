@@ -2,6 +2,7 @@ const icons = require('icons.js');
 const Sprite = require('Sprite.js');
 const Menu = require('Menu.js');
 const TeamViewer = require('TeamViewer.js');
+const Match = require('Match.js');
 class User {
   constructor(name, id, activeGames, wins, losses) {
     this.name = name;
@@ -102,7 +103,8 @@ class Lobby {
       'start spectate': [],
       'play by post': [],
       'human vs ai game': [],
-      'ai vs ai game': []
+      'ai vs ai game': [],
+      'start match': []
     };
     this.cursor = new Sprite(icons.find(i => i.bio.name == 'Ability Cursor').bio.sprite);
   }
@@ -325,6 +327,21 @@ class Lobby {
     });
   }
 
+  createMatch() {
+    this.hide();
+    let match = new Match(() => {
+      console.log('created match', match);
+      document.body.removeChild(match.tag);
+      this.hide();
+      this.trigger('start match', match);
+    }, () => {
+      document.body.removeChild(match.tag);
+      this.show();
+    });
+    match.render(document.body);
+
+  }
+
   didJoinGame(data) {
     console.log('didJoinGame', data)
     let game = this.games.find(g => g.id == data.game.id);
@@ -529,6 +546,10 @@ class Lobby {
             fn: () => this.createPlayByPostGame(this.localUser)
           }
         ]
+      },
+      {
+        text: 'Custom Game',
+        fn: () => this.createMatch()
       },
       {
         text: 'Bestiary',

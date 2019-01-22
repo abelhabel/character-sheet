@@ -127,6 +127,7 @@ class Monster {
     this.abilities = this.createAbilities();
     this._selections = new FixedList(1);
     this._team = '';
+
   }
 
   addAI(level = 1) {
@@ -280,7 +281,7 @@ class Monster {
   }
 
   addEffect(source, ability, power, triggered, triggeredPower, positions, special) {
-    if(power < 1) return;
+    if(power < 1 && !ability.stats.ailment && !ability.stats.vigor && !special) return;
     let e = this.effects.filter(e => e.ability.bio.name == ability.bio.name);
     if(e && e.length >= ability.stats.stacks ) {
       e[0].rounds = 0;
@@ -581,8 +582,6 @@ class Monster {
         box-shadow: 0px 0px 5px -1px rgba(0,0,0,0.25);
       }
       #details {
-        position: absolute;
-        bottom: 0px;
         width: 100%;
       }
       .bio {

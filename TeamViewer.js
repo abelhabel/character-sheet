@@ -30,6 +30,7 @@ class TeamViewer {
         top:50%;
         transform:translate(-50%,-50%);
         z-index:2000;
+        background-color: darkslategray;
       }
       .title {
         font-size:24px;

@@ -1,6 +1,104 @@
 const Slider = require('Slider.js');
 const Sprite = require('Sprite.js');
+const guid = require('guid.js');
 var noop = function() {};
+window.__tags = {};
+const bg = {
+  sprite: new Sprite({
+    "x": 1088,
+    "y": 15,
+    "spritesheet": 'Hell2.jpg',
+    "w":100,
+    "h":100
+  })
+};
+bg.png = bg.sprite.png;
+const fg = {
+  sprite: new Sprite({
+    "x": 444,
+    "y": 768,
+    "spritesheet": 'Hell2.jpg',
+    "w":50,
+    "h":50
+  })
+};
+fg.png = fg.sprite.png;
+class Increment {
+  constructor(val) {
+    this.val = val || 0;
+    this.id = guid();
+    this.tag = null;
+  }
+
+  render(container) {
+    let outer = html`<div></div>`;
+    let shadow = outer.attachShadow({mode: 'open'});
+    let style = html`<style>
+    * {
+      box-sizing: border-box;
+    }
+    .increment {
+      position: relative;
+      width: 100px;
+      height: 100px;
+      border-radius: 50%;
+      overflow: hidden;
+      background: none;
+    }
+    .increment:hover {
+      background: url(${bg.png});
+    }
+    .half {
+      display: inline-block;
+      width: 50%;
+      height: 100%;
+      vertical-align: top;
+      float: left;
+    }
+    .half:hover {
+      background-color: rgba(0,0,0,0.5);
+    }
+    .value {
+      position: absolute;
+      width: 50px;
+      height: 50px;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      border: 2px solid white;
+      border-radius: 50%;
+      color: white;
+      background: url(${fg.png});
+      text-align: center;
+      line-height: 46px;
+      font-size: 1.5em;
+    }
+    </style>`;
+    window.__tags[this.id] = (inc) => {
+      this.increment(inc);
+    }
+    this.inner = html`<div class='increment'>
+      <div class='half' onclick="__tags['${this.id}'](-1)"></div>
+      <div class='half' onclick="__tags['${this.id}'](1)"></div>
+      <div class='value'>${this.val}</div>
+    </div>`;
+    if(this.tag) {
+      container.replaceChild(outer, this.tag);
+    } else {
+      container.appendChild(outer);
+    }
+    shadow.appendChild(style);
+    shadow.appendChild(this.inner);
+    this.tag = outer;
+    return outer;
+  }
+
+  increment(n) {
+    this.val += Number(n);
+    this.inner.querySelector('.value').textContent = this.val;
+  }
+}
+
 class CS {
   constructor(tpl, parent, pools, onUpdateState) {
     this.name = tpl.name;

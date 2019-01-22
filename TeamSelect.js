@@ -3,6 +3,7 @@ const Menu = require('Menu.js');
 const MonsterCard = require('MonsterCard.js');
 const Team = require('Team.js');
 const guid = require('guid.js');
+const TeamViewer = require('TeamViewer.js');
 class TeamSelect  {
   constructor(items, container, tw, th, cash, teamNames, onDone, onExit) {
     this.onDone = onDone;
@@ -14,9 +15,9 @@ class TeamSelect  {
     this.container = container;
     this.cash = cash || 200;
     this.spent = 0;
-    this.max = 8;
+    this.max = 80;
     this.picked = document.createElement('canvas');
-    this.picked.width = 2000;
+    this.picked.width = this.max * this.tw;
     this.picked.height = th;
     this.picked.addEventListener('click', (e) => this.sell(e))
     this.container.appendChild(this.picked);
@@ -64,8 +65,17 @@ class TeamSelect  {
           c.cached.style.display = 'none';
         }
       })
-    })
+    });
 
+    let preset = html`<button>Choose Preset</button>`;
+    preset.addEventListener('click', e => {
+      let ts = new TeamViewer('Pick a team');
+      ts.on('done', team => {
+        this.onDone(Team.create(team));
+      });
+      ts.render(this.container);
+    })
+    this.container.appendChild(preset);
     let menu = new Menu([
       {
         text: 'Share',
@@ -77,7 +87,7 @@ class TeamSelect  {
         fn: () => this.done()
       },
       {
-        text: 'Back to Lobby',
+        text: 'Back',
         hidden: !this.onExit,
         fn: this.onExit
       }
@@ -100,7 +110,9 @@ class TeamSelect  {
       })
       this.container.appendChild(c);
       return card;
-    })
+    });
+
+    this.render();
   }
 
   done() {

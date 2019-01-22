@@ -8,6 +8,21 @@ class Special {
   }
 }
 
+module.exports.addMonster = {
+  when: 'per use',
+  fn: function (battle, caster, target, ability, power, triggeredPower, selections, triggeredBy) {
+    let team = battle.currentTeam;
+    let m = team.pickRandomMonster();
+    if(!m) {
+      console.log('no more monsters to portal in');
+      return new Special();
+    }
+    m.team = battle.currentActor.team;
+    battle.addMonster(m, target);
+    return new Special();
+  }
+};
+
 module.exports.suicide = {
   when: 'per target',
   fn: function (battle, caster, target, ability, power, triggeredPower, selections, triggeredBy) {
@@ -75,6 +90,7 @@ module.exports.giveEffectAsAbility = {
     battle.addAura(a);
     return new Special(function() {
       let index = target.abilities.findIndex(b => b.id == a.id);
+      console.log('removing ability', index)
       target.abilities.splice(index, 1);
       battle.removeAura(a);
     });
