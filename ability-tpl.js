@@ -53,7 +53,8 @@ var tpl = {
             'when nearyby enemy is hit',
             'when enemy is hit',
             'when adjacent enemy is slain',
-            'when enemy is slain by self'
+            'when enemy is slain by self',
+            'when moving'
           ],
           initial: 'when selected',
           exportAs: 'activation'
@@ -175,7 +176,7 @@ var tpl = {
         {
           name: 'Effect',
           type: 'select',
-          values: abilities.map(a => a.bio.name).sort(sortAlphabetically),
+          values: ['',...abilities.map(a => a.bio.name).sort(sortAlphabetically)],
           initial: '',
           exportAs: 'effect'
         },

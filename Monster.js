@@ -301,7 +301,7 @@ class Monster {
     }
   }
 
-  abilityConditionMet(a) {
+  abilityConditionMet(a, target) {
     if(!a.bio.condition) return true;
     if(a.stats.targetFamily == 'self' && a.bio.condition == 'flanked') {
       let flanks = this.battle ? this.battle.flanks(this) : 0;
@@ -322,14 +322,19 @@ class Monster {
       if(flanks < 2) return false;
       return true;
     }
+    if(target && a.stats.targetFamily == 'self' && a.bio.condition == 'flanking') {
+      let flanks = this.battle ? this.battle.flanks(target) : 0;
+      if(flanks < 2) return false;
+      return true;
+    }
   }
 
-  passiveAbilityBonus(name) {
+  passiveAbilityBonus(name, target) {
     var out = new StatBonus();
     this.passives.forEach(a => {
       if(a.stats.attribute != name) return;
       if(a.stats.targetFamily == 'enemies') return;
-      if(!this.abilityConditionMet(a)) return;
+      if(!this.abilityConditionMet(a, target)) return;
       out.add(a);
     })
     return out;
@@ -384,10 +389,10 @@ class Monster {
     return out;
   }
 
-  statBonus(name) {
+  statBonus(name, target) {
     var base = this.stats[name] || 0;
     var circumstance = this['bonus' + name] || 0;
-    var passive = this.passiveAbilityBonus(name);
+    var passive = this.passiveAbilityBonus(name, target);
     var activeEffects = this.activeEffectBonus(name);
     var auras = this.auraBonus(name);
     var combined = StatBonus.combine(passive, activeEffects, auras);
@@ -395,8 +400,8 @@ class Monster {
     return {base, circumstance, passive, activeEffects, auras, combined: combined, total};
   }
 
-  totalStat(name) {
-    var total = this.statBonus(name).total;
+  totalStat(name, target) {
+    var total = this.statBonus(name, target).total;
     return Math.max(0, total);
   }
 

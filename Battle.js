@@ -335,16 +335,16 @@ class Battle {
     this.team2 = [];
     this.teamColors = {
       team1: {
-        aura: 'rgba(22, 88, 110, 1)',
-        selected: 'rgba(22, 88, 110, 1)'
+        aura: 'rgba(22, 88, 110, 0.5)',
+        selected: 'rgba(22, 88, 110, 0.5)'
       },
       team2: {
-        aura: 'rgba(110, 22, 33, 1)',
-        selected: 'rgba(110, 22, 33, 1)'
+        aura: 'rgba(110, 22, 33, 0.5)',
+        selected: 'rgba(110, 22, 33, 0.5)'
       },
       neutral: {
-        aura: 'rgba(110, 110, 22, 1)',
-        selected: 'rgba(110, 110, 22, 1)'
+        aura: 'rgba(110, 110, 22, 0.5)',
+        selected: 'rgba(110, 110, 22, 0.5)'
       }
     };
     this.placeUnits = false;
@@ -1397,7 +1397,6 @@ class Battle {
     .filter(m => {
       return m.item instanceof Monster && m.item.team != b.team
     }).length;
-
   }
 
   wait(a) {
@@ -1427,11 +1426,14 @@ class Battle {
   }
 
   trigger(event, target, source, power, ability) {
+    console.log('trigger', event, target.bio.name)
     if(!target.alive || !target.canTrigger) return;
     target.triggers.forEach(a => {
+      console.log(a.bio.name, a.bio.activation)
       if(a.bio.activation != event) return;
       if(!target.canTrigger) return;
       var t = a.stats.targetFamily == 'self' ? target : source;
+      console.log('eventual target', t)
       if(a.stats.target == 'self') {
         console.log('trigger on self', event, target, source, power, ability, t)
         t = target;
@@ -1529,7 +1531,7 @@ class Battle {
     let at = a.totalStat('attack');
     let df = b.totalStat('defence');
     let stacks = a.stacks;
-    let bonusDamage = a.totalStat('damage');
+    let bonusDamage = a.totalStat('damage', b);
     let flanks = this.flanks(b) - 1;
     let flankMultiplier = 1 + (flanks / 5);
     let abilityDamage = ability.roll(bonusDamage);
@@ -1549,13 +1551,15 @@ class Battle {
     let df = b.totalStat('defence');
     let at = a.totalStat('attack');
     let stacks = a.stacks;
-    let bonusDamage = a.totalStat('damage');
+    let bonusDamage = a.totalStat('damage', b);
+    console.log('bonusDamage', bonusDamage)
     let flanks = this.flanks(b) - 1;
     let flankMultiplier = 1 + (flanks / 5);
     let abilityDamage = ability.minPower(bonusDamage);
     let multiplier = 1;
     let vigorMultiplier = this.vigorMultiplier(a, b);
     let ailmentMultiplier = this.ailmentMultiplier(a, b);
+    console.log(vigorMultiplier, ailmentMultiplier)
     if(at > df) {
       multiplier = 1 + (at - df)/10;
     } else if(df > at) {
@@ -1569,7 +1573,7 @@ class Battle {
     let df = b.totalStat('defence');
     let at = a.totalStat('attack');
     let stacks = a.stacks;
-    let bonusDamage = a.totalStat('damage');
+    let bonusDamage = a.totalStat('damage', b);
     let flanks = this.flanks(b) - 1;
     let flankMultiplier = 1 + (flanks / 5);
     let abilityDamage = ability.maxPower(bonusDamage);
@@ -1809,7 +1813,7 @@ class Battle {
       let actions = positions.map(b => {
         a.setOrientation(b.x);
         var targets = this.abilityTargets(a, ability, b.x, b.y);
-
+        console.log('targets', targets)
         if(!a.canUseAbility(ability)) {
           return;
         }
@@ -1934,6 +1938,7 @@ class Battle {
         }
         this.grid.remove(a.x, a.y);
         a.move(p[0], p[1]);
+        this.trigger('when moving', a);
         this.grid.setItem(a);
         this.render();
         this.sounds.move.play();
