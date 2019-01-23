@@ -1458,8 +1458,8 @@ class Battle {
       b.heal(d);
       c = 'healed';
     }
-    if(this.roll(1, 100) > 0) this.applyElementalAilment(a, b, ability);
-    logger.log(`${a.bio.name} ${c} ${b.bio.name} ${d} (${ability.stats.element}) with ${ability.bio.name} (${b.totalHealth})`, a.totalStat('attack'), 'vs', b.totalStat('defence'));
+    if(this.roll(1, 100) > 95) this.applyElementalAilment(a, b, ability);
+    logger.log(`${a.bio.name} ${c} ${b.bio.name} ${d} (${ability.stats.element}) with ${ability.bio.name} (${b.totalHealth})`);
     if(!b.alive) logger.log(b.bio.name, 'died!');
     if(!fromEffect) {
       this.trigger('when self is hit', b, a, d, ability);
@@ -1572,7 +1572,7 @@ class Battle {
     let multiplier = 1;
     let vigorMultiplier = this.vigorMultiplier(a, b, ability);
     let ailmentMultiplier = this.ailmentMultiplier(a, b, ability);
-    console.log(vigorMultiplier, ailmentMultiplier)
+    console.log(vigorMultiplier, ailmentMultiplier);
     if(at > df) {
       multiplier = 1 + (at - df)/10;
     } else if(df > at) {
@@ -1625,7 +1625,8 @@ class Battle {
     let bonusDamage = a.totalStat("damage");
     let abilityDamage = effectPower || ability.roll(bonusDamage);
     let spellPower = 1 + a.totalStat('spellPower') / 10;
-    let d = Math.ceil(abilityDamage * stacks * spellPower);
+    let soaked = a.hasAilment('soaked') ? 0.75 : 1;
+    let d = Math.ceil(abilityDamage * stacks * spellPower * soaked);
     return d;
   }
 
@@ -1980,6 +1981,20 @@ class Battle {
     });
   }
 
+  spreadContagion(a) {
+    let adjacent = this.grid.around(a.x, a.y, 1)
+    .filter(b => b.item && b.item.team == a.team);
+    a.activeEffects.filter(e => {
+      return e.ability.stats.source == 'curse' || (e.power && (e.ability.stats.source == 'spell' || e.ability.stats.source == 'attack'))
+    })
+    .forEach(e => {
+      adjacent.forEach(m => {
+        let effect = m.item.addEffect(e.source, e.ability, e.power, e.triggered, e.power);
+        if(effect) effect.rounds = e.rounds;
+      })
+    })
+  }
+
   startTurn() {
     var a = this.tr.actor;
     logger.log('Turn start for', a.bio.name);
@@ -1994,6 +2009,7 @@ class Battle {
     a.resetMovement();
     a.selectAbility(null);
     this.applyEffects(a);
+    if(a.hasAilment('contagious')) this.spreadContagion(a);
     this.render();
     this.battleMenu.setActor(a);
     if(!this.tr.filter(m => m.team != a.team).length) {

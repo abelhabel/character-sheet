@@ -3,8 +3,8 @@ let ailments = {
   'fire': ['singed', 'scorched'],
   'water': ['wet', 'soaked'],
   'air': ['winded', 'shocked'],
-  'earth': ['infected', 'brittle'],
-  'vitality': ['blessed', 'sanctified'],
+  'earth': ['contagious', 'brittle'],
+  'vitality': ['dazzled', 'blinded'],
   'rot': ['wilted', 'blighted'],
 };
 

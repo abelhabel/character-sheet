@@ -12,7 +12,8 @@ const Sprite = require('Sprite.js');
 const AI = require('AI.js');
 const FixedList = require('FixedList.js');
 class StatBonus {
-  constructor() {
+  constructor(owner) {
+    this.owner = owner;
     this.blessing = {
       ability: '',
       value: 0
@@ -24,8 +25,8 @@ class StatBonus {
   }
 
   static combine() {
-    var out = new StatBonus();
-    for(let i = 0; i < arguments.length; i++) {
+    var out = new StatBonus(arguments[0]);
+    for(let i = 1; i < arguments.length; i++) {
       if(arguments[i].blessing.ability) {
         out.add(arguments[i].blessing.ability, arguments[i].blessing.value);
       }
@@ -221,6 +222,18 @@ class Monster {
     return this.abilities.filter(a => a.bio.type == 'passive');
   }
 
+  get ailments() {
+    let e = this.activeEffects.filter(e => e.ability.stats.ailment).map(e => e.ability.stats.ailment);
+    e.push.apply(e, this.permanentAilments);
+    return e;
+  }
+
+  get vigors() {
+    let e = this.activeEffects.filter(e => e.ability.stats.vigor).map(e => e.ability.stats.vigor);
+    e.push.apply(e, this.permanentVigors);
+    return e;
+  }
+
   get canvas() {
     return this.template.canvases ? this.template.canvases[this.orientation] : (this.template.canvas || this.sprite.canvas);
   }
@@ -260,6 +273,7 @@ class Monster {
 
   heal(d) {
     if(isNaN(d)) return;
+    if(this.hasAilment('dazzled')) d = Math.round(d/2);
     this.damageTaken = Math.max(0, this.damageTaken - d);
   }
 
@@ -283,11 +297,16 @@ class Monster {
   }
 
   addAilment(ailment) {
+    if(~this.permanentAilments.indexOf(ailment)) return;
     this.permanentAilments.push(ailment);
   }
 
   addEffect(source, ability, power, triggered, triggeredPower, positions, special) {
     if(power < 1 && !ability.stats.ailment && !ability.stats.vigor && !special) return;
+    if(ability.stats.source == 'blessing' && this.hasAilment('blinded')) {
+      logger.log(ability.bio.name, 'failed because', this.bio.name, 'is blinded and cannot receive new blessings.');
+      return;
+    }
     let e = this.effects.filter(e => e.ability.bio.name == ability.bio.name);
     if(e && e.length >= ability.stats.stacks ) {
       e[0].rounds = 0;
@@ -295,15 +314,16 @@ class Monster {
     }
 
     if(ability.stats.duration) {
-      this.effects.push(new AbilityEffect({
+      let effect = new AbilityEffect({
         triggered: !!triggered,
         power: power,
         rounds: 0,
         source: source,
         ability: new ability.constructor(ability.template, ability.owner),
         onEffectEnd: special && special.onEffectEnd
-      }));
-
+      });
+      this.effects.push(effect);
+      return effect;
     }
   }
 
@@ -336,7 +356,7 @@ class Monster {
   }
 
   passiveAbilityBonus(name, target) {
-    var out = new StatBonus();
+    var out = new StatBonus(this);
     this.passives.forEach(a => {
       if(a.stats.attribute != name) return;
       if(a.stats.targetFamily == 'enemies') return;
@@ -347,7 +367,7 @@ class Monster {
   }
 
   activeEffectBonus(name) {
-    var out = new StatBonus();
+    var out = new StatBonus(this);
     var stacks = {};
     this.activeEffects.forEach(e => {
       if(e.ability.stats.attribute != name) return;
@@ -365,7 +385,7 @@ class Monster {
   }
 
   auraBonus(name) {
-    var out = new StatBonus();
+    var out = new StatBonus(this);
     var stacks = {};
     this.battle && this.battle.auras.all.forEach(a => {
       if(!a.owner.alive) return
@@ -396,14 +416,37 @@ class Monster {
   }
 
   statBonus(name, target) {
-    var base = this.stats[name] || 0;
+    var base = this.baseStat(name);
     var circumstance = this['bonus' + name] || 0;
     var passive = this.passiveAbilityBonus(name, target);
     var activeEffects = this.activeEffectBonus(name);
     var auras = this.auraBonus(name);
-    var combined = StatBonus.combine(passive, activeEffects, auras);
+    var combined = StatBonus.combine(this, passive, activeEffects, auras);
+
+    if(name == 'movement' && this.hasAilment('wet')) {
+      if(combined.blessing.value) {
+        combined.blessing.value -= 1;
+      }
+      if(combined.curse.value) {
+        combined.curse.value +=1;
+      }
+    }
+
     var total = base + circumstance + combined.blessing.value - combined.curse.value;
-    return {base, circumstance, passive, activeEffects, auras, combined: combined, total};
+
+    if(name == 'apr' && this.hasAilment('shocked') && total > 1) {
+      total = 1;
+    }
+
+    return {base, circumstance, passive, activeEffects, auras, combined, total};
+  }
+
+  baseStat(name) {
+    let base = this.stats[name];
+    if(name == 'defence' && this.hasAilment('brittle')) {
+      base = Math.round(0.5 * base);
+    }
+    return base;
   }
 
   totalStat(name, target) {
@@ -438,8 +481,7 @@ class Monster {
       this.selectedAbility = null;
       return;
     }
-    if(a.stats.resourceType == 'mana' && this.totalMana < a.stats.resourceCost) return;
-    if(a.stats.resourceType == 'health' && this.totalHealth < a.stats.resourceCost) return;
+    if(!this.canUseAbility(a)) return;
     this.selectedAbility = a;
     let selectionsRequired = this.selectedAbility && this.selectedAbility.stats.selections || 1;
     this._selections = new FixedList(selectionsRequired);
@@ -483,7 +525,7 @@ class Monster {
   }
 
   get canTrigger() {
-    return this.triggerCount < this.totalStat('tpr');
+    return this.triggerCount < this.totalStat('tpr') && !this.hasAilment('winded');
   }
 
   get canMove() {
@@ -619,8 +661,10 @@ class Monster {
         <div id='close'>Close</div>
         <div class='bio' id='monster-image'></div>
         <div class='bio'>
-          <span id='monster-name'>${m.bio.name}</span><br>
-          <span id='monster-description'>${m.bio.description || 'No description available for this monster'}</span>
+          <div id='monster-name'>${m.bio.name}</div><br>
+          <div id='monster-description'>${m.bio.description || 'No description available for this monster'}</div>
+          <div id='monster-ailments'>Ailments: ${this.ailments.join()}</div>
+          <div id='monster-vigors'>Vigors: ${this.vigors.join()}</div>
         </div>
       </section>
       <div class = 'stat-column'>

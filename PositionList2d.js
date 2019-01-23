@@ -147,6 +147,7 @@ class PositionList2d {
       if(y < 0 || y > this.h-1) continue;
       for(var x = cx - r; x <= cx + r; x++) {
         if(x < 0 || x > this.w-1) continue;
+        if(x == cx && y == cy) continue;
         out.push({item: this.get(x, y), x:x, y: y});
       }
     }
