@@ -217,6 +217,18 @@ module.exports.lifeLeech = {
   }
 };
 
+module.exports.manaLeech = {
+  when: 'per target',
+  fn: function (battle, caster, target, ability, power, triggeredPower, selections, triggeredBy) {
+    // if(!triggeredPower) return;
+    if(triggeredPower) {
+      caster.replenishMana(Math.ceil(triggeredPower/2));
+    } else {
+      caster.replenishMana(Math.ceil(power/2));
+    }
+  }
+};
+
 module.exports.polymorph = {
   when: 'per target',
   fn: function (battle, caster, target, ability, power, triggeredPower, selections, triggeredBy) {

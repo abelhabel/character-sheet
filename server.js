@@ -96,6 +96,7 @@ loadFile('game-modes.js');
 loadFile('guid.js');
 loadFile('seven.js');
 loadFile('special-effects.js');
+loadFile('elemental-ailments.js');
 loadFile('ability-tpl.js');
 loadFile('terrain-tpl.js');
 loadFile('animation-tpl.js');

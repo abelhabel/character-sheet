@@ -22,7 +22,7 @@ function assembleTeam(team) {
 function createRNG(seed) {
   var generator = new Rand(seed || Date.now()).generator;
   window._random = (t) => generator.random();
-  window._roll = (a, b) => Math.ceil(a + _random() * (b-a));
+  window._roll = (a, b) => Math.round(a + _random() * (b-a));
   return generator;
 }
 

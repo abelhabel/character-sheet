@@ -447,8 +447,17 @@
         An ailment is a special condition that applies to a monster and they are always negative.
         These are the ailments: stunned, held, overwhelmed, meekend, exposed, rushed.
       </p>
+      <p>
+        Some ailments are only applied when hit by an element. These are the ailments for the elements: <br>
+        Force: bruised, bledding<br>
+        Fire: singed, scorched<br>
+        Water: wet, soaked<br>
+        Air: winded, shocked<br>
+        Vitality: blessed, sanctified<br>
+        Rot: wilted, blighted
+      </p>
       <section id='stunned'>
-        <h4>Ailment</h4>
+        <h4>Stunned</h4>
         <p>
           A monster that is stunned is unable to take any action, making it automatically lose its turn.
         </p>
@@ -481,6 +490,31 @@
         <h4>Rushed</h4>
         <p>
           A monster that is rushed deals 25% reduced damage to targets that are far away.
+        </p>
+      </section>
+      <section id='bruised'>
+        <h4>Bruised</h4>
+        <p>
+          A monster that is bruised takes 25% increased force damage.
+        </p>
+      </section>
+      <section id='bleeding'>
+        <h4>Bleeding</h4>
+        <p>
+          A monster that is bleeding takes 2% of current life for each tile moved. If 2% is less than 1, the monster
+          still takes 1 damage.
+        </p>
+      </section>
+      <section id='singed'>
+        <h4>Singed</h4>
+        <p>
+          A monster that is singed takes 25% increased fire damage.
+        </p>
+      </section>
+      <section id='scorched'>
+        <h4>Scorched</h4>
+        <p>
+          A monster that is scorched has all mana costs for abilites increased by 1.
         </p>
       </section>
     </section>

@@ -16,6 +16,7 @@ const terrains = require('terrains.js');
 const arenas = require('arenas.js');
 const icons = require('icons.js');
 const animations = require('animations.js');
+const elementalAilments = require('elemental-ailments.js');
 class TurnOrder extends Array {
   constructor() {
     super();
@@ -1323,6 +1324,7 @@ class Battle {
   playAbilityAnimation(a, b, ability) {
     if(ability.animation.template) {
       let {sprite, template} = ability.animation;
+      if(!sprite) sprite = new Sprite(ability.bio.sprite);
       let anim = new Animation(a.x * this.tw, a.y*this.th, b.x*this.tw, b.y*this.th, sprite, template.stats);
       return anim.playAndEnd(this.animationCanvas)
       .then(() => this.playHitAnimation(a, b, ability))
@@ -1426,21 +1428,25 @@ class Battle {
   }
 
   trigger(event, target, source, power, ability) {
-    console.log('trigger', event, target.bio.name)
     if(!target.alive || !target.canTrigger) return;
     target.triggers.forEach(a => {
       console.log(a.bio.name, a.bio.activation)
       if(a.bio.activation != event) return;
       if(!target.canTrigger) return;
       var t = a.stats.targetFamily == 'self' ? target : source;
-      console.log('eventual target', t)
       if(a.stats.target == 'self') {
-        console.log('trigger on self', event, target, source, power, ability, t)
         t = target;
       }
       this.useAbility(target, [t], a, true, power, ability);
       target.triggerCount += 1;
     })
+  }
+
+  applyElementalAilment(a, b, ability) {
+    let element = ability.stats.element;
+    let ailment = elementalAilments.random(element);
+    logger.log(b.bio.name, 'is now', ailment);
+    b.addAilment(ailment);
   }
 
   dealDamage(a, b, d, ability, fromEffect) {
@@ -1452,6 +1458,7 @@ class Battle {
       b.heal(d);
       c = 'healed';
     }
+    if(this.roll(1, 100) > 0) this.applyElementalAilment(a, b, ability);
     logger.log(`${a.bio.name} ${c} ${b.bio.name} ${d} (${ability.stats.element}) with ${ability.bio.name} (${b.totalHealth})`, a.totalStat('attack'), 'vs', b.totalStat('defence'));
     if(!b.alive) logger.log(b.bio.name, 'died!');
     if(!fromEffect) {
@@ -1509,7 +1516,7 @@ class Battle {
     return m;
   }
 
-  ailmentMultiplier(a, b) {
+  ailmentMultiplier(a, b, ability) {
     let d = this.grid.squareRadius(a.x, a.y, b.x, b.y);
     let m = 1;
     if(b.hasAilment('overwhelmed') && d <= 1) {
@@ -1524,6 +1531,12 @@ class Battle {
     if(a.hasAilment('rushed') && d > 5) {
       m -= 0.25;
     }
+    if(ability.stats.element == 'force' && b.hasAilment('bruised')) {
+      m += 0.25;
+    }
+    if(ability.stats.element == 'fire' && b.hasAilment('singed')) {
+      m += 0.25;
+    }
     return m;
   }
 
@@ -1536,8 +1549,8 @@ class Battle {
     let flankMultiplier = 1 + (flanks / 5);
     let abilityDamage = ability.roll(bonusDamage);
     let multiplier = 1;
-    let vigorMultiplier = this.vigorMultiplier(a, b);
-    let ailmentMultiplier = this.ailmentMultiplier(a, b);
+    let vigorMultiplier = this.vigorMultiplier(a, b, ability);
+    let ailmentMultiplier = this.ailmentMultiplier(a, b, ability);
     if(at > df) {
       multiplier = 1 + (at - df)/10;
     } else if(df > at) {
@@ -1557,8 +1570,8 @@ class Battle {
     let flankMultiplier = 1 + (flanks / 5);
     let abilityDamage = ability.minPower(bonusDamage);
     let multiplier = 1;
-    let vigorMultiplier = this.vigorMultiplier(a, b);
-    let ailmentMultiplier = this.ailmentMultiplier(a, b);
+    let vigorMultiplier = this.vigorMultiplier(a, b, ability);
+    let ailmentMultiplier = this.ailmentMultiplier(a, b, ability);
     console.log(vigorMultiplier, ailmentMultiplier)
     if(at > df) {
       multiplier = 1 + (at - df)/10;
@@ -1578,8 +1591,8 @@ class Battle {
     let flankMultiplier = 1 + (flanks / 5);
     let abilityDamage = ability.maxPower(bonusDamage);
     let multiplier = 1;
-    let vigorMultiplier = this.vigorMultiplier(a, b);
-    let ailmentMultiplier = this.ailmentMultiplier(a, b);
+    let vigorMultiplier = this.vigorMultiplier(a, b, ability);
+    let ailmentMultiplier = this.ailmentMultiplier(a, b, ability);
     if(at > df) {
       multiplier = 1 + (at - df)/10;
     } else if(df > at) {
@@ -1813,7 +1826,6 @@ class Battle {
       let actions = positions.map(b => {
         a.setOrientation(b.x);
         var targets = this.abilityTargets(a, ability, b.x, b.y);
-        console.log('targets', targets)
         if(!a.canUseAbility(ability)) {
           return;
         }
@@ -1938,7 +1950,11 @@ class Battle {
         }
         this.grid.remove(a.x, a.y);
         a.move(p[0], p[1]);
-        this.trigger('when moving', a);
+        if(a.hasAilment('bleeding')) {
+          let d = Math.round(a.totalHealth / 50) || 1;
+          logger.log(a.bio.name, 'takes bleeding damage', d);
+          a.harm(d);
+        }
         this.grid.setItem(a);
         this.render();
         this.sounds.move.play();

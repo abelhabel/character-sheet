@@ -127,6 +127,8 @@ class Monster {
     this.abilities = this.createAbilities();
     this._selections = new FixedList(1);
     this._team = '';
+    this.permanentAilments = [];
+    this.permanentVigors = [];
 
   }
 
@@ -273,11 +275,15 @@ class Monster {
   }
 
   hasVigor(name) {
-    return this.activeEffects.find(e => e.ability.stats.vigor == name);
+    return this.activeEffects.find(e => e.ability.stats.vigor == name) || ~this.permanentVigors.indexOf(name);
   }
 
   hasAilment(name) {
-    return this.activeEffects.find(e => e.ability.stats.ailment == name);
+    return this.activeEffects.find(e => e.ability.stats.ailment == name) || ~this.permanentAilments.indexOf(name);
+  }
+
+  addAilment(ailment) {
+    this.permanentAilments.push(ailment);
   }
 
   addEffect(source, ability, power, triggered, triggeredPower, positions, special) {
@@ -407,7 +413,8 @@ class Monster {
 
   canUseAbility(a) {
     if(!a) return true;
-    return this.totalMana >= a.stats.resourceCost;
+    let m = this.hasAilment('scorched') ? 1 : 0;
+    return this.totalMana >= a.stats.resourceCost + m;
   }
 
   selectBestAbility(t) {
@@ -452,7 +459,9 @@ class Monster {
   }
 
   useMana(n) {
-    this.manaUsed += n;
+    let m = this.hasAilment('scorched') ? 1 : 0;
+    if(m) logger.log(this.bio.name, 'is scorched: mana cost increased by 1');
+    this.manaUsed += n + m;
   }
 
   get totalMana() {
@@ -795,6 +804,9 @@ class Monster {
       ailment, vigor
     } = a.stats;
     tag.style.whiteSpace = 'pre-line';
+    if(resourceType == 'mana' && this.hasAilment('scorched')) {
+      resourceCost += 1;
+    }
     let {activation, type, name, description, condition} = a.bio;
     let stat = source == 'blessing' || source == 'curse' ? attribute : 'health';
     let act = type == 'trigger' ? `\n<span class='bold'>Trigger</span>: ${activation}` : '';
