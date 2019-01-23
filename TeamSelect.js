@@ -71,7 +71,12 @@ class TeamSelect  {
     preset.addEventListener('click', e => {
       let ts = new TeamViewer('Pick a team');
       ts.on('done', team => {
-        this.onDone(Team.create(team));
+        let t = Team.create(team);
+        console.log('picked preset team', t)
+        t.monsters.forEach(m => {
+          this.monsters.push(new Monster(m.template, m.stacks));
+        })
+        this.done();
       });
       ts.render(this.container);
     })

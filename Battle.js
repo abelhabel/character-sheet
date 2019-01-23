@@ -1432,7 +1432,6 @@ class Battle {
   trigger(event, target, source, power, ability) {
     if(!target.alive || !target.canTrigger) return;
     target.triggers.forEach(a => {
-      console.log(a.bio.name, a.bio.activation)
       if(a.bio.activation != event) return;
       if(!target.canTrigger) return;
       var t = a.stats.targetFamily == 'self' ? target : source;
@@ -1460,7 +1459,7 @@ class Battle {
       d = b.heal(d);
       c = 'healed';
     }
-    if(this.roll(1, 100) > 0) this.applyElementalAilment(a, b, ability);
+    if(this.roll(1, 100) > 95) this.applyElementalAilment(a, b, ability);
     logger.log(`${a.bio.name} ${c} ${b.bio.name} ${d} (${ability.stats.element}) with ${ability.bio.name} (${b.totalHealth})`);
     if(!b.alive) logger.log(b.bio.name, 'died!');
     if(!fromEffect) {
@@ -1567,14 +1566,12 @@ class Battle {
     let at = a.totalStat('attack');
     let stacks = a.stacks;
     let bonusDamage = a.totalStat('damage', b);
-    console.log('bonusDamage', bonusDamage)
     let flanks = this.flanks(b) - 1;
     let flankMultiplier = 1 + (flanks / 5);
     let abilityDamage = ability.minPower(bonusDamage);
     let multiplier = 1;
     let vigorMultiplier = this.vigorMultiplier(a, b, ability);
     let ailmentMultiplier = this.ailmentMultiplier(a, b, ability);
-    console.log(vigorMultiplier, ailmentMultiplier);
     if(at > df) {
       multiplier = 1 + (at - df)/10;
     } else if(df > at) {

@@ -143,6 +143,7 @@ gameModes.localMultiplayer = function(lobby, viewer) {
     var generator = createRNG();
     viewer.showTeamSelect();
     var onDone = (team1, team2) => {
+      console.log('selected teams')
       viewer.hideTeamSelect();
       placeUnits(arenas[1], team1, 'left', viewer)
       .then(team1 => {
