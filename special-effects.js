@@ -162,6 +162,17 @@ module.exports.dispel = {
   }
 };
 
+module.exports.cleanse = {
+  when: 'per target',
+  description: 'Removes all permanent ailments',
+  fn: function (battle, caster, target, ability, power, triggeredPower, selections, triggeredBy) {
+    console.log('cleanse', target.bio.name)
+    target.removePermanentAilments();
+
+    return new Special();
+  }
+};
+
 module.exports.teleport = {
   when: 'per target',
   fn: function (battle, caster, target, ability, power, triggeredPower, selections, triggeredBy) {

@@ -1424,6 +1424,8 @@ class Battle {
       (ability.stats.element == 'vitality' && b.bio.family == 'Undead')
       ||
       (ability.stats.element == 'rot' && b.bio.family != 'Undead')
+      ||
+      (ability.stats.element == 'vitality' && b.hasAilment('blighted'))
     )
   }
 
@@ -1452,13 +1454,13 @@ class Battle {
   dealDamage(a, b, d, ability, fromEffect) {
     var c = 'damaged';
     if(this.isHarmful(b, ability)) {
-      b.harm(d);
+      d = b.harm(d);
       this.br.damage(a, b, ability, d);
     } else {
-      b.heal(d);
+      d = b.heal(d);
       c = 'healed';
     }
-    if(this.roll(1, 100) > 95) this.applyElementalAilment(a, b, ability);
+    if(this.roll(1, 100) > 0) this.applyElementalAilment(a, b, ability);
     logger.log(`${a.bio.name} ${c} ${b.bio.name} ${d} (${ability.stats.element}) with ${ability.bio.name} (${b.totalHealth})`);
     if(!b.alive) logger.log(b.bio.name, 'died!');
     if(!fromEffect) {
@@ -1999,6 +2001,7 @@ class Battle {
     var a = this.tr.actor;
     logger.log('Turn start for', a.bio.name);
     this.currentActor = a;
+    a.replenishMana(1);
     var turn = new Turn(a);
     this.turns.push(turn);
     this.undefend(a);

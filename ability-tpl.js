@@ -266,7 +266,7 @@ var tpl = {
             'giveEffectAsAbility', 'phantomImage', 'stealBlessing',
             'dispel', 'teleport', 'lifeLeech', 'polymorph', 'blink',
             'chain', 'manaThief', 'suicide', 'charge', 'reflectArrows',
-            'transferCurse', 'addMonster', 'manaLeech'
+            'transferCurse', 'addMonster', 'manaLeech', 'cleanse'
           ],
           initial: 'false',
           exportAs: 'special'

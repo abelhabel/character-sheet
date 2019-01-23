@@ -234,6 +234,10 @@ class Monster {
     return e;
   }
 
+  removePermanentAilments() {
+    this.permanentAilments = [];
+  }
+
   get canvas() {
     return this.template.canvases ? this.template.canvases[this.orientation] : (this.template.canvas || this.sprite.canvas);
   }
@@ -269,12 +273,14 @@ class Monster {
   harm(d) {
     if(isNaN(d)) return;
     this.damageTaken += d;
+    return d;
   }
 
   heal(d) {
     if(isNaN(d)) return;
     if(this.hasAilment('dazzled')) d = Math.round(d/2);
     this.damageTaken = Math.max(0, this.damageTaken - d);
+    return d;
   }
 
   removeEffect(e) {
@@ -489,6 +495,7 @@ class Monster {
 
   useAbility(a) {
     if(a.stats.resourceType == 'mana' && this.totalMana >= a.stats.resourceCost) {
+      logger.log('use ability', a.bio.name)
       this.useMana(a.stats.resourceCost);
     }
     if(a.stats.resourceType == 'health' && this.totalHealth >= a.stats.resourceCost) {
@@ -503,7 +510,12 @@ class Monster {
   useMana(n) {
     let m = this.hasAilment('scorched') ? 1 : 0;
     if(m) logger.log(this.bio.name, 'is scorched: mana cost increased by 1');
-    this.manaUsed += n + m;
+    let t = n + m;
+    if(this.hasAilment('wilted')) {
+      logger.log(this.bio.name, 'takes wilted damage', 5*t, 'from mana use.');
+      this.harm(5 * t);
+    }
+    this.manaUsed += t;
   }
 
   get totalMana() {
