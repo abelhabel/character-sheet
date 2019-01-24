@@ -129,7 +129,9 @@ class TeamSection extends MatchSection {
     text-align: center;
     background-color: #2d5f75;'
     ></div>`;
-    let ts = new TeamSelect(monsters, container, 42, 42, 600, ['team1'], (t) => this.onDone(t), () => this.onClose());
+    let cash = Number(this.match.settings.settings.cash);
+    let max = Number(this.match.settings.settings.maxMonsters)
+    let ts = new TeamSelect(monsters, container, 42, 42, cash, max, ['team1'], (t) => this.onDone(t), () => this.onClose());
     document.body.appendChild(container);
   }
 

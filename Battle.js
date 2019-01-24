@@ -816,7 +816,7 @@ class Battle {
         display: none;
         position: fixed;
         width: 800px;
-        min-height: 600px;
+        height: 600px;
         top: 50%;
         left: 50%;
         transform: translate(-50%, -50%);
@@ -1544,6 +1544,7 @@ class Battle {
   attackRoll(a, b, ability) {
     let at = a.totalStat('attack');
     let df = b.totalStat('defence');
+    logger.log('attack vs defense', at, df);
     let stacks = a.stacks;
     let bonusDamage = a.totalStat('damage', b);
     let flanks = this.flanks(b) - 1;
@@ -1677,7 +1678,12 @@ class Battle {
     a.passives.forEach(ab => {
       if(!(ab.stats.source == 'attack' || ab.stats.source == 'spell')) return;
       if(ab.stats.targetFamily == 'self') {
-        this.dealDamage(a, a, ab.power, ab, true);
+        if(ab.stats.source == 'attack') {
+          this.dealAttackDamage(a, a, ab, ab, 0);
+        }
+        if(ab.stats.source == 'spell') {
+          this.dealSpellDamage(a, a, ab, ab, 0);
+        }
       } else
       if(ab.stats.targetFamily == 'enemies') {
         this.useAbility(a, [a], ab, true);
@@ -1859,6 +1865,11 @@ class Battle {
             }
 
             t.addEffect(a, ability, power, fromEffect, triggeredPower, positions, specialResult);
+
+            if(special && special.when == 'per target, after effect') {
+              specialResult = special.fn(this, a, t, ability, power, triggeredPower, positions, triggeredBy);
+            }
+
             if(ability.stats.special != 'giveEffectAsAbility' && ability.stats.effect) {
               this.useAbility(a, [t], ability.stats.effect, true, power);
             }
@@ -1982,7 +1993,7 @@ class Battle {
 
   spreadContagion(a) {
     let adjacent = this.grid.around(a.x, a.y, 1)
-    .filter(b => b.item && b.item.team == a.team);
+    .filter(b => b.item && b.item.team == a.team && b.id != a.id);
     a.activeEffects.filter(e => {
       return e.ability.stats.source == 'curse' || (e.power && (e.ability.stats.source == 'spell' || e.ability.stats.source == 'attack'))
     })

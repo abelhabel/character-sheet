@@ -110,7 +110,7 @@ gameModes.humanVSAI = function(lobby, viewer) {
       viewer.reset();
       lobby.show();
     };
-    var teamSelect = new TeamSelect(monsters, viewer.selectContainer, tw, th, cash, ['team1'], onDone, viewer.backToLobby);
+    var teamSelect = new TeamSelect(monsters, viewer.selectContainer, tw, th, cash, 8, ['team1'], onDone, viewer.backToLobby);
     teamSelect.render();
   });
 };
@@ -165,7 +165,7 @@ gameModes.localMultiplayer = function(lobby, viewer) {
         })
       });
     }
-    var teamSelect = new TeamSelect(monsters, viewer.selectContainer, tw, th, cash, ['team1', 'team2'], onDone, viewer.backToLobby)
+    var teamSelect = new TeamSelect(monsters, viewer.selectContainer, tw, th, cash, 8, ['team1', 'team2'], onDone, viewer.backToLobby)
 
     teamSelect.render();
   });
@@ -190,7 +190,7 @@ gameModes.localMultiplayerPortal = function(lobby, viewer) {
       battle.start();
       window.battle = battle;
     }
-    var teamSelect = new TeamSelect(monsters, viewer.selectContainer, tw, th, 3500, ['team1', 'team2'], onDone, viewer.backToLobby);
+    var teamSelect = new TeamSelect(monsters, viewer.selectContainer, tw, th, 3500, 8, ['team1', 'team2'], onDone, viewer.backToLobby);
 
     teamSelect.render();
   });
@@ -291,7 +291,7 @@ gameModes.liveMultiplayer = function(lobby, viewer) {
       })
     }
 
-    var teamSelect = new TeamSelect(monsters, viewer.selectContainer, tw, th, cash, [lobby.localUser.name], onDone, viewer.backToLobby);
+    var teamSelect = new TeamSelect(monsters, viewer.selectContainer, tw, th, cash, 8, [lobby.localUser.name], onDone, viewer.backToLobby);
 
 
   });
@@ -363,7 +363,7 @@ gameModes.playByPost = function(lobby, viewer) {
           lobby.show();
         });
       }
-      var teamSelect = new TeamSelect(monsters, viewer.selectContainer, tw, th, cash, [lobby.localUser.name], onDone, viewer.backToLobby);
+      var teamSelect = new TeamSelect(monsters, viewer.selectContainer, tw, th, cash, 8, [lobby.localUser.name], onDone, viewer.backToLobby);
     }
   })
 }

@@ -66,7 +66,7 @@ module.exports.hypnotize = {
 };
 
 module.exports.berzerk = {
-  when: 'per target',
+  when: 'per target, after effect',
   fn: function (battle, caster, target, ability, power, triggeredPower, selections, triggeredBy) {
     var originalTeam = target.team;
     target.team = caster.team;
@@ -280,7 +280,8 @@ module.exports.chain = {
 module.exports.reflectArrows = {
   when: 'per target',
   fn: function (battle, caster, target, ability, power, triggeredPower, selections, triggeredBy) {
-    if(triggeredBy.bio.type != 'attack' || triggeredBy.stats.range < 2) {
+    console.log('reflectArrows', triggeredBy)
+    if(triggeredBy.stats.source != 'attack' || triggeredBy.stats.range < 2) {
       target.triggerCount -= 1;
       return;
     }

@@ -132,13 +132,15 @@ Module.onLoad(['DungeonCrawl_ProjectUtumnoTileset.png', 'sheet_of_old_paper.png'
     drawAbilityStats(a, tag) {
       let {source, attribute, element, minPower, shape, radius,
         maxPower, multiplier, resourceCost, resourceType,
-        range, effect, duration, target, targetFamily, stacks
+        range, effect, duration, target, targetFamily, stacks,
+        ailment, vigor, selections
       } = a.stats;
       tag.style.whiteSpace = 'pre-line';
-      let {activation, type, name, description} = a.bio;
+      let {activation, type, name, description, tier} = a.bio;
       let stat = source == 'blessing' || source == 'curse' ? attribute : 'health';
       let act = type == 'trigger' ? `\n<span class='bold'>Trigger</span>: ${activation}` : '';
       var text = `<span class='bold'>Name</span>: ${name}
+      <span class='bold'>Tier</span>: ${tier || 'Not set'}
       <span class='bold'>Target</span>: ${target}/${targetFamily}
       <span class='bold'>Type</span>: ${type}${act}
       <span class='bold'>Shape</span>: ${shape}
@@ -146,7 +148,11 @@ Module.onLoad(['DungeonCrawl_ProjectUtumnoTileset.png', 'sheet_of_old_paper.png'
       <span class='bold'>Source</span>: ${source}
       <span class='bold'>Element</span>: ${element}
       <span class='bold'>Cost</span>: ${resourceCost} ${resourceType}
-      <span class='bold'>Range</span>: ${range}`;
+      <span class='bold'>Range</span>: ${range}
+      <span class='bold'>Duration</span>: ${duration}
+      <span class='bold'>Selections</span>: ${selections}`;
+      if(ailment) text += `\n<span class='bold'>Ailment</span>: ${ailment}`;
+      if(vigor) text += `\n<span class='bold'>Vigor</span>: ${vigor}`;
       let time = duration ? ` for ${duration} rounds` : '';
       if(multiplier) {
         text += `\n<span class='bold'>Power</span>: (${minPower}-${maxPower}) * ${multiplier}% to ${stat}${time} (max stacks: ${stacks})`;
@@ -177,19 +183,57 @@ Module.onLoad(['DungeonCrawl_ProjectUtumnoTileset.png', 'sheet_of_old_paper.png'
       }
     }
 
+    freeSearch(card, term) {
+      let item = card.a;
+      let a = Object.assign({}, item.bio, item.stats);
+      return Object.keys(a).find(key => {
+        let k = key.toLowerCase();
+        let l = a[key].toString().toLowerCase();
+        let t = term.toLowerCase();
+        return k.match(t) || l.match(t);
+      })
+    }
+
+    propSearch(card, prop, val) {
+      let p = prop.toLowerCase();
+      let item = card.a;
+      let a = Object.assign({}, item.bio, item.stats);
+      return Object.keys(a).find(key => {
+        let k = key.toLowerCase();
+        let l = a[key].toString().toLowerCase();
+        let t = val.toLowerCase();
+        if(!t) return k == p && l;
+        return k == p && l.match(t);
+      })
+    }
+
+    excludeSearch(card, prop) {
+      let item = card.a;
+      let p = prop.toLowerCase();
+      let a = Object.assign({}, item.bio, item.stats);
+      return Object.keys(a).find(key => {
+        let k = key.toLowerCase();
+        let l = a[key].toString().toLowerCase();
+        return k == p && !l;
+      })
+    }
+
     update() {
       this.tags.results.innerHTML = '';
-      this.db.filter(card => {
-        let item = card.a;
-        let a = Object.assign({}, item.bio, item.stats);
-        return Object.keys(a).find(key => {
-          let k = key.toLowerCase();
-          let l = a[key].toString().toLowerCase();
-          let t = this.term.toLowerCase();
-          return k.match(t) || l.match(t);
-        })
-      })
-      .forEach(card => {
+      let prop; let val; let cards = [];
+      if(this.term.charAt(0) == '!') {
+        cards = this.db.filter(c => this.excludeSearch(c, this.term.substr(1)))
+      } else
+      if(this.term.match(':')) {
+        let words = this.term.split(':');
+        prop = words[0].trim();
+        val = words[1].trim();
+        console.log('prop search', prop, val)
+        cards = this.db.filter(c => this.propSearch(c, prop, val));
+      } else {
+        cards = this.db.filter(c => this.freeSearch(c, this.term));
+      }
+      cards.forEach(card => {
         let tag = card.render();
         tag.addEventListener('click', e => card.drawAbilityStats(card.a, (this.tags.popup.style.display = 'block', this.tags.popup)));
         this.tags.results.appendChild(tag);

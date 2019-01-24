@@ -18,6 +18,13 @@ var tpl = {
       exportAs: 'bio',
       items: [
         {
+          name: 'Tier',
+          exportAs: 'tier',
+          type: 'increment',
+          initial: 1,
+          range: [1, 5]
+        },
+        {
           name: 'Name',
           exportAs: 'name',
           type: 'input',
@@ -242,6 +249,20 @@ var tpl = {
             'meekened', //25% reduced damage dealt to adjacent enemies
             'exposed', //25% increased damage taken from enemies far away
             'rushed', //25% reduced damage dealt to enemies far away,
+            'bruised',
+            'bleeding',
+            'singed',
+            'scorched',
+            'wet',
+            'soaked',
+            'winded',
+            'shocked',
+            'contagious',
+            'brittle',
+            'dazzled',
+            'blinded',
+            'wilted',
+            'blighted',
           ],
           initial: '',
           exportAs: 'ailment'

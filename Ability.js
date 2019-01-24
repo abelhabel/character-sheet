@@ -18,6 +18,7 @@ class Ability {
     this.owner = owner;
     this.bio = {
       name: t.bio.name,
+      tier: t.bio.tier || 1,
       sprite: t.bio.sprite,
       type: t.bio.type,
       activation: t.bio.activation,
@@ -66,7 +67,6 @@ class Ability {
     if(this.stats.effect) {
       this.stats.effect = new Ability(abilities.find(a => a.bio.name == this.stats.effect), this);
     }
-    this.might = (this.stats.minPower + this.stats.maxPower) * this.stats.multiplier;
     this.effectSprite = new AbilityEffect({ability: this}).sprite;
     this.baseSprite = new Sprite(this.bio.sprite);
   }
@@ -85,6 +85,10 @@ class Ability {
 
   get isAura() {
     return this.bio.type == 'passive' && (this.stats.shape == 'circle' || this.stats.shape == 'square') && this.stats.radius;
+  }
+
+  get might() {
+    return (this.stats.minMower + this.stats.maxPower) * this.stats.multiplier * (1 + this.stats.duration);
   }
 
   roll(d) {

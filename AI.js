@@ -1,10 +1,15 @@
-function sortOnRange(a, b) {
+function sortOnActorRange(a, b) {
   let g = a.potentialRange;
   let h = b.potentialRange;
   if(g == h) return 0;
   return g > h ? -1 : 1;
 }
-
+function sortOnAbilityRange(a, b) {
+  let g = a.stats.range;
+  let h = b.stats.range;
+  if(g == h) return 0;
+  return g > h ? -1 : 1;
+}
 function sortOnMight(a, b) {
   let g = a.might;
   let h = b.might;
@@ -57,7 +62,7 @@ class AI {
     let {actor, battle} = this;
     return battle.getEnemyTeam(actor.team)
     .filter(m => m.alive)
-    .sort(sortOn || sortOnRange);
+    .sort(sortOn || sortOnActorRange);
 
   }
 
@@ -131,18 +136,30 @@ class AI {
     // 1. Find enemy with longest range
     // 2. Attack if possible
     // 3. Move towards longest range enemy if can't attak.
-    let enemies = this.enemies(sortOnRange);
+    let enemies = this.enemies(sortOnActorRange);
+    let abilities = actor.damaging.sort(sortOnMight).filter(a => actor.canUseAbility(a));
+    // check if any of the enemies can be attacked by any of the abilities
+    let enemy;
+    let ability;
+    abilities.find(a => {
+      return enemies.find(e => {
+        let inRange = battle.inRange(actor, e, a);
+        if(inRange) {
+          enemy = e;
+          ability = a;
+        }
+        return inRange;
+      })
+    })
     let t = enemies[0];
-    actor.selectBestAbility();
-    let ability = actor.selectedAbility;
-    if(ability && battle.inRange(actor, t, ability)) {
-      return battle.addAction(new Action('use ability', [t], ability.template.id));
+    actor.selectAbility(ability);
+    if(ability && enemy) {
+      return battle.addAction(new Action('use ability', [enemy], ability.template.id));
     } else
     if(actor.canMove) {
       let tile = this.closestEmpty(t);
       let path = tile ? battle.grid.path(actor.x, actor.y, tile.x, tile.y) : [];
-      path.shift();
-      let l = path.shift();
+      let l = path[1];
       if(!l) {
         return this.routine1(Action);
       }

@@ -95,6 +95,10 @@ class MonsterCard {
             </div>
           </div>
           <div class='stats-right'>
+            <div class='card-stat tier'>
+              ${item.tier}
+              <span>Ability Tier</span>
+            </div>
             <div class='card-stat apr'>
               ${item.totalStat('apr')}
               <span>Actions/Round</span>
@@ -277,7 +281,7 @@ class MonsterCard {
       background-color: purple;
     }
 
-    .cost {
+    .cost, .tier {
       background-color: #b19500;
     }
 

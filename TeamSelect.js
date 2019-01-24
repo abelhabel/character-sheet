@@ -5,7 +5,7 @@ const Team = require('Team.js');
 const guid = require('guid.js');
 const TeamViewer = require('TeamViewer.js');
 class TeamSelect  {
-  constructor(items, container, tw, th, cash, teamNames, onDone, onExit) {
+  constructor(items, container, tw, th, cash, max, teamNames, onDone, onExit) {
     this.onDone = onDone;
     this.onExit = onExit;
     this.teamNames = teamNames;
@@ -15,7 +15,7 @@ class TeamSelect  {
     this.container = container;
     this.cash = cash || 200;
     this.spent = 0;
-    this.max = 80;
+    this.max = max || 8;
     this.picked = document.createElement('canvas');
     this.picked.width = this.max * this.tw;
     this.picked.height = th;

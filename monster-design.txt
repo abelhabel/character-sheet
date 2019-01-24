@@ -1,0 +1,35 @@
+Pick Faction
+Each faction is tied to one or more elements. When designing or deciding on
+abilities, these elements have to be used
+
+Pick Power Level
+Only the most powerful monsters should have the most powerful abilities. The power level
+is not explicit. Fire Ball is powerful in terms of damage in an area, but Hypnotize is.
+
+Ability Level
+
+Spell/Attack - Active/Trigger - Base = 1
+Spell/Attack/Blessing/Curse - Passive - Base = 2
+Blessing/Curse - Active/Trigger - Base = 2
+
+Additional Levels
+AOE +1
+DOT +1
+Effect +1
+Ailment/Vigor +1
+Low Damage (max avg 2) +0
+Medium Damage (max avg 7 ) +1
+High Damage (max avg 12) +2
+Attack/Spell Low Duration (max 2) +1
+Attack/Spell Medium Duration (max 5) +2
+Attack/Spell Long Duration (max 10) +3
+Action Per Target +1
+Stacking +1
+Give Effect As Ability +1
+
+Specials have to be judged on a per case basis.
+
+If both AOE and Duration are at the lower end of its bracket only add +1.
+
+If only one additional level is gained and it is in the lower end of its bracket,
+you can increase the mana cost to decrease the level.

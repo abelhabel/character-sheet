@@ -146,6 +146,10 @@ class Monster {
     return 'spell';
   }
 
+  get tier() {
+    return Math.max.apply(null, this.abilities.map(a => a.bio.tier));
+  }
+
   get might() {
     if(this.prefers == 'attack') {
       return this.stacks * this.totalStat('apr') * this.totalStat('attack') * (1 + Math.min(this.totalStat('tpr'), this.triggers.length));
@@ -190,6 +194,7 @@ class Monster {
   createAbilities() {
     return this.abilities.abilities.map(name => {
       let a = abilities.find(c => c.bio.name == name);
+      if(!a) return;
       return new Ability(a, this);
     });
   }
@@ -495,7 +500,6 @@ class Monster {
 
   useAbility(a) {
     if(a.stats.resourceType == 'mana' && this.totalMana >= a.stats.resourceCost) {
-      logger.log('use ability', a.bio.name)
       this.useMana(a.stats.resourceCost);
     }
     if(a.stats.resourceType == 'health' && this.totalHealth >= a.stats.resourceCost) {
