@@ -16,7 +16,7 @@ const terrains = require('terrains.js');
 const arenas = require('arenas.js');
 const icons = require('icons.js');
 const animations = require('animations.js');
-const elementalAilments = require('elemental-ailments.js');
+const elements = require('elements.js');
 class TurnOrder extends Array {
   constructor() {
     super();
@@ -1097,7 +1097,6 @@ class Battle {
         item.y = y;
         this.grid.setItem(item);
       }
-      console.log('setting position', item, this.arena.w);
     })
     return Promise.resolve();
   }
@@ -1384,9 +1383,20 @@ class Battle {
 
   applyElementalAilment(a, b, ability) {
     let element = ability.stats.element;
-    let ailment = elementalAilments.random(element);
-    logger.log(b.bio.name, 'is now', ailment);
-    b.addAilment(ailment);
+    let ailment = elements.randomAilment(element);
+    if(ailment) {
+      logger.log(b.bio.name, 'is now', ailment);
+      b.addAilment(ailment);
+    }
+  }
+
+  applyElementalVigor(a, b, ability) {
+    let element = ability.stats.element;
+    let vigor = elements.randomVigor(element);
+    if(vigor) {
+      logger.log(b.bio.name, 'is now', vigor);
+      b.addVigor(vigor);
+    }
   }
 
   dealDamage(a, b, d, ability, fromEffect) {
@@ -1602,6 +1612,7 @@ class Battle {
     let abilityMultiplier = ability.stats.multiplier / 100;
     let roll = this.roll(ability.stats.minPower, ability.stats.maxPower);
     let d = Math.ceil(roll * abilityMultiplier);
+    if(this.roll(1, 100) > 95) this.applyElementalAilment(a, b, ability);
     return d;
   }
 
@@ -1616,17 +1627,7 @@ class Battle {
 
     a.passives.forEach(ab => {
       if(!(ab.stats.source == 'attack' || ab.stats.source == 'spell')) return;
-      if(ab.stats.targetFamily == 'self') {
-        if(ab.stats.source == 'attack') {
-          this.dealAttackDamage(a, a, ab, ab, 0);
-        }
-        if(ab.stats.source == 'spell') {
-          this.dealSpellDamage(a, a, ab, ab, 0);
-        }
-      } else
-      if(ab.stats.targetFamily == 'enemies') {
-        this.useAbility(a, [a], ab, true);
-      }
+      this.useAbility(a, [a], ab, true);
     })
 
   }
@@ -1954,7 +1955,6 @@ class Battle {
     this.undefend(a);
     a.selections = [];
     a.triggerCount = 0;
-    this.undefend(a);
     this._selections = [];
     a.resetMovement();
     a.selectAbility(null);

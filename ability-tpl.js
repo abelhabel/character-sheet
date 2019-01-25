@@ -279,6 +279,7 @@ var tpl = {
             'prepared', //25% reduced damage taken from adjacent enemies
             'precise', //25% increased damage dealt to enemies far away
             'hidden', //25% reduced damage taken from enemies far away,
+            'illuminated'
           ],
           initial: '',
           exportAs: 'vigor'
@@ -290,7 +291,8 @@ var tpl = {
             'giveEffectAsAbility', 'phantomImage', 'stealBlessing',
             'dispel', 'teleport', 'lifeLeech', 'polymorph', 'blink',
             'chain', 'manaThief', 'suicide', 'charge', 'reflectArrows',
-            'transferCurse', 'addMonster', 'manaLeech', 'cleanse'
+            'transferCurse', 'addMonster', 'manaLeech', 'cleanse',
+            'knockback'
           ],
           initial: 'false',
           exportAs: 'special'

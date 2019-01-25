@@ -442,6 +442,10 @@ class Monster {
       }
     }
 
+    if(name == 'damage' && this.hasVigor('illuminated')) {
+      circumstance += Math.floor(this.activeEffects.filter(e => e.ability.stats.source == 'blessing').length / 2);
+    }
+
     var total = base + circumstance + combined.blessing.value - combined.curse.value;
 
     if(name == 'apr' && this.hasAilment('shocked') && total > 1) {

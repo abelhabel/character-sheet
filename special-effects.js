@@ -14,7 +14,7 @@ module.exports.addMonster = {
     let team = battle.currentTeam;
     let m = team.pickRandomMonster();
     if(!m) {
-      console.log('no more monsters to portal in');
+      logger.log('no more monsters to portal in');
       return new Special();
     }
     m.team = battle.currentActor.team;
@@ -22,6 +22,21 @@ module.exports.addMonster = {
     return new Special();
   }
 };
+
+module.exports.knockback = {
+  when: 'per target',
+  fn: function (battle, caster, target, ability, power, triggeredPower, selections, triggeredBy) {
+    tiles = battle.grid.inLine(caster.x, caster.y, target.x, target.y, 10).filter(t => !t.item);
+    if(tiles.length) {
+      battle.grid.remove(target.x, target.y);
+      target.move(tiles[0].x, tiles[0].y);
+      battle.grid.setItem(target);
+    } else {
+      console.log('could not find tile in line')
+    }
+    return new Special();
+  }
+}
 
 module.exports.suicide = {
   when: 'per target',
