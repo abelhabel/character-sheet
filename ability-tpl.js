@@ -75,7 +75,10 @@ var tpl = {
             'flanking',
             'wounded',
             'near death',
-            'full health'
+            'full health',
+            'self is wounded',
+            'self is near death',
+            'self is full health'
           ],
           initial: '',
           exportAs: 'condition'

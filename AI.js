@@ -156,7 +156,7 @@ class AI {
     if(ability && enemy) {
       return battle.addAction(new Action('use ability', [enemy], ability.template.id));
     } else
-    if(actor.canMove) {
+    if(t && actor.canMove) {
       let tile = this.closestEmpty(t);
       let path = tile ? battle.grid.path(actor.x, actor.y, tile.x, tile.y) : [];
       let l = path[1];

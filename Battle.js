@@ -348,10 +348,7 @@ class Battle {
         selected: 'rgba(110, 110, 22, 0.5)'
       }
     };
-    this.placeUnits = false;
-    this.unitsPlaced = false;
-    this.unitPlacement = null;
-    arena = arena || arenas[1];
+    arena = arena || arenas[0];
     this.arena = new Arena(arena, tw, th);
     this.grid = this.arena.obstacles;
     this.w = this.arena.w;
@@ -448,7 +445,7 @@ class Battle {
 
     this.originalTeam1.units.forEach(u => {
       let m = this.team1.find(m => m.suuid == u.suuid);
-      if(!isNaN(u.x) && !isNaN(u.y)) {
+      if(typeof u.x == 'number' && typeof u.y == 'number') {
         let currentMonster = this.grid.get(m.x, m.y);
         if(currentMonster && currentMonster.suuid == u.suuid) {
           this.grid.remove(m.x, m.y);
@@ -461,7 +458,7 @@ class Battle {
 
     this.originalTeam2.units.forEach(u => {
       let m = this.team2.find(m => m.suuid == u.suuid);
-      if(!isNaN(u.x) && !isNaN(u.y)) {
+      if(typeof u.x == 'number' && typeof u.y == 'number') {
         let currentMonster = this.grid.get(m.x, m.y);
         if(currentMonster && currentMonster.suuid == u.suuid) {
           this.grid.remove(m.x, m.y);
@@ -623,10 +620,6 @@ class Battle {
     this.inputCanvas.addEventListener('click', (e) => {
       let x = Math.floor(e.offsetX / this.tw);
       let y = Math.floor(e.offsetY / this.th);
-      if(this.placeUnits && !this.unitsPlaced) {
-        this.unitPlacement.click(x, y);
-        return;
-      }
       let a = this.currentActor;
       actor = a;
 
@@ -647,7 +640,7 @@ class Battle {
           console.log('action error', e)
         });
       } else
-      if(a.canMove && !this.grid.get(x, y)) {
+      if(!a.selectedAbility && a.canMove && !this.grid.get(x, y)) {
         let action = new Action('move', [{x,y}], a.template.id);
         this.addAction(action)
         .then(() => {
@@ -755,9 +748,6 @@ class Battle {
     })
 
     this.inputCanvas.addEventListener('mousemove', (e) => {
-      if(this.placeUnits && !this.unitsPlaced) {
-        return;
-      }
       let a = this.currentActor;
       if(!a || a.ai) return;
       let x = Math.floor(e.offsetX / this.tw);
@@ -785,7 +775,7 @@ class Battle {
         this.removeDamagePreview();
       }
       if(x > this.w -1 || y > this.h -1) return;
-      var path = this.grid.path(a.x, a.y, x, y);
+      var path = a.selectedAbility ? [] : this.grid.path(a.x, a.y, x, y);
       path.shift();
       var m = a.movesLeft;
       var targets = {
@@ -1041,7 +1031,8 @@ class Battle {
   }
 
   setPositions() {
-
+    this.w = this.arena.w;
+    this.h = this.arena.h;
     var w, h;
     h = 2;
     w = Math.ceil(this.team1.length / h);
@@ -1091,7 +1082,7 @@ class Battle {
     meleeCounter = 0;
     this.team2.forEach((item, i) => {
       if(item.stats.range < 2) {
-        let x = this.w -2;
+        let x = this.arena.w -2;
         let y = meleePositions[meleeCounter];
         meleeCounter += 1;
         item.x = x;
@@ -1099,69 +1090,16 @@ class Battle {
         this.grid.setItem(item);
 
       } else {
-        let x = this.h - 1;
+        let x = this.arena.w - 1;
         let y = rangePositions[rangeCounter];
         rangeCounter += 1;
         item.x = x;
         item.y = y;
         this.grid.setItem(item);
       }
+      console.log('setting position', item, this.arena.w);
     })
     return Promise.resolve();
-  }
-
-  placeU() {
-    let placements = [];
-    let placed = 0;
-    let placementDone = () => {
-      if(placed == placements.length) {
-        this.unitsPlaced = true;
-        this.showMonsterCards();
-      }
-    }
-    if(!this.team1[0].ai) placements.push((resolve, reject) => {
-      let up = new UnitPlacement(this, 'team1');
-      console.log('unit placement team1')
-      up.onDone = () => {
-        placed += 1;
-        placementDone();
-        resolve();
-      };
-      this.unitPlacement = up;
-      up.render(document.body);
-      this.render();
-    });
-    if(!this.team2[0].ai) placements.push((resolve, reject) => {
-      let up = new UnitPlacement(this, 'team2');
-      console.log('unit placement team2')
-      up.onDone = () => {
-        placed += 1;
-        placementDone();
-        resolve();
-      };
-      this.unitPlacement = up;
-      up.render(document.body);
-      this.render();
-    })
-    if(placements.length) {
-      logger.hide();
-    }
-    let p = Promise.resolve();
-    placements.forEach(pl => {
-      p = p.then(() => new Promise(pl));
-    })
-    if(placements.length) this.hideMonsterCards();
-    return p;
-    return new Promise((resolve, reject) => {
-      let up = new UnitPlacement(this, 'team2');
-      up.onDone = () => {
-        this.unitsPlaced = true;
-        resolve();
-      };
-      this.unitPlacement = up;
-      up.render(document.body);
-      this.render();
-    })
   }
 
   cacheCanvases() {
@@ -1434,6 +1372,7 @@ class Battle {
     target.triggers.forEach(a => {
       if(a.bio.activation != event) return;
       if(!target.canTrigger) return;
+      if(!target.abilityConditionMet(a, target)) return;
       var t = a.stats.targetFamily == 'self' ? target : source;
       if(a.stats.target == 'self') {
         t = target;
@@ -1930,7 +1869,7 @@ class Battle {
     this.grid.setItem(monster);
     this.tr.add([monster]);
     this.addAuras(monster);
-    logger.log('added monster', monster.bio.name)
+    logger.log('Added monster', monster.bio.name)
     this.initiativeChanged();
     return monster;
   }

@@ -178,7 +178,6 @@ class ControlsSection extends MatchSection {
 
   onDone() {
     let {team1, team2} = this.match;
-    console.log(team1, team2)
     if(team1.team && team1.team.units.length && team2.team && team2.team.units.length) {
       return this.match.onDone();
     }

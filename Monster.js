@@ -135,7 +135,6 @@ class Monster {
 
   addAI(level = 1) {
     this.ai = true;
-    console.log('adding AI', level)
     this.routine = new AI(this.battle, this, level);
   }
 
@@ -345,13 +344,13 @@ class Monster {
       if(flanks < 2) return false;
       return true;
     }
-    if(a.stats.targetFamily == 'self' && a.bio.condition == 'wounded') {
+    if(a.bio.condition == 'self is wounded') {
       return this.totalHealth < this.maxHealth/2;
     }
-    if(a.stats.targetFamily == 'self' && a.bio.condition == 'near death') {
+    if(a.bio.condition == 'self is near death') {
       return this.totalHealth < this.maxHealth/10;
     }
-    if(a.stats.targetFamily == 'self' && a.bio.condition == 'full health') {
+    if(a.bio.condition == 'self is full health') {
       return this.totalHealth >= this.maxHealth;
     }
     if(a.stats.targetFamily == 'enemies' && a.bio.condition == 'flanking') {
@@ -468,7 +467,8 @@ class Monster {
   canUseAbility(a) {
     if(!a) return true;
     let m = this.hasAilment('scorched') ? 1 : 0;
-    return this.totalMana >= a.stats.resourceCost + m;
+    let resource = a.stats.resourceType == 'mana' ? this.totalMana : this.totalHealth;
+    return resource >= a.stats.resourceCost + m;
   }
 
   selectBestAbility(t) {
@@ -503,7 +503,8 @@ class Monster {
       this.useMana(a.stats.resourceCost);
     }
     if(a.stats.resourceType == 'health' && this.totalHealth >= a.stats.resourceCost) {
-      this.harm(this.stats.resourceCost);
+      this.harm(a.stats.resourceCost);
+      if(!this.alive) this.battle.kill(this);
     }
   }
 

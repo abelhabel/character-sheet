@@ -33,3 +33,12 @@ If both AOE and Duration are at the lower end of its bracket only add +1.
 
 If only one additional level is gained and it is in the lower end of its bracket,
 you can increase the mana cost to decrease the level.
+
+
+--------------
+Abilities
+tier 1: 18
+tier 2: 54
+tier 3: 45
+tier 4: 11
+tier 5: 8

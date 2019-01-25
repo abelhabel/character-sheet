@@ -39,7 +39,6 @@ module.exports.suicide = {
 module.exports.charge = {
   when: 'per use',
   fn: function (battle, caster, target, ability, power, triggeredPower, selections, triggeredBy) {
-    console.log('charge')
     let tiles = battle.abilityTargets(caster, ability, selections[0].x, selections[0].y).tiles;
     let tile = tiles[tiles.length -1];
     if(battle.grid.get(tile.x, tile.y)) {

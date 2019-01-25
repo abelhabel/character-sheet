@@ -31,7 +31,7 @@ class Ability {
       range: t.stats.range,
       target: t.stats.target,
       targetFamily: t.stats.targetFamily,
-      duration: t.stats.duration,
+      duration: t.stats.duration || 0,
       resourceCost: t.stats.resourceCost,
       resourceType: t.stats.resourceType,
       element: t.stats.element,
@@ -88,7 +88,7 @@ class Ability {
   }
 
   get might() {
-    return (this.stats.minMower + this.stats.maxPower) * this.stats.multiplier * (1 + this.stats.duration);
+    return (this.stats.minPower + this.stats.maxPower) * this.stats.multiplier * (1 + this.stats.duration);
   }
 
   roll(d) {
