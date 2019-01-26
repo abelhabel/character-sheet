@@ -595,7 +595,7 @@ class Monster {
     return html;
   }
 
-  drawMonsterCS(popup) {
+  drawMonsterCS(popup, onClose) {
     let m = this;
     popup.innerHTML = '';
     let {name, family, cost, maxStacks} = m.bio;
@@ -769,7 +769,8 @@ class Monster {
     tag.querySelector('.stat-img.tpr').appendChild(tpr.canvas);
     tag.querySelector('.stat-img.damage').appendChild(damage.canvas);
     tag.querySelector('#close').addEventListener('click', e => {
-      this.battle.toggleAbilityBook();
+      this.battle && this.battle.toggleAbilityBook();
+      onClose && onClose();
     })
     m.actives.forEach(a => {
       var c = a.sprite.canvas.clone();

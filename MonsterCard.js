@@ -33,10 +33,17 @@ class MonsterCard {
     let image = card.querySelector('.card-image');
     let canvas = this.canvas.clone();
     this.cached = card.firstElementChild;
-    if(this.item.battle) {
       let open = card.querySelector('.open-cs');
       open.addEventListener('click', e => {
-        this.item.battle.toggleAbilityBook(this.item);
+        if(!this.item.battle) {
+          let Battle = require('Battle.js');
+          let popup = Battle.prototype.popup();
+          popup.style.display = 'block';
+          this.item.drawMonsterCS(popup, () => document.body.removeChild(popup));
+        } else {
+          this.item.battle.toggleAbilityBook(this.item);
+        }
+        // this.item.battle.toggleAbilityBook(this.item);
         e.stopPropagation();
       });
       this.cached.addEventListener('mouseenter', e => {
@@ -45,7 +52,6 @@ class MonsterCard {
       this.cached.addEventListener('mouseleave', e => {
         open.style.display = 'none';
       })
-    }
     this.small = canvas;
     if(this.state == 'small') {
       container.appendChild(canvas);
