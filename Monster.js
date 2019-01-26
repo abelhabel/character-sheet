@@ -91,6 +91,7 @@ class Monster {
     this.routine = this.ai ? new AI(this, 1) : null;
     this.x = null;
     this.y = null;
+    this.defending = false;
     this.selections = [];
     this.triggerCount = 0;
     this.bio = {
@@ -343,6 +344,9 @@ class Monster {
       let flanks = this.battle ? this.battle.flanks(this) : 0;
       if(flanks < 2) return false;
       return true;
+    }
+    if(a.bio.condition == 'self is defending') {
+      return this.defending;
     }
     if(a.bio.condition == 'self is wounded') {
       return this.totalHealth < this.maxHealth/2;

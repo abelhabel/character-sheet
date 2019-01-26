@@ -1,3 +1,13 @@
+const Sprite = require('Sprite.js');
+const bgSprite = new Sprite({
+  x: 700,
+  y: 1500,
+  w: 144,
+  h: 184,
+  spritesheet: 'Hell2.jpg'
+});
+// bgSprite.drawWithOpacity(0.5);
+const bg = bgSprite.png;
 class MonsterCard {
   constructor(item) {
     this.item = item;
@@ -23,6 +33,19 @@ class MonsterCard {
     let image = card.querySelector('.card-image');
     let canvas = this.canvas.clone();
     this.cached = card.firstElementChild;
+    if(this.item.battle) {
+      let open = card.querySelector('.open-cs');
+      open.addEventListener('click', e => {
+        this.item.battle.toggleAbilityBook(this.item);
+        e.stopPropagation();
+      });
+      this.cached.addEventListener('mouseenter', e => {
+        open.style.display = 'block';
+      })
+      this.cached.addEventListener('mouseleave', e => {
+        open.style.display = 'none';
+      })
+    }
     this.small = canvas;
     if(this.state == 'small') {
       container.appendChild(canvas);
@@ -126,6 +149,7 @@ class MonsterCard {
           </div>
         </div>
       </div>
+      <button class='open-cs'>Open Character Sheet</button>
     </div>`;
   }
 
@@ -134,6 +158,11 @@ class MonsterCard {
     #monster-cards {
       text-align: center;
       position: relative;
+    }
+    .open-cs {
+      position: absolute;
+      bottom: -10px;
+      display: none;
     }
     .card-outer {
       box-sizing: border-box;
@@ -153,12 +182,13 @@ class MonsterCard {
       margin: 2px;
       border: none;
       background: linear-gradient(to bottom, #bdb76b 0%,#713c14 100%);
+      background: url(${bg});
     }
     .card-outer.team1 {
-      background: linear-gradient(to bottom, #0000ff 0%,#713c14 100%);
+      border: 1px solid blue;
     }
     .card-outer.team2 {
-      background: linear-gradient(to bottom, #ff0000 0%,#713c14 100%);
+      border: 1px solid red;
     }
     .card-outer.selected {
       border: 3px solid cornflowerblue;
@@ -176,9 +206,8 @@ class MonsterCard {
       width: 100%;
       height: 100%;
       padding: 4px;
-      background-color: beige;
+      background-color: rgba(245, 245, 220,0.3);
       border: 1px solid gray;
-
     }
 
     .card-inner.turn {
@@ -187,14 +216,15 @@ class MonsterCard {
 
     .card-name {
       padding: 2px 4px;
-      background-color: darkkhaki;
+      background-color: #dad9be;
       position: relative;
       top: -5px;
       left: -5px;
-      border-bottom: 2px solid gray;
-      border-right: 1px solid gray;
+      border-bottom: 2px solid #3f4035;
+      border-right: 1px solid #3f4035;
       font-weight: bold;
-      letter-spacing: 0.1em;
+      font-size: 12px;
+      text-align: left;
     }
 
     .card-image {

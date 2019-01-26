@@ -61,7 +61,8 @@ var tpl = {
             'when enemy is hit',
             'when adjacent enemy is slain',
             'when enemy is slain by self',
-            'when moving'
+            'when moving',
+            'when far away enemy move'
           ],
           initial: 'when selected',
           exportAs: 'activation'
@@ -71,6 +72,7 @@ var tpl = {
           type: 'select',
           values: [
             '',
+            'self is defending',
             'flanked',
             'flanking',
             'wounded',

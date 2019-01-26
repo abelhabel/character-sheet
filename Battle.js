@@ -92,6 +92,10 @@ class R extends Array {
     });
   }
 
+  didWait(a) {
+    return this.current.waiting.find(b => b.id == a.id);
+  }
+
   wait(actor) {
     if(actor.movesLeft < actor.totalStat('movement')) {
       logger.log(actor.bio.name, 'has already moved');
@@ -348,7 +352,7 @@ class Battle {
         selected: 'rgba(110, 110, 22, 0.5)'
       }
     };
-    arena = arena || arenas[0];
+    arena = arena || arenas[1];
     this.arena = new Arena(arena, tw, th);
     this.grid = this.arena.obstacles;
     this.w = this.arena.w;
@@ -469,6 +473,10 @@ class Battle {
       }
     })
 
+  }
+
+  isFarWay(a, b) {
+    return this.grid.steps(a.x, a.y, b.x, b.y) > 5;
   }
 
   getEnemyTeam(team) {
@@ -826,9 +834,10 @@ class Battle {
     return tag;
   }
 
-  toggleAbilityBook() {
+  toggleAbilityBook(a) {
+    a = a || this.currentActor;
     let c = this.csPopup;//document.getElementById('outer-abilities');
-    this.currentActor.drawMonsterCS(c);
+    a.drawMonsterCS(c);
     if(c.style.display == 'none')
       c.style.display = 'block';
     else
@@ -1348,10 +1357,12 @@ class Battle {
   defend(a) {
     logger.log(a.bio.name, 'defends');
     a.bonusdefence = 2 + (a.canMove ? 1 : 0) * Math.round(8 * (a.movesLeft/a.totalStat('movement')));
+    a.defending = true;
   }
 
   undefend(a) {
     a.bonusdefence = 0;
+    a.defending = false;
   }
 
   isHarmful(b, ability) {
@@ -1370,12 +1381,12 @@ class Battle {
     if(!target.alive || !target.canTrigger) return;
     target.triggers.forEach(a => {
       if(a.bio.activation != event) return;
-      if(!target.canTrigger) return;
       if(!target.abilityConditionMet(a, target)) return;
       var t = a.stats.targetFamily == 'self' ? target : source;
       if(a.stats.target == 'self') {
         t = target;
       }
+      if(!this.inRange(target, t, a)) return;
       this.useAbility(target, [t], a, true, power, ability);
       target.triggerCount += 1;
     })
@@ -1737,7 +1748,11 @@ class Battle {
         let path = this.grid.path(actor.x, actor.y, position.x, position.y);
         path.shift();
         if(actor.movesLeft < path.length) return reject(["Invalid move", actor.movesLeft, path]);
-        p = this.walk(actor, path);
+        p = this.walk(actor, path).then(() => {
+          console.log('walk done')
+          this.movementTriggers(actor);
+
+        });
       } else
       if(type == 'use ability') {
         let ability = actor.abilities.find(a => a.template.id == abilityId);
@@ -1772,6 +1787,7 @@ class Battle {
       let actions = positions.map(b => {
         a.setOrientation(b.x);
         var targets = this.abilityTargets(a, ability, b.x, b.y);
+        console.log("use ability", ability.bio.name, a.canUseAbility(ability), b)
         if(!a.canUseAbility(ability)) {
           return;
         }
@@ -1891,6 +1907,16 @@ class Battle {
     return d <= range + 0.42;
   }
 
+  movementTriggers(a) {
+    let enemies = this.getEnemyTeam(a.team);
+    enemies.forEach(e => {
+      console.log('is far away', this.isFarWay(a, e))
+      if(this.isFarWay(a, e)) {
+        this.trigger('when far away enemy move', e, a, 0, null);
+      }
+    })
+  }
+
   walk(a, path) {
     return new Promise((resolve, reject) => {
       var int = setInterval(() => {
@@ -1949,7 +1975,6 @@ class Battle {
     var a = this.tr.actor;
     logger.log('Turn start for', a.bio.name);
     this.currentActor = a;
-    a.replenishMana(1);
     var turn = new Turn(a);
     this.turns.push(turn);
     this.undefend(a);
@@ -1958,8 +1983,11 @@ class Battle {
     this._selections = [];
     a.resetMovement();
     a.selectAbility(null);
-    this.applyEffects(a);
-    if(a.hasAilment('contagious')) this.spreadContagion(a);
+    if(!this.tr.didWait(a)) {
+      a.replenishMana(1);
+      this.applyEffects(a);
+      if(a.hasAilment('contagious')) this.spreadContagion(a);
+    }
     this.render();
     this.battleMenu.setActor(a);
     if(!this.tr.filter(m => m.team != a.team).length) {
@@ -1973,15 +2001,17 @@ class Battle {
     logger.log('Turn end for', a.bio.name);
     this.turn.endMovement.x = a.x;
     this.turn.endMovement.y = a.y;
-    let effectsToRemove = [];
-    a.effects.forEach(e => {
-      var {source} = e.ability.stats;
-      e.rounds += 1;
-      if(e.rounds == e.ability.stats.duration) {
-        effectsToRemove.push(e);
-      }
-    });
-    effectsToRemove.forEach(e => a.removeEffect(e));
+    if(!this.tr.didWait(a) || a.defending) {
+      let effectsToRemove = [];
+      a.effects.forEach(e => {
+        let {source} = e.ability.stats;
+        e.rounds += 1;
+        if(e.rounds == e.ability.stats.duration) {
+          effectsToRemove.push(e);
+        }
+      });
+      effectsToRemove.forEach(e => a.removeEffect(e));
+    }
     let currentRound = this.tr.currentRound;
     this.tr.nextTurn();
     this.makeMonsterCards();

@@ -61,7 +61,7 @@ class Canvas {
     return c;
   }
 
-  drawSprite(sprite, x, y, tw, th) {
+  drawSprite(sprite, x = 0, y = 0, tw = this.w, th =  this.h) {
     this.context.drawImage(sprite.canvas, x, y, tw, th);
   }
 
