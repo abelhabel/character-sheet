@@ -281,7 +281,8 @@ var tpl = {
             'prepared', //25% reduced damage taken from adjacent enemies
             'precise', //25% increased damage dealt to enemies far away
             'hidden', //25% reduced damage taken from enemies far away,
-            'illuminated'
+            'illuminated',
+            'engorged'
           ],
           initial: '',
           exportAs: 'vigor'
@@ -289,12 +290,12 @@ var tpl = {
         {
           name: 'Special',
           type: 'select',
-          values: ['', 'hypnotize', 'berzerk', 'reflectDamage',
+          values: ['', 'hypnotize', 'berzerk', 'berzerkAlly', 'reflectDamage',
             'giveEffectAsAbility', 'phantomImage', 'stealBlessing',
             'dispel', 'teleport', 'lifeLeech', 'polymorph', 'blink',
             'chain', 'manaThief', 'suicide', 'charge', 'reflectArrows',
             'transferCurse', 'addMonster', 'manaLeech', 'cleanse',
-            'knockback'
+            'knockback', 'sharedPain'
           ],
           initial: 'false',
           exportAs: 'special'

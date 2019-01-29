@@ -108,7 +108,7 @@ class Monster {
     };
     this.stats = {
       health: t.stats.health,
-      mana: t.stats.mana,
+      mana: t.stats.mana || 1,
       attack: t.stats.attack,
       defence: t.stats.defence,
       spellPower: t.stats.spellPower,
@@ -486,9 +486,11 @@ class Monster {
     }).find(a => {
       return a.bio.type == 'active' &&
       (a.stats.source == 'attack' || a.stats.source == 'spell') &&
-      this.canUseAbility(a)
+      this.canUseAbility(a) &&
+      (t ? this.battle.inRange(this, t, a) : true)
     });
     this.selectedAbility != a && this.selectAbility(a);
+    return this.selectedAbility;
   }
 
   selectAbility(a) {

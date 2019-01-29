@@ -50,7 +50,6 @@ class UnitPlacement {
       this.arena.highlight(x, y);
     }
     this.arena.drawObstacles();
-    console.log(this.current && this.current.bio.name)
   }
 
   render(container) {

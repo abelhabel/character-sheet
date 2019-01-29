@@ -92,6 +92,30 @@ module.exports.berzerk = {
     if(!a) return;
     battle.useAbility(target, [t], a);
     target.team = originalTeam;
+    return new Special();
+  }
+};
+
+module.exports.berzerkAlly = {
+  when: 'per target, after effect',
+  fn: function (battle, caster, target, ability, power, triggeredPower, selections, triggeredBy) {
+    var t = battle.grid.closest(target.x, target.y, (b) => {
+      return b instanceof target.constructor && b.team != caster.team;
+    });
+    if(!t) return;
+    var a = target.selectBestAbility(t);
+    if(!a) return;
+    battle.useAbility(target, [t], a);
+    return new Special();
+  }
+};
+
+module.exports.sharedPain = {
+  when: 'per target',
+  fn: function (battle, caster, target, ability, power, triggeredPower, selections, triggeredBy) {
+    let d = Math.ceil(triggeredPower/2);
+    battle.dealDamage(triggeredBy.owner, caster, d, triggeredBy, true);
+    return new Special();
   }
 };
 

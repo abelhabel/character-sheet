@@ -1504,7 +1504,6 @@ class Battle {
   attackRoll(a, b, ability) {
     let at = a.totalStat('attack');
     let df = b.totalStat('defence');
-    logger.log('attack vs defense', at, df);
     let stacks = a.stacks;
     let bonusDamage = a.totalStat('damage', b);
     let flanks = this.flanks(b) - 1;
@@ -1586,7 +1585,8 @@ class Battle {
     let abilityDamage = effectPower || ability.roll(bonusDamage);
     let spellPower = 1 + a.totalStat('spellPower') / 10;
     let soaked = a.hasAilment('soaked') ? 0.75 : 1;
-    let d = Math.ceil(abilityDamage * stacks * spellPower * soaked);
+    let engorged = a.hasVigor('engorged') ? 1.5 : 1;
+    let d = Math.ceil(abilityDamage * stacks * spellPower * soaked * engorged);
     return d;
   }
 
@@ -1595,16 +1595,20 @@ class Battle {
     let bonusDamage = a.totalStat("damage");
     let abilityDamage = ability.minPower(bonusDamage);
     let spellPower = 1 + a.totalStat('spellPower') / 10;
-    let d = Math.ceil(abilityDamage * stacks * spellPower);
+    let soaked = a.hasAilment('soaked') ? 0.75 : 1;
+    let engorged = a.hasVigor('engorged') ? 1.5 : 1;
+    let d = Math.ceil(abilityDamage * stacks * spellPower * soaked * engorged);
     return d;
   }
 
   spellRollMax(a, b, ability, fromEffect, effectPower) {
     let stacks = a.stacks;
     let bonusDamage = a.totalStat("damage");
-    let abilityDamage = effectPower || ability.maxPower(bonusDamage);
+    let abilityDamage = ability.maxPower(bonusDamage);
     let spellPower = 1 + a.totalStat('spellPower') / 10;
-    let d = Math.ceil(abilityDamage * stacks * spellPower);
+    let soaked = a.hasAilment('soaked') ? 0.75 : 1;
+    let engorged = a.hasVigor('engorged') ? 1.5 : 1;
+    let d = Math.ceil(abilityDamage * stacks * spellPower * soaked * engorged);
     return d;
   }
 
@@ -1749,7 +1753,6 @@ class Battle {
         path.shift();
         if(actor.movesLeft < path.length) return reject(["Invalid move", actor.movesLeft, path]);
         p = this.walk(actor, path).then(() => {
-          console.log('walk done')
           this.movementTriggers(actor);
 
         });
@@ -1776,10 +1779,18 @@ class Battle {
       })
       .catch(reject);
     })
+    .then(() => {
+      this.render();
+    })
     .catch(e => {
       console.log('Action Error:', e)
     })
   }
+
+  /*
+    how do you trigger an ability on yourself that is triggered when
+    you hit with with a specific attack.
+  */
 
   useAbility(a, positions, ability, fromEffect, triggeredPower, triggeredBy) {
     return new Promise((resolve, reject) => {
@@ -1787,12 +1798,11 @@ class Battle {
       let actions = positions.map(b => {
         a.setOrientation(b.x);
         var targets = this.abilityTargets(a, ability, b.x, b.y);
-        console.log("use ability", ability.bio.name, a.canUseAbility(ability), b)
         if(!a.canUseAbility(ability)) {
           return;
         }
         a.useAbility(ability);
-
+        logger.log(a.bio.name, triggeredPower ? 'trigger' : 'uses' ,'ability:', ability.bio.name);
         if(!ability.stats.summon) {
           let acts = targets.actors.map((t, i) => {
             let specialResult;
@@ -1827,6 +1837,7 @@ class Battle {
             }
 
             if(ability.stats.special != 'giveEffectAsAbility' && ability.stats.effect) {
+              t = ability.stats.effect.stats.target == 'self' ? a : t;
               this.useAbility(a, [t], ability.stats.effect, true, power);
             }
             return this.playAbilityAnimation(a, t, ability);
@@ -1864,7 +1875,8 @@ class Battle {
     let stacks = a ? Math.min(template.bio.maxStacks, Math.ceil(health / template.stats.health)) : 1;
     let monster = new Monster(template, 1, true);
     monster.addStack(stacks -1);
-    monster.harm(health % template.stats.health);
+    monster.harm(monster.totalHealth);
+    monster.heal(health);
     monster.team = a.team;
     monster.battle = a.battle;
     monster.ai = a.ai;
@@ -1910,7 +1922,6 @@ class Battle {
   movementTriggers(a) {
     let enemies = this.getEnemyTeam(a.team);
     enemies.forEach(e => {
-      console.log('is far away', this.isFarWay(a, e))
       if(this.isFarWay(a, e)) {
         this.trigger('when far away enemy move', e, a, 0, null);
       }
