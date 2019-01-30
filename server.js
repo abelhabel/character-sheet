@@ -113,12 +113,19 @@ loadFile('arena.html');
 loadFile('lobby.html');
 loadFile('bestiary.html');
 loadFile('ability-compendium.html');
+loadFile('Aclonica.ttf');
 loadFile('DungeonCrawl_ProjectUtumnoTileset.png');
 loadFile('sheet_of_old_paper.png');
 loadFile('sheet_of_old_paper_horizontal.png');
 loadFile('spellbookForFlare.png');
 loadFile('Hell2.jpg');
-loadFile('Aclonica.ttf');
+loadFile('mythical_card.jpg');
+loadFile('demons_card.jpg');
+loadFile('beasts_card.jpg');
+loadFile('outlaws_card.jpg');
+loadFile('undead_card.jpg');
+loadFile('order_of_idun_card.jpg');
+loadFile('aloysias_chosen_card.jpg');
 
 
 

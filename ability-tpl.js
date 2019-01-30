@@ -73,11 +73,13 @@ var tpl = {
           values: [
             '',
             'self is defending',
-            'flanked',
-            'flanking',
-            'wounded',
-            'near death',
-            'full health',
+            'self is flanked',
+            'self is flanking',
+            'target is flanked',
+            'target is flanking',
+            'target is wounded',
+            'target is near death',
+            'target is full health',
             'self is wounded',
             'self is near death',
             'self is full health'
@@ -295,7 +297,7 @@ var tpl = {
             'dispel', 'teleport', 'lifeLeech', 'polymorph', 'blink',
             'chain', 'manaThief', 'suicide', 'charge', 'reflectArrows',
             'transferCurse', 'addMonster', 'manaLeech', 'cleanse',
-            'knockback', 'sharedPain'
+            'knockback', 'sharedPain', 'pullIn', 'banish'
           ],
           initial: 'false',
           exportAs: 'special'

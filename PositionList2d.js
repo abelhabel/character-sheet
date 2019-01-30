@@ -107,6 +107,24 @@ class PositionList2d {
       let t = this.get(x, y);
       targets.push({item: t, x:x, y: y});
     }
+    console.log('in line', x1, y1, x2, y2, l, targets)
+    return targets;
+  }
+
+  inLOS(x1, y1, x2, y2) {
+    var dx = x2 - x1;
+    var dy = y2 - y1;
+    var a = Math.atan2(dy, dx);
+    var l = this.distance(x1, y1, x2, y2);
+    var targets = [];
+    for(var step = 0; step < l; step++) {
+      let x = Math.round(x1 + step * Math.cos(a));
+      let y = Math.round(y1 + step * Math.sin(a));
+      if(x < 0 || y < 0) continue;
+      if(x >= this.w || y >= this.h) continue;
+      let t = this.get(x, y);
+      targets.push({item: t, x:x, y: y});
+    }
     return targets;
   }
 

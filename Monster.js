@@ -338,6 +338,16 @@ class Monster {
     }
   }
 
+  get adjacentEnemies() {
+    if(!this.battle) return [];
+    return this.battle.grid.around(this.x, this.y, 1)
+    .filter(t => {
+      if(!t.item) return;
+      return t.item.constructor == this.constructor && t.item.team != this.team;
+    })
+    .map(t => t.item);
+  }
+
   abilityConditionMet(a, target) {
     if(!a.bio.condition) return true;
     if(a.stats.targetFamily == 'self' && a.bio.condition == 'flanked') {
@@ -357,15 +367,24 @@ class Monster {
     if(a.bio.condition == 'self is full health') {
       return this.totalHealth >= this.maxHealth;
     }
-    if(a.stats.targetFamily == 'enemies' && a.bio.condition == 'flanking') {
-      let flanks = this.battle ? this.battle.flanks(this) : 0;
-      if(flanks < 2) return false;
-      return true;
-    }
-    if(target && a.stats.targetFamily == 'self' && a.bio.condition == 'flanking') {
+    if(!this.battle) return;
+    if(target && a.bio.condition == 'target is flanked') {
       let flanks = this.battle ? this.battle.flanks(target) : 0;
       if(flanks < 2) return false;
       return true;
+    }
+    if(a.bio.condition == 'self is flanking') {
+      let adjacent = this.adjacentEnemies;
+      let flanks = 0;
+      adjacent.forEach(m => {
+        let f = this.battle.flanks(m);
+        flanks = Math.max(flanks, f);
+      })
+      return flanks > 1;
+    }
+    if(a.bio.condition == 'self is flanked') {
+      let flanks = this.battle.flanks(this);
+      return flanks > 1;
     }
   }
 
@@ -410,11 +429,17 @@ class Monster {
         d -= radius * 0.415;
       }
       if(d > radius) return;
-      if(a.owner.team == this.team && targetFamily != 'enemies' && source == 'blessing') {
-        out.add(a);
+      if(a.owner.team == this.team && (targetFamily == 'allies' || targetFamily == 'all') && source == 'blessing') {
+        if(!a.owner.abilityConditionMet(a, this)) return;
+        if(a.stats.stacks > 1) {
+          stacks[a.bio.name] = stacks[a.bio.name] || {power: 0, ability: a};
+          stacks[a.bio.name].power += a.power;
+        } else {
+          out.add(a, a.power);
+        }
       }
-      if(a.owner.team != this.team && targetFamily != 'allies' && source == 'curse') {
-        if(!this.abilityConditionMet(a)) return;
+      if(a.owner.team != this.team && (targetFamily == 'enemies' || targetFamily == 'all') && source == 'curse') {
+        if(!a.owner.abilityConditionMet(a, this)) return;
         if(a.stats.stacks > 1) {
           stacks[a.bio.name] = stacks[a.bio.name] || {power: 0, ability: a};
           stacks[a.bio.name].power += a.power;
@@ -806,7 +831,7 @@ class Monster {
     })
     m.passives.forEach(a => {
       if(a.stats.targetFamily != 'self') return;
-      if(!a.owner.abilityConditionMet(a)) return;
+      if(!a.owner.abilityConditionMet(a, this)) return;
       var c = a.effectSprite.canvas.clone();
       c.addEventListener('click', e => {
         this.drawEffectStats({ability: a, power: a.power}, tag.querySelector('#details'));
@@ -817,14 +842,15 @@ class Monster {
     this.battle && this.battle.auras.all.forEach(a => {
       if(!a.owner.alive) return;
       var {source, targetFamily, multiplier, radius} = a.stats;
-      if(a.owner.team == this.battle.currentActor.team) {
+      if(a.owner.team == this.team) {
         if(targetFamily == 'enemies') return;
       } else {
         if(targetFamily == 'allies') return;
       }
-      var d = this.battle.grid.distance(this.battle.currentActor.x, this.battle.currentActor.y, a.owner.x, a.owner.y);
+      if(!a.owner.abilityConditionMet(a, this)) return;
+      var d = this.battle.grid.distance(this.x, this.y, a.owner.x, a.owner.y);
       if(a.stats.shape == 'square') {
-        d -= radius * 0.415;
+        d = this.battle.grid.squareRadius(this.x, this.y, a.owner.x, a.owner.y);
       }
       if(d > radius) return;
       var c = a.effectSprite.canvas.clone();

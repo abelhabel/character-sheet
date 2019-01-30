@@ -27,9 +27,35 @@ class MonsterCard {
     this.small.classList.remove('selected');
   }
 
+  get bg() {
+    if(this.item.bio.family == 'Mythical') {
+      return 'url(mythical_card.jpg)';
+    }
+    if(this.item.bio.family == 'Undead') {
+      return 'url(undead_card.jpg)';
+    }
+    if(this.item.bio.family == 'Order of Idun') {
+      return 'url(order_of_idun_card.jpg)';
+    }
+    if(this.item.bio.family == 'Demons') {
+      return 'url(demons_card.jpg)';
+    }
+    if(this.item.bio.family == 'Beasts') {
+      return 'url(beasts_card.jpg)';
+    }
+    if(this.item.bio.family == "Aloysia's Chosen") {
+      return 'url(mythical_card.jpg)';
+    }
+    if(this.item.bio.family == 'Outlaws') {
+      return 'url(outlaws_card.jpg)';
+    }
+    return `url(${bg})`;
+  }
+
   render(container, noEvents = false) {
     let card = document.createElement('div');
     card.innerHTML = this.html();
+    card.querySelector('.card-outer').style.background = this.bg;
     let image = card.querySelector('.card-image');
     let canvas = this.canvas.clone();
     this.cached = card.firstElementChild;
@@ -222,7 +248,7 @@ class MonsterCard {
 
     .card-name {
       padding: 2px 4px;
-      background-color: #dad9be;
+      background-color: rgba(218, 217, 190, 0.5);
       position: relative;
       top: -5px;
       left: -5px;
@@ -240,6 +266,15 @@ class MonsterCard {
     .card-upper, .card-lower {
       height: 50%;
       position: relative;
+      background-color: rgba(0,0,255,0.1);
+    }
+
+    .card-lower {
+      background-color: rgba(255,255,255,0.3);
+    }
+
+    .card-lower:hover {
+      background-color: rgba(255,255,255,0.8);
     }
 
     .stats-left {

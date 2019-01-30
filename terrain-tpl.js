@@ -37,6 +37,12 @@ var tpl = {
           exportAs: 'walkable',
           type: 'binary',
           initial: true
+        },
+        {
+          name: 'Cover',
+          exportAs: 'cover',
+          type: 'binary',
+          initial: false
         }
       ]
     }

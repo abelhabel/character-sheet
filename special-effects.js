@@ -38,6 +38,24 @@ module.exports.knockback = {
   }
 }
 
+module.exports.pullIn = {
+  when: 'per target',
+  fn: function (battle, caster, target, ability, power, triggeredPower, selections, triggeredBy) {
+    tiles = battle.grid.inLOS(caster.x, caster.y, target.x, target.y);
+    // tiles = battle.grid.inLOS(target.x, target.y, caster.x, caster.y);
+    console.log(tiles)
+    tiles = tiles.filter(t => !t.item);
+    if(tiles.length) {
+      battle.grid.remove(target.x, target.y);
+      target.move(tiles[0].x, tiles[0].y);
+      battle.grid.setItem(target);
+    } else {
+      console.log('could not find tile in line')
+    }
+    return new Special();
+  }
+}
+
 module.exports.suicide = {
   when: 'per target',
   fn: function (battle, caster, target, ability, power, triggeredPower, selections, triggeredBy) {
@@ -47,6 +65,18 @@ module.exports.suicide = {
     .forEach(t => {
       battle.dealDamage(caster, t.item, healthLost, ability, true);
     })
+    return new Special();
+  }
+};
+
+module.exports.banish = {
+  when: 'per target',
+  fn: function (battle, caster, target, ability, power, triggeredPower, selections, triggeredBy) {
+    if(!target.summoned) {
+      logger.log(target.bio.name, 'is not a summoned creature.');
+      return;
+    };
+    battle.kill(target);
     return new Special();
   }
 };

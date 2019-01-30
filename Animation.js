@@ -1,7 +1,7 @@
 const Sprite = require('Sprite.js');
 class Animation {
   constructor(sx, sy, ex, ey, sprite, t) {
-    this.speed = 10;
+    this.speed = 20;
     this.sx = sx;
     this.sy = sy;
     this.ex = ex;

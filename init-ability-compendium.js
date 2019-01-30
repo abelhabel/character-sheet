@@ -136,13 +136,14 @@ Module.onLoad(['DungeonCrawl_ProjectUtumnoTileset.png', 'sheet_of_old_paper.png'
         ailment, vigor, selections
       } = a.stats;
       tag.style.whiteSpace = 'pre-line';
-      let {activation, type, name, description, tier} = a.bio;
+      let {activation, type, name, description, tier, condition} = a.bio;
       let stat = source == 'blessing' || source == 'curse' ? attribute : 'health';
       let act = type == 'trigger' ? `\n<span class='bold'>Trigger</span>: ${activation}` : '';
+      let con = condition ? `\n<span class='bold'>Condition</span>: ${condition}` : '';
       var text = `<span class='bold'>Name</span>: ${name}
       <span class='bold'>Tier</span>: ${tier || 'Not set'}
       <span class='bold'>Target</span>: ${target}/${targetFamily}
-      <span class='bold'>Type</span>: ${type}${act}
+      <span class='bold'>Type</span>: ${type}${act}${con}
       <span class='bold'>Shape</span>: ${shape}
       <span class='bold'>Radius</span>: ${radius}
       <span class='bold'>Source</span>: ${source}
@@ -207,7 +208,7 @@ Module.onLoad(['DungeonCrawl_ProjectUtumnoTileset.png', 'sheet_of_old_paper.png'
       })
     }
 
-    excludeSearch(card, prop) {
+    isNotSetSearch(card, prop) {
       let item = card.a;
       let p = prop.toLowerCase();
       let a = Object.assign({}, item.bio, item.stats);
@@ -218,11 +219,25 @@ Module.onLoad(['DungeonCrawl_ProjectUtumnoTileset.png', 'sheet_of_old_paper.png'
       })
     }
 
+    isSetSearch(card, prop) {
+      let item = card.a;
+      let p = prop.toLowerCase();
+      let a = Object.assign({}, item.bio, item.stats);
+      return Object.keys(a).find(key => {
+        let k = key.toLowerCase();
+        let l = a[key].toString().toLowerCase();
+        return k == p && l;
+      })
+    }
+
     update() {
       this.tags.results.innerHTML = '';
       let prop; let val; let cards = [];
       if(this.term.charAt(0) == '!') {
-        cards = this.db.filter(c => this.excludeSearch(c, this.term.substr(1)))
+        cards = this.db.filter(c => this.isNotSetSearch(c, this.term.substr(1)))
+      } else
+      if(this.term.charAt(0) == '$') {
+        cards = this.db.filter(c => this.isSetSearch(c, this.term.substr(1)))
       } else
       if(this.term.match(':')) {
         let words = this.term.split(':');
