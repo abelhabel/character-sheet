@@ -139,6 +139,24 @@ class Monster {
     this.routine = new AI(this.battle, this, level);
   }
 
+  abilityMight(a) {
+    let base = a;
+    if(a.stats.effect) {
+      base += a.stats.effect.might;
+    }
+    let triggers = this.triggersOnHit;
+    let triggerMight = 0;
+    triggers.forEach(t => triggerMight += t.might);
+    console.log(base, triggerMight);
+    return base + triggerMight;
+  }
+
+  get triggersOnHit() {
+    let max =  this.totalStat('tpr') - this.triggerCount;
+    return this.triggers.filter(t => t.bio.activation == 'when attack hits')
+    .splice(0, max);
+  }
+
   get prefers() {
     let attacks = this.attacks;
     let spells = this.spells;

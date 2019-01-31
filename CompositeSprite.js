@@ -9,6 +9,10 @@ class CompositeSprite {
     this.draw();
   }
 
+  get png() {
+    return this.canvas.toDataURL('image/png');
+  }
+
   get canvas() {
     return this._canvas.canvas;
   }

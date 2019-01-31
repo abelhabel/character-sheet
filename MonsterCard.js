@@ -123,7 +123,7 @@ class MonsterCard {
           <div class='card-abilities'>
             ${abilities.join(', ')}
           </div>
-          <div class='stats-left'>
+          <div class='stats stats-left'>
             <div class='card-stat cost'>
               ${item.bio.cost}
               <span>Cost</span>
@@ -149,7 +149,7 @@ class MonsterCard {
               <span>Health</span>
             </div>
           </div>
-          <div class='stats-right'>
+          <div class='stats stats-right'>
             <div class='card-stat tier'>
               ${item.tier}
               <span>Ability Tier</span>
@@ -211,7 +211,7 @@ class MonsterCard {
       font-family: Tahoma, monospace;
       font-size: 14px;
       vertical-align: top;
-      margin: 2px;
+      margin: 8px;
       border: none;
       background: linear-gradient(to bottom, #bdb76b 0%,#713c14 100%);
       background: url(${bg});
@@ -237,7 +237,6 @@ class MonsterCard {
       border: 1px solid thistle;
       width: 100%;
       height: 100%;
-      padding: 4px;
       background-color: rgba(245, 245, 220,0.3);
       border: 1px solid gray;
     }
@@ -250,17 +249,20 @@ class MonsterCard {
       padding: 2px 4px;
       background-color: rgba(218, 217, 190, 0.5);
       position: relative;
-      top: -5px;
-      left: -5px;
+      top: -1px;
+      left: 0px;
       border-bottom: 2px solid #3f4035;
       border-right: 1px solid #3f4035;
       font-weight: bold;
       font-size: 12px;
       text-align: left;
+      border-top-left-radius: 7px;
+      border-top-right-radius: 7px
     }
 
     .card-image {
       text-align: center;
+      padding: 10px 20px;
     }
 
     .card-upper, .card-lower {
@@ -282,12 +284,18 @@ class MonsterCard {
       left: -10px;
       width: 24px;
       bottom: -6px;
+      display: none;
     }
     .stats-right {
       position: absolute;
       right: -10px;
       width: 24px;
       bottom: -6px;
+      display: none;
+    }
+
+    .card-outer:hover .stats {
+      display: block;
     }
 
     .card-stat {

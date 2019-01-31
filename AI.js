@@ -16,6 +16,12 @@ function sortOnMight(a, b) {
   if(g == h) return 0;
   return g > h ? -1 : 1;
 }
+function sortOnAbilityMight(a, b) {
+  let g = a.owner.abilityMight(a);
+  let h = b.owner.abilityMight(b);
+  if(g == h) return 0;
+  return g > h ? -1 : 1;
+}
 class AI {
   constructor(battle, actor, level) {
     this.battle = battle;
@@ -137,7 +143,7 @@ class AI {
     // 2. Attack if possible
     // 3. Move towards longest range enemy if can't attak.
     let enemies = this.enemies(sortOnActorRange);
-    let abilities = actor.damaging.sort(sortOnMight).filter(a => actor.canUseAbility(a));
+    let abilities = actor.damaging.sort(sortOnAbilityMight).filter(a => actor.canUseAbility(a));
     // check if any of the enemies can be attacked by any of the abilities
     let enemy;
     let ability;
@@ -153,7 +159,9 @@ class AI {
     })
     let t = enemies[0];
     actor.selectAbility(ability);
-    if(ability && enemy) {
+    console.log(abilities[0].bio.name, ability && ability.bio.name)
+    let shouldMoveBeforeRangedAttack = ability && actor.potentialRange > 1 && abilities.length > 1 && abilities[0].stats.range < ability.stats.range;
+    if(ability && enemy && !shouldMoveBeforeRangedAttack) {
       return battle.addAction(new Action('use ability', [enemy], ability.template.id));
     } else
     if(t && actor.canMove) {

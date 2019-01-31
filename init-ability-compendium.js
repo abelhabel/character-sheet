@@ -87,9 +87,10 @@ function require(name) {
 Module.modules = {};
 Module.loaders = [];
 
-Module.onLoad(['DungeonCrawl_ProjectUtumnoTileset.png', 'sheet_of_old_paper.png', 'abilities.js', 'Canvas.js', 'Sprite.js', 'Ability.js'], () => {
+Module.onLoad(['DungeonCrawl_ProjectUtumnoTileset.png', 'sheet_of_old_paper.png', 'icons.js', 'abilities.js', 'Canvas.js', 'Sprite.js', 'CompositeSprite.js', 'AbilityEffect.js', 'Ability.js'], () => {
   const abilities = require('abilities.js');
   const Sprite = require('Sprite.js');
+  const Ability = require('Ability.js');
   abilities.forEach(a => {
     let s = new Sprite(a.bio.sprite);
     a.canvas = s.canvas;
@@ -97,6 +98,7 @@ Module.onLoad(['DungeonCrawl_ProjectUtumnoTileset.png', 'sheet_of_old_paper.png'
   class Card {
     constructor(a) {
       this.a = a;
+      this.b = new Ability(this.a);
     }
 
     render() {
@@ -106,7 +108,7 @@ Module.onLoad(['DungeonCrawl_ProjectUtumnoTileset.png', 'sheet_of_old_paper.png'
       let s = this.a.stats.special && this.a.stats.special != 'false'? `<br>Special: ${this.a.stats.special}` : '';
       let tag = html`<div class='card'>
         <span class='image'></span>
-        <b>${n}</b>${e}${s}
+        <b>${n}</b>${e}${s}<br>Might: ${this.b.might}
       </div>`;
       let style = html`<style>
         .card {

@@ -5,6 +5,7 @@ const Terrain = require('Terrain.js');
 const Arena = require('Arena.js');
 const Animation = require('Animation.js');
 const Sprite = require('Sprite.js');
+const CompositeSprite = require('CompositeSprite.js');
 const Canvas = require('Canvas.js');
 const BattleResult = require('BattleResult.js');
 const BattleMenu = require('BattleMenu.js');
@@ -1282,13 +1283,13 @@ class Battle {
   playHitAnimation(a, b, ability) {
     return new Promise((resolve, reject) => {
       this.sounds.attack.play();
-      var counter = 20;
+      var counter = 5;
       var max = counter;
       var c = this.effects.getContext('2d');
 
       var int = setInterval(() => {
-        c.clearRect(a.x * this.tw, a.y * this.th, this.tw, this.th);
-        c.clearRect(b.x * this.tw, b.y * this.th, this.tw, this.th);
+        c.clearRect(0, 0, this.w * this.tw, this.h * this.th);
+        c.clearRect(0, 0, this.w * this.tw, this.h * this.th);
         counter -= 1;
         if(counter < 1) {
           c.globalAlpha = 1;
@@ -2086,7 +2087,15 @@ class Battle {
   createMonsterCardContainer() {
     var c = document.createElement('div');
     c.id = 'monster-cards';
-    c.attachShadow({mode: 'open'})
+    c.style.display = 'inlin-block';
+    c.style.left = '50%';
+    c.style.transform = 'translateX(-50%)';
+    c.style.backgroundImage = `url(sheet_of_old_paper_horizontal.png)`;
+    c.style.border = '5px solid rgba(0,0,0,0.2)';
+    c.style.outline = '1px solid rgba(0,0,0,0.2)';
+    c.style.outlineOffset = "-4px";
+    c.style.borderRadius = '3px';
+    c.attachShadow({mode: 'open'});
     document.body.appendChild(c);
   }
 
