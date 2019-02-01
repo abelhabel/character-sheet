@@ -6,10 +6,25 @@ const Sprite = require('Sprite.js');
 const MonsterCard = require('MonsterCard.js');
 const icons = require('icons.js');
 const teamSelect = new Component();
+const match = new Component();
 const battle = new Component();
 const unitPlacement = new Component();
+const waitingRoom = new Component();
+waitingRoom.shadow.appendChild(html`<div>Waiting for other player to pick team...</div>`);
 teamSelect.addStyle(html`<style>${MonsterCard.style}</style>`);
-
+match.addStyle(html`<style>
+  #match {
+    background-image: url(sheet_of_old_paper_horizontal.png);
+    padding: 10px;
+    border-radius:10px;
+    display: inline-block;
+    left: 50%;
+    top:50%;
+    transform:translate(-50%,-50%);
+    position: absolute;
+    z-index: 4000;
+  }
+</style`);
 // teamSelect.shadow.appendChild(html`<div>TEAM SELECT</div>`);
 class GameUI extends Component {
   style() {
@@ -36,17 +51,22 @@ class GameUI extends Component {
   constructor() {
     super();
     this.id = ++ID;
-    this.lobby = new Lobby();
+    this.lobby = new Lobby(this);
     this.lobby.render();
-    this.showing = 'lobby';
     this.views = [
       new View('lobby', this.lobby),
       new View('team select', teamSelect),
+      new View('match', match),
       new View('battle', battle),
-      new View('unit placement', unitPlacement)
+      new View('unit placement', unitPlacement),
+      new View('waiting room', waitingRoom),
     ];
     this.inView = null;
     this.cursor = new Sprite(icons.find(i => i.bio.name == 'Ability Cursor').bio.sprite);
+  }
+
+  showWaitingRoom() {
+    this.show('waiting room');
   }
 
   showLobby() {
@@ -65,8 +85,16 @@ class GameUI extends Component {
     this.show('battle');
   }
 
+  showMatch() {
+    this.show('match');
+  }
+
   hideTeamSelect() {
 
+  }
+
+  get inner() {
+    return this.inView.item.inner || this.container;
   }
 
   get selectContainer() {

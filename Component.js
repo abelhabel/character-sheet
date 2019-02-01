@@ -11,7 +11,7 @@ class Component {
     return this.tags.inner;
   }
 
-  addInner(o) {
+  addInner(o = {}) {
     let tag = html`<div class='inner'></div>`;
     if(o.id) tag.id = o.id;
     this.tags.inner = tag;

@@ -380,7 +380,7 @@ class Match {
   }
 
   render(container) {
-    let outer = html`<div id='match' style='background-image: url(sheet_of_old_paper_horizontal.png); padding: 10px;border-radius:10px;display: inline-block; left: 50%;top:50%;transform:translate(-50%,-50%);position: relative;z-index: 4000;'></div>`;
+    let outer = html`<div id='match'></div>`;
     let shadow = outer.attachShadow({mode: 'open'});
     let arena = this.arena.render();
     let team1 = this.team1.render();

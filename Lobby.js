@@ -87,8 +87,9 @@ class Game {
 }
 
 class Lobby extends Component {
-  constructor() {
+  constructor(gameui) {
     super();
+    this.gameui = gameui;
     this.localUser = null;
     this.localUserName = localStorage.localUserName || '';
     this.users = [];
@@ -329,17 +330,16 @@ class Lobby extends Component {
   }
 
   createMatch() {
-    this.hide();
     let match = new Match(() => {
       console.log('created match', match);
-      document.body.removeChild(match.tag);
-      this.hide();
+      this.gameui.remove(match.tag);
       this.trigger('start match', match);
     }, () => {
-      document.body.removeChild(match.tag);
-      this.show();
+      this.gameui.remove(match.tag);
+      this.gameui.showLobby();
     });
-    match.render(document.body);
+    this.gameui.showMatch();
+    match.render(this.gameui.container);
 
   }
 

@@ -50,7 +50,7 @@ function placeUnits(arenaTpl, team, side, viewer) {
 
 gameModes.startMatch = function(lobby, viewer) {
   lobby.on('start match', match => {
-    viewer.hideTeamSelect();
+    viewer.showUnitPlacement();
     console.log('starting match')
     createRNG();
     match.container = viewer.container;
@@ -65,6 +65,8 @@ gameModes.startMatch = function(lobby, viewer) {
       }
     }
     prep.then(() => {
+      viewer.showBattle();
+      match.container = viewer.container;
       let battle = Battle.fromMatch(match);
       battle.onGameEnd = (o) => {
         o.results.winningTeam(o.winningTeam == 'team1' ? 'You' : 'AI');
@@ -234,10 +236,9 @@ gameModes.spectate = function(lobby, viewer) {
 gameModes.liveMultiplayer = function(lobby, viewer) {
   lobby.on('remote game', (game) => {
     var generator = createRNG(game.seed);
-    lobby.hide();
     viewer.showTeamSelect();
     var onDone = (team) => {
-      viewer.hideTeamSelect();
+      viewer.showUnitPlacement();
       let side = game.owner.id == lobby.localUser.id ? 'left' : 'right';
       placeUnits(arenas[1], team, side, viewer)
       .then(selected => {
@@ -276,10 +277,9 @@ gameModes.liveMultiplayer = function(lobby, viewer) {
                 lobby.loseGame(game);
               }
               battle.destroy();
-              viewer.reset();
-              lobby.show();
+              viewer.showLobby();
             });
-            document.body.appendChild(report);
+            viewer.append(report);
 
           };
           lobby.on('battle action confirmed', (data) => {
