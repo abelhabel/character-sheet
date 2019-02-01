@@ -10,6 +10,7 @@ const Canvas = require('Canvas.js');
 const BattleResult = require('BattleResult.js');
 const BattleMenu = require('BattleMenu.js');
 const UnitPlacement = require('UnitPlacement.js');
+const Component = require('Component.js');
 const specialEffects = require('special-effects.js');
 const abilities = require('abilities.js');
 const monsters = require('monsters.js');
@@ -61,6 +62,8 @@ class R extends Array {
     this.currentRound = 0;
     this.waited = false;
     this.cardSize = 'big';
+    this.component = new Component();
+    this.scrollIndex = -1;
   }
 
   get actor() {
@@ -214,19 +217,32 @@ class R extends Array {
     this._actor = this.current.willAct[0] || this.current.waiting[this.current.waiting.length -1];
   }
 
-  render(battle) {
-    var container = document.getElementById('monster-cards');
-    var shadow = container.shadowRoot;
-    Object.assign(container.style, {position: 'relative'});
-    let cursor = new Sprite(icons.find(i => i.bio.name == 'Ability Cursor').bio.sprite);
-    shadow.innerHTML = '';
+  init() {
+    let c = this.component;
+    c.addInner({id: 'monster-cards'});
     let style = html`<style>
+      #monster-cards {
+        position: absolute;
+        display: inline-block;
+        left: 0px;
+        bottom: 0px;
+        background-image: url(sheet_of_old_paper_horizontal.png);
+        border: 5px solid rgba(0,0,0,0.2);
+        outline: 1px solid rgba(0,0,0,0.2);
+        outline-offset: -4px;
+        border-radius: 3px;
+        width: 60%;
+        overflow: hidden;
+        height: 214px;
+      }
+
       .toggle-control {
-        position: relative;
+        position: absolute;
+        z-index: 1;
         display: inline-block;
         padding: 10px;
         border: none;
-        font-size: 20px;
+        font-size: 18px;
         font-weight: bold;
         margin: 4px;
         box-shadow: 0px 2px 4px -1px rgba(0,0,0,0.5);
@@ -236,7 +252,7 @@ class R extends Array {
         background: url(sheet_of_old_paper_horizontal.png);
         text-align: left;
         user-select: none;
-        cursor: url(${cursor.canvas.toDataURL('image/png')}), auto;
+        max-width: 174px;
       }
       .toggle-button {
         position: relative;
@@ -255,31 +271,77 @@ class R extends Array {
       .toggle-button:hover {
         background-color: rgba(0,0,0,0.1);
       }
+      #cards {
+        display: inline-block;
+        margin-left: 200px;
+      }
+      #next, #prev {
+        position: absolute;
+        width: 32px;
+        height: 32px;
+        top: 82px;
+        z-index: 2;
+        transform: rotate(-45deg);
+      }
+      #next {
+        border-bottom: 10px solid black;
+        border-right: 10px solid black;
+        right: 25px;
+      }
+      #prev {
+        border-top: 10px solid black;
+        border-left: 10px solid black;
+        right: 57px;
+      }
+      #next:hover, #prev:hover {
+        border-color: grey;
+      }
       ${MonsterCard.style}
     </style>`;
+    c.addStyle(style);
+    this.battle.container.appendChild(c.tags.outer);
+  }
+
+  render(battle) {
+    let inner = this.component.inner;
+    inner.innerHTML = '';
     let round = battle.tr.currentRound + 1;
     let teamName = battle.currentTeamName;
     let actor = battle.currentActor ? battle.currentActor.bio.name : '';
-    let toggle = html`<div class='toggle-control'>
-      <div class='toggle-button'>
-        Change Size
+    let tag = html`<div>
+      <div class='toggle-control'>
+        <div class='toggle-button'>
+          Change Size
+        </div>
+        <div>
+          Round: ${round}<br>
+          Team: ${teamName}<br>
+          Actor: ${actor}
+        </div>
       </div>
-      <div>
-        Round: ${round}<br>
-        Team: ${teamName}<br>
-        Actor: ${actor}
-      </div>
-    </div>`;
-    toggle.querySelector('.toggle-button').addEventListener('click', e => {
+      <div id='next'></div>
+      <div id='prev'></div>
+      <div id='cards'></div>
+    </div>
+    `;
+    tag.querySelector('.toggle-button').addEventListener('click', e => {
       this.cardSize = this.cardSize == 'small' ? 'big' : 'small';
       this.render(battle);
-    })
-    shadow.appendChild(style);
-    shadow.appendChild(toggle);
-    battle.monsterCards.forEach(c => {
-      c.state = this.cardSize;
-      c.render(shadow)
     });
+    tag.querySelector('#next').addEventListener('click', e => {
+      this.scrollIndex = Math.min(this.battle.monsterCards.length - 3, this.scrollIndex + 1);
+      this.render(battle);
+    })
+    tag.querySelector('#prev').addEventListener('click', e => {
+      this.scrollIndex = Math.max(-1, this.scrollIndex - 1);
+      this.render(battle);
+    })
+    battle.monsterCards.forEach((c, i) => {
+      if(i <= this.scrollIndex) return;
+      c.state = this.cardSize;
+      c.render(tag.querySelector('#cards'));
+    });
+    inner.appendChild(tag);
   }
 }
 
@@ -2085,18 +2147,27 @@ class Battle {
   }
 
   createMonsterCardContainer() {
-    var c = document.createElement('div');
-    c.id = 'monster-cards';
-    c.style.display = 'inlin-block';
-    c.style.left = '50%';
-    c.style.transform = 'translateX(-50%)';
-    c.style.backgroundImage = `url(sheet_of_old_paper_horizontal.png)`;
-    c.style.border = '5px solid rgba(0,0,0,0.2)';
-    c.style.outline = '1px solid rgba(0,0,0,0.2)';
-    c.style.outlineOffset = "-4px";
-    c.style.borderRadius = '3px';
-    c.attachShadow({mode: 'open'});
-    document.body.appendChild(c);
+    return this.tr.init();
+    let c = new Component();
+    c.addInner({id: 'monster-cards'});
+    let style = html`<style>
+      #monster-cards {
+        display: inline-block;
+        left: 0px;
+        left: 0px;
+        transform: translateX(-50%);
+        background-image: url(sheet_of_old_paper_horizontal.png);
+        border: 5px solid rgba(0,0,0,0.2);
+        outline: 1px solid rgba(0,0,0,0.2);
+        outline-offset: -4px;
+        border-radius: 3px;
+      }
+
+      ${MonsterCard.style}
+    </style>`;
+    c.addStyle(style);
+
+    this.container.appendChild(c.tags.outer);
   }
 
   showMonsterCards() {

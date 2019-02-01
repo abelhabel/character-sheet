@@ -30,12 +30,12 @@ function placeUnits(arenaTpl, team, side, viewer) {
   return new Promise((resolve, reject) => {
     let arena = new Arena(arenaTpl, tw, th);
     let canvas = arena.render();
-    viewer.container.appendChild(canvas);
+    viewer.append(canvas);
     let up = new UnitPlacement(arena, team, side);
     up.initPos();
 
     up.onDone = () => {
-      viewer.container.removeChild(canvas);
+      viewer.remove(canvas);
       resolve(team);
     };
     up.render(document.body);
@@ -87,10 +87,10 @@ gameModes.humanVSAI = function(lobby, viewer) {
     var generator = createRNG();
     viewer.showTeamSelect();
     var onDone = (team) => {
-      viewer.hideTeamSelect();
-
+      viewer.showUnitPlacement();
       placeUnits(arenas[1], team, 'left', viewer)
       .then(team => {
+        viewer.showBattle();
         var battle = new Battle(team, aiteam, tw, th, viewer.container);
         battle.team2.forEach(m => m.addAI(aiLevel));
         battle.onGameEnd = (o) => {
@@ -139,23 +139,25 @@ gameModes.AIVSAI = function(lobby, viewer) {
 };
 
 gameModes.localMultiplayer = function(lobby, viewer) {
+  console.log('localMultiplayer', viewer)
   lobby.on('local game', (game) => {
+    console.log('localMultiplayer')
     var generator = createRNG();
     viewer.showTeamSelect();
     var onDone = (team1, team2) => {
       console.log('selected teams')
-      viewer.hideTeamSelect();
+      viewer.showUnitPlacement();
       placeUnits(arenas[1], team1, 'left', viewer)
       .then(team1 => {
         return placeUnits(arenas[1], team2, 'right', viewer)
         .then(team2 => {
+          viewer.showBattle();
           var battle = new Battle(team1, team2, tw, th, viewer.container);
           battle.onGameEnd = (o) => {
             o.results.winningTeam(o.winningTeam);
             let report = o.results.report(() => {
               battle.destroy();
-              viewer.reset();
-              lobby.show();
+              viewer.showLobby();
             });
             document.body.appendChild(report);
           };
@@ -165,7 +167,7 @@ gameModes.localMultiplayer = function(lobby, viewer) {
         })
       });
     }
-    var teamSelect = new TeamSelect(monsters, viewer.selectContainer, tw, th, cash, 8, ['team1', 'team2'], onDone, viewer.backToLobby)
+    var teamSelect = new TeamSelect(monsters, viewer.selectContainer, tw, th, cash, 8, ['team1', 'team2'], onDone, viewer.showLobby.bind(viewer))
 
     teamSelect.render();
   });

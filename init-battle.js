@@ -123,75 +123,21 @@ Module.onLoad(['DungeonCrawl_ProjectUtumnoTileset.png', 'Hell2.jpg',
 'monsters.js', 'abilities.js', 'terrains.js', 'arenas.js', 'icons.js', 'animations.js', 'teams.js', 'elements.js',
 'special-effects.js','FixedList.js', 'Logger.js', 'Rand.js', 'Canvas.js', 'Sprite.js', 'CompositeSprite.js', 'AbilityEffect.js', 'Animation.js',
 'PositionList2d.js', 'pathfinding.js',  'Ability.js', 'AI.js', 'Monster.js', 'Terrain.js', 'Menu.js', 'BattleMenu.js',
-'Arena.js', 'MonsterCard.js', 'TeamViewer.js', 'Team.js', 'TeamSelect.js', 'UnitPlacement.js', 'BattleResult.js', 'Match.js', 'Lobby.js', 'Battle.js',
-'game-modes.js' ], () => {
+'Arena.js', 'MonsterCard.js', 'TeamViewer.js', 'Team.js', 'TeamSelect.js', 'UnitPlacement.js', 'BattleResult.js', 'Match.js',
+'Component.js', 'View.js', 'Lobby.js', 'Battle.js', 'GameUI.js',
+'game-modes.js', 'lobby-channels-client.js' ], () => {
+  const GameUI = require('GameUI.js');
   const aiTeams = require('teams.js');
   const Lobby = require('Lobby.js');
   const lobby = new Lobby();
+  const channels = require('lobby-channels-client.js');
   window.lobby = lobby;
-  lobby.render();
+  // lobby.render();
 
-  socket.on('user entered', (user) => {
-    console.log('user enters', user)
-    lobby.didEnter(user);
-  });
-
-  socket.on('token', data => {
-    lobby.setToken(data);
-  })
-
-  socket.on('user left', (user) => {
-    console.log('user left', user)
-    lobby.didLeave(user);
-  })
-
-  socket.on('user list', users => {
-    lobby.addUsers(users);
-  })
-
-  socket.on('game created', game => {
-    lobby.gameCreated(game);
-  })
-
-  socket.on('game joined', game => {
-    lobby.didJoinGame(game);
-  })
-
-  socket.on('game stopped', game => {
-    lobby.didStopGame(game);
-  })
-
-  socket.on('game started', game => {
-    lobby.gameDidStart(game);
-  })
-
-  socket.on('spectate confirmed', game => {
-    lobby.startSpectate(game);
-  })
-
-  socket.on('game ready', game => {
-    // when all teams have been selected
-    lobby.gameIsReady(game);
-  })
-
-  socket.on('game list', games => {
-    lobby.addGames(games);
-  })
-  socket.on('game updated', game => {
-    lobby.updateGame(game);
-  })
-
-  socket.on('team selected', game => {
-    lobby.teamSelected(game);
-  })
-
-  socket.on('game continued', game => {
-    lobby.gameContinued(game);
-  })
-
-  socket.on('battle action confirmed', data => {
-    lobby.confirmBattleAction(data);
-  })
+  const gameui = new GameUI();
+  channels(gameui.lobby);
+  gameui.render();
+  window.gameui = gameui;
   const Rand = require('Rand.js');
   const PL = require('PositionList2d.js');
   const monsters = require('monsters.js');
@@ -207,9 +153,6 @@ Module.onLoad(['DungeonCrawl_ProjectUtumnoTileset.png', 'Hell2.jpg',
   var style = document.createElement('style');
   style.innerHTML = MonsterCard.style;
   document.head.appendChild(style);
-  var team1 = [];
-  var team2 = [];
-  var cash = 600;
 
   var selectContainer = document.createElement('div');
   selectContainer.style.position = 'absolute';
@@ -220,7 +163,7 @@ Module.onLoad(['DungeonCrawl_ProjectUtumnoTileset.png', 'Hell2.jpg',
   selectContainer.style.backgroundColor = 'darkslategray';
   selectContainer.style.zIndex = 10;
   selectContainer.style.textAlign = 'center';
-  document.body.appendChild(selectContainer);
+  // document.body.appendChild(selectContainer);
 
   // team2.forEach(a => a.ai = true);
   var w = h = 12;
@@ -248,7 +191,7 @@ Module.onLoad(['DungeonCrawl_ProjectUtumnoTileset.png', 'Hell2.jpg',
     transform: 'translateX(-50%)',
 
   })
-  document.body.appendChild(container);
+  // document.body.appendChild(container);
   const waitingRoom = html`<div
     style='
       position: relative;
@@ -261,7 +204,7 @@ Module.onLoad(['DungeonCrawl_ProjectUtumnoTileset.png', 'Hell2.jpg',
   >
     Waiting for the other player to pick a team...
   </div>`;
-  document.body.appendChild(waitingRoom);
+  // document.body.appendChild(waitingRoom);
   const viewer = {
     selectContainer,
     container,
@@ -303,11 +246,11 @@ Module.onLoad(['DungeonCrawl_ProjectUtumnoTileset.png', 'Hell2.jpg',
   }
 
   const gameModes = require('game-modes.js');
-  gameModes.humanVSAI(lobby, viewer);
-  gameModes.AIVSAI(lobby, viewer);
-  gameModes.localMultiplayer(lobby, viewer);
-  gameModes.spectate(lobby, viewer);
-  gameModes.liveMultiplayer(lobby, viewer);
-  gameModes.playByPost(lobby, viewer);
-  gameModes.startMatch(lobby, viewer);
+  gameModes.humanVSAI(gameui.lobby, gameui);
+  gameModes.AIVSAI(gameui.lobby, gameui);
+  gameModes.localMultiplayer(gameui.lobby, gameui);
+  gameModes.spectate(gameui.lobby, gameui);
+  gameModes.liveMultiplayer(gameui.lobby, gameui);
+  gameModes.playByPost(gameui.lobby, gameui);
+  gameModes.startMatch(gameui.lobby, gameui);
 })

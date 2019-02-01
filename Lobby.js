@@ -3,6 +3,7 @@ const Sprite = require('Sprite.js');
 const Menu = require('Menu.js');
 const TeamViewer = require('TeamViewer.js');
 const Match = require('Match.js');
+const Component = require('Component.js');
 class User {
   constructor(name, id, activeGames, wins, losses) {
     this.name = name;
@@ -85,13 +86,13 @@ class Game {
   }
 }
 
-class Lobby {
+class Lobby extends Component {
   constructor() {
+    super();
     this.localUser = null;
     this.localUserName = localStorage.localUserName || '';
     this.users = [];
     this.games = [];
-    this.tags = {};
     this.channels = {
       'user entered': 'didEnter'
     };
@@ -299,8 +300,8 @@ class Lobby {
   createPlayByPostGame(user) {
     socket.emit('create play by post game', this.localUser);
   }
+
   createLocalGame() {
-    this.hide();
     this.trigger('local game');
   }
 
@@ -572,17 +573,17 @@ class Lobby {
     c.appendChild(users);
     c.appendChild(games);
 
-    let outer = document.createElement('div');
-    let shadow = outer.attachShadow({mode: 'open'});
+    let outer = this.tags.outer;
+    let shadow = this.shadow;
     let style = html`<style>
       * {
         box-sizing: border-box;
       }
       #lobby {
-        position: fixed;
+        position: absolute;
         z-index: 1000;
-        width: 100vw;
-        height: 100vh;
+        width: 100%;
+        height: 100%;
         background-color: rgba(0,0,0,0.5);
         background-image: url(sheet_of_old_paper_horizontal.png);
         background-size: contain;
@@ -630,8 +631,8 @@ class Lobby {
     shadow.appendChild(style);
     shadow.appendChild(c);
 
-    document.body.appendChild(outer);
-
+    // document.body.appendChild(outer);
+    this.tags.outer = outer;
     this.tags.container = c;
     this.tags.users = users;
     this.tags.games = games;

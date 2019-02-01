@@ -187,10 +187,6 @@ class MonsterCard {
 
   static get style() {
     return `
-    #monster-cards {
-      text-align: center;
-      position: relative;
-    }
     .open-cs {
       position: absolute;
       bottom: -10px;

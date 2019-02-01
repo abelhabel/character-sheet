@@ -47,6 +47,7 @@ class Logger {
     Object.assign(this.container.style, {
       position: 'fixed',
       width: '600px',
+      maxWidth: '39%',
       height: '120px',
       border: '1px solid black',
       bottom: '0px',
