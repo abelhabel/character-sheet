@@ -17,12 +17,32 @@ function render(body) {
           margin: auto;
           margin-bottom: 20px;
         }
+        header {
+          background-color: cornflowerblue;
+
+        }
+        article header {
+          background-color: transparent;
+
+        }
+        header a {
+          float: right;
+        }
+        article header a {
+          float: none;
+        }
         footer {
           font-style: italic;
         }
       </style>
     </head>
     <body>
+      <header>
+        <h2>
+          Fangalia blog
+          <a href='/battle.html'>Play the game</a>
+        </h2>
+      </header>
       ${body}
     </body>
   </html>`

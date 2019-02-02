@@ -404,10 +404,10 @@ class Match {
     let team2 = this.team2.render();
     let settings = this.settings.render();
     let startGame = this.controls.render();
+    outer.appendChild(settings);
     outer.appendChild(arena);
     outer.appendChild(team1);
     outer.appendChild(team2);
-    outer.appendChild(settings);
     outer.appendChild(startGame);
     this.tag = outer;
     this.gameui.append(outer);
