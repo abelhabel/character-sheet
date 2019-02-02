@@ -107,7 +107,6 @@ class PositionList2d {
       let t = this.get(x, y);
       targets.push({item: t, x:x, y: y});
     }
-    console.log('in line', x1, y1, x2, y2, l, targets)
     return targets;
   }
 

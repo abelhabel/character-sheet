@@ -1,10 +1,12 @@
 class Component {
-  constructor() {
+  constructor(shadow) {
     this.tags = {
       outer: html`<div class='component'></div>`,
       inner: null
     };
-    this.tags.outer.attachShadow({mode: 'open'});
+    if(shadow) {
+      this.tags.outer.attachShadow({mode: 'open'});
+    }
   }
 
   get inner() {
@@ -25,8 +27,15 @@ class Component {
     this.shadow.insertBefore(style, this.shadow.firstElementChild);
   }
 
+  clear() {
+    let s = this.shadow;
+    while (s.firstChild) {
+      s.removeChild(s.firstChild);
+    }
+  }
+
   get shadow() {
-    return this.tags.outer.shadowRoot;
+    return this.tags.outer.shadowRoot || this.tags.outer;
   }
 }
 

@@ -8,6 +8,10 @@ class View {
     return this.item.tags.outer;
   }
 
+  clear() {
+    this.item.clear();
+  }
+
 }
 
 module.exports = View;

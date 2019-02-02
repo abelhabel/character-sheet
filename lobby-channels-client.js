@@ -1,6 +1,5 @@
 module.exports = function(lobby) {
   socket.on('user entered', (user) => {
-    console.log('user enters', user)
     lobby.didEnter(user);
   });
 
@@ -9,7 +8,6 @@ module.exports = function(lobby) {
   })
 
   socket.on('user left', (user) => {
-    console.log('user left', user)
     lobby.didLeave(user);
   })
 

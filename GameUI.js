@@ -4,28 +4,14 @@ const View = require('View.js');
 const Component = require('Component.js');
 const Sprite = require('Sprite.js');
 const MonsterCard = require('MonsterCard.js');
+const Match = require('Match.js');
 const icons = require('icons.js');
 const teamSelect = new Component();
 const match = new Component();
 const battle = new Component();
 const unitPlacement = new Component();
 const waitingRoom = new Component();
-waitingRoom.shadow.appendChild(html`<div>Waiting for other player to pick team...</div>`);
-teamSelect.addStyle(html`<style>${MonsterCard.style}</style>`);
-match.addStyle(html`<style>
-  #match {
-    background-image: url(sheet_of_old_paper_horizontal.png);
-    padding: 10px;
-    border-radius:10px;
-    display: inline-block;
-    left: 50%;
-    top:50%;
-    transform:translate(-50%,-50%);
-    position: absolute;
-    z-index: 4000;
-  }
-</style`);
-// teamSelect.shadow.appendChild(html`<div>TEAM SELECT</div>`);
+const teamView = new Component();
 class GameUI extends Component {
   style() {
     return html`<style>
@@ -38,18 +24,31 @@ class GameUI extends Component {
         height: 100vh;
         overflow: hidden;
         top: 0px;
-        height: 0px;
+        left: 0px;
       }
       .gameui-inner {
         position: absolute;
         width: 100%;
         height: 100%;
       }
+      #board-damage-preview {
+        position: absolute;
+        display: inline-block;
+        padding: 4px;
+        background-image: url(sheet_of_old_paper.png);
+        background-repeat: no-repeat;
+        overflow: hidden;
+        border-radius: 2px;
+        z-index: 1000;
+        box-shadow: 0px 0px 5px 1px rgba(0,0,0,0.75);
+      }
+      ${MonsterCard.style}
     </style>`;
   }
 
   constructor() {
-    super();
+    super(true);
+    this.addStyle(Match.style);
     this.id = ++ID;
     this.lobby = new Lobby(this);
     this.lobby.render();
@@ -60,6 +59,7 @@ class GameUI extends Component {
       new View('battle', battle),
       new View('unit placement', unitPlacement),
       new View('waiting room', waitingRoom),
+      new View('team view', teamView),
     ];
     this.inView = null;
     this.cursor = new Sprite(icons.find(i => i.bio.name == 'Ability Cursor').bio.sprite);
@@ -98,11 +98,11 @@ class GameUI extends Component {
   }
 
   get selectContainer() {
-    return this.views[1].tag.shadowRoot;
+    return this.views[1].tag;
   }
 
   get container() {
-    return this.inView.tag.shadowRoot;
+    return this.inView.tag;
   }
 
   append(tag) {
@@ -117,18 +117,22 @@ class GameUI extends Component {
     }
   }
 
-  show(view) {
-    this.inView = this.views.find(v => v.name == view);
+  show(name) {
+    this.inView = this.views.find(v => v.name == name);
     this.update();
+  }
+
+  clear(name) {
+    let view = this.views.find(v => v.name == name);
+    if(!view) return;
+    view.clear();
   }
 
   update() {
     if(!this.inView) {
       this.inView = this.views[0];
     }
-    console.log('update game ui', this.inView.name)
     this.tags.inner.innerHTML = '';
-    console.log(this.inView)
     this.tags.inner.appendChild(this.inView.tag);
   }
 

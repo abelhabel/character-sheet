@@ -64,7 +64,7 @@ class TeamViewer {
       });
       c.appendChild(d);
     })
-    c.querySelector('#close-team-select').addEventListener('click', e => container.removeChild(o));
+    c.querySelector('#close-team-select').addEventListener('click', e => this.trigger('close'));
     container.appendChild(o);
 
   }

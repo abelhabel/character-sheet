@@ -113,26 +113,29 @@ class TeamSection extends MatchSection {
   }
 
   onClose() {
-    let ts = document.body.querySelector('#team-select-container');
-    document.body.removeChild(ts);
-    this.match.show();
+    this.match.gameui.showMatch();
   }
 
   openTeamSelect() {
-    this.match.hide();
-    let container = html`<div id='team-select-container'
-    style='position: absolute;
-    left: 0px;
-    top: 0px;
-    z-index: 10;
-    width: 100%;
-    text-align: center;
-    background-color: #2d5f75;'
-    ></div>`;
+
+    this.match.gameui.showTeamSelect();
+
+    let container = html`<div id='team-select'></div>`;
     let cash = Number(this.match.settings.settings.cash);
     let max = Number(this.match.settings.settings.maxMonsters)
-    let ts = new TeamSelect(monsters, container, 42, 42, cash, max, ['team1'], (t) => this.onDone(t), () => this.onClose());
-    document.body.appendChild(container);
+    let ts = new TeamSelect(monsters, container, 42, 42, cash, max, ['team1'],
+      (t) => {
+        this.team = t;
+        this.updateTeam();
+        this.match.gameui.remove(container);
+        this.match.gameui.showMatch();
+      },
+      () => {
+        this.match.gameui.remove(container);
+        this.match.gameui.showMatch();
+      }
+    );
+    this.match.gameui.append(container);
   }
 
   updateTeam() {
@@ -274,7 +277,8 @@ class SettingsSection extends MatchSection {
 }
 
 class Match {
-  constructor(onDone, onCancel) {
+  constructor(gameui, onDone, onCancel) {
+    this.gameui = gameui;
     this.onDone = onDone;
     this.onCancel = onCancel;
     this.mode = 'standard'; //standard, portal mayhem
@@ -287,6 +291,17 @@ class Match {
 
   static get style() {
     return html`<style>
+      #match {
+        background-image: url(sheet_of_old_paper_horizontal.png);
+        padding: 10px;
+        border-radius:10px;
+        display: inline-block;
+        left: 50%;
+        top:50%;
+        transform:translate(-50%,-50%);
+        position: absolute;
+        z-index: 4000;
+      }
       * {
         box-sizing: border-box;
       }
@@ -345,8 +360,11 @@ class Match {
         max-height: 100%;
         max-width: 100%;
       }
+      .arena-select img {
+        margin: 2px;
+      }
       .arena-select img:hover {
-        border: 2px solid white;
+        outline: 2px solid white;
       }
       .section-name {
         font-size: 24px;
@@ -381,20 +399,18 @@ class Match {
 
   render(container) {
     let outer = html`<div id='match'></div>`;
-    let shadow = outer.attachShadow({mode: 'open'});
     let arena = this.arena.render();
     let team1 = this.team1.render();
     let team2 = this.team2.render();
     let settings = this.settings.render();
     let startGame = this.controls.render();
-    shadow.appendChild(Match.style);
-    shadow.appendChild(arena);
-    shadow.appendChild(team1);
-    shadow.appendChild(team2);
-    shadow.appendChild(settings);
-    shadow.appendChild(startGame);
+    outer.appendChild(arena);
+    outer.appendChild(team1);
+    outer.appendChild(team2);
+    outer.appendChild(settings);
+    outer.appendChild(startGame);
     this.tag = outer;
-    container.appendChild(outer);
+    this.gameui.append(outer);
   }
 
 }

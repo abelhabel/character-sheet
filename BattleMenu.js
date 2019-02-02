@@ -41,7 +41,7 @@ class BattleMenu {
       let canvas = a.canvas.clone();
       canvas.addEventListener('click', e => this.selectAbility(a, canvas));
       if(a == a.owner.selectedAbility) {
-        canvas.style.border = '1px solid black';
+        canvas.style.outline = '3px solid #45692b';
       } else {
         canvas.style.border = 'none';
       }

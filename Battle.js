@@ -461,7 +461,7 @@ class Battle {
       m.team2.team,
       42,
       42,
-      m.container,
+      m.gameui.container,
       m.arena.arena,
       m.settings.settings.mode
     );
@@ -611,10 +611,6 @@ class Battle {
   }
 
   destroy() {
-    let mc = document.getElementById('monster-cards');
-    mc && document.body.removeChild(mc);
-    let oa = document.getElementById('outer-abilities');
-    oa && document.body.removeChild(oa);
     let keys = Object.keys(this);
     keys.forEach(key => delete this[key]);
   }
@@ -647,37 +643,22 @@ class Battle {
   }
 
   removeDamagePreview() {
-    let c = document.getElementById('battle-menu');
-    let d = document.getElementById('board-damage-preview')
+    let c = this.container.querySelector('#battle-menu');
+    let d = this.container.querySelector('#board-damage-preview')
     if(d) {
       c.removeChild(d);
     }
   }
 
   drawDamagePreview(a, b, ability, p) {
-    let c = document.getElementById('battle-menu');
-    let d = document.getElementById('board-damage-preview')
+    let c = this.container.querySelector('#battle-menu');
+    let d = this.container.querySelector('#board-damage-preview')
     if(d) {
       c.removeChild(d);
     }
     let min = ability.stats.source == 'attack' ? this.attackRollMin(a, b, ability) : this.spellRollMin(a, b, ability);
     let max = ability.stats.source == 'attack' ? this.attackRollMax(a, b, ability) : this.spellRollMax(a, b, ability);
-    let tag = html`<div id='board-damage-preview' style='
-      position: absolute;
-      top: ${p.y}px;
-      left: ${p.x}px;
-      display: inline-block;
-      padding: 4px;
-      background-image: url(sheet_of_old_paper.png);
-      background-repeat: no-repeat;
-      overflow: hidden;
-      border-radius: 2px;
-      z-index: 1000;
-      box-shadow: 0px 0px 5px 1px rgba(0,0,0,0.75);
-      '
-    >
-      ${min} - ${max}
-    </div>`;
+    let tag = html`<div id='board-damage-preview' style='top: ${p.y}px; left: ${p.x}px;'>${min} - ${max}</div>`;
     c.appendChild(tag);
     return tag;
   }
@@ -736,31 +717,31 @@ class Battle {
             console.log('action error', e)
           });
         case '1':
-          this.battleMenu.selectAbility(this.currentActor.activeAbilities[0]);
+          this.battleMenu.selectAbility(this.currentActor.actives[0]);
           return
         case '2':
-          this.battleMenu.selectAbility(this.currentActor.activeAbilities[1]);
+          this.battleMenu.selectAbility(this.currentActor.actives[1]);
           return
         case '3':
-          this.battleMenu.selectAbility(this.currentActor.activeAbilities[2]);
+          this.battleMenu.selectAbility(this.currentActor.actives[2]);
           return
         case '4':
-          this.battleMenu.selectAbility(this.currentActor.activeAbilities[3]);
+          this.battleMenu.selectAbility(this.currentActor.actives[3]);
           return
         case '5':
-          this.battleMenu.selectAbility(this.currentActor.activeAbilities[4]);
+          this.battleMenu.selectAbility(this.currentActor.actives[4]);
           return
         case '6':
-          this.battleMenu.selectAbility(this.currentActor.activeAbilities[5]);
+          this.battleMenu.selectAbility(this.currentActor.actives[5]);
           return
         case '7':
-          this.battleMenu.selectAbility(this.currentActor.activeAbilities[6]);
+          this.battleMenu.selectAbility(this.currentActor.actives[6]);
           return
         case '8':
-          this.battleMenu.selectAbility(this.currentActor.activeAbilities[7]);
+          this.battleMenu.selectAbility(this.currentActor.actives[7]);
           return
         case '9':
-          this.battleMenu.selectAbility(this.currentActor.activeAbilities[8]);
+          this.battleMenu.selectAbility(this.currentActor.actives[8]);
           return
         default:
           return;
@@ -783,39 +764,6 @@ class Battle {
         }
 
       })
-    })
-
-    var monsterCSPreview = null;
-
-    this.inputCanvas.addEventListener('mousedown', e => {
-      if(e.button != 2) return;
-      let c = this.monsterCards.find(c => {
-        if(!c.cached) return;
-        if(c.item == this.grid.get(this.mouse.x, this.mouse.y)) {
-          return true;
-        }
-
-      })
-      if(!c) return;
-      monsterCSPreview = document.createElement('div');
-      Object.assign(monsterCSPreview.style, {
-        position: 'fixed',
-        width: '400px',
-        height: '400px',
-        backgroundColor: 'white',
-        zIndex: 30
-      });
-      monsterCSPreview.style.left = e.pageX + 'px';
-      monsterCSPreview.style.top = e.pageY + 'px';
-      monsterCSPreview.innerHTML = c.item.renderCS();
-      document.body.appendChild(monsterCSPreview);
-    })
-
-    this.inputCanvas.addEventListener('mouseup', e => {
-      if(e.button != 2) return;
-      if(!monsterCSPreview) return;
-      document.body.removeChild(monsterCSPreview);
-      monsterCSPreview = null;
     })
 
     this.inputCanvas.addEventListener('mousemove', (e) => {

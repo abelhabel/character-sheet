@@ -1,0 +1,3 @@
+Beasts
+Beasts are the fused souls of two other monsters, ie imp fused with seraphine.
+Beasts cannot cast blessings, spells and curses, but can trigger them when they attack.

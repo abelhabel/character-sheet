@@ -115,7 +115,7 @@ class TeamSelect  {
       this.container.appendChild(c);
       return card;
     });
-
+    console.log('new')
     this.render();
   }
 
@@ -140,6 +140,7 @@ class TeamSelect  {
     this.teamName.value = this.teamNames[i];
     this.monsters = [];
     this.spent = 0;
+    console.log('done')
     this.render();
   }
 
@@ -181,7 +182,7 @@ class TeamSelect  {
       this.spent -= c;
       this.monsters.splice(i, 1);
     }
-
+    console.log('sell')
     this.render();
   }
 
@@ -201,6 +202,7 @@ class TeamSelect  {
 
       }
       this.spent += cost * stacks;
+      console.log('buy')
       this.render();
     }
   }
@@ -235,10 +237,12 @@ class TeamSelect  {
   }
 
   render() {
+    console.log('render TeamSelect', this)
     var ct = this.picked.getContext('2d');
     ct.clearRect(0,0, 2000, this.th);
     this.monsters.forEach((m, i) => {
       var {sprite} = m.bio;
+      console.log('draw monster', m)
       ct.drawImage(m.canvas, this.tw * i, 0, this.tw, this.th);
       ct.font = '16px monospace';
       ct.fillStyle = 'black';

@@ -36,12 +36,10 @@ class Game {
   }
 
   static create(g) {
-    console.log('createGame', g)
     let game = new Game(g.owner, g.type, g.id, g.status, g.max, g.seed, g.actions, g.teams);
     if(g.users && g.users.length) {
       game.users = g.users.map(u => User.create(u));
     }
-    console.log('created game', game)
     return game;
   }
 
@@ -134,6 +132,13 @@ class Lobby extends Component {
     this.events[event].push(fn);
   }
 
+  off(event, fn) {
+    if(!this.events[event]) return;
+    let index = this.events[event].indexOf(fn);
+    if(!~index) return;
+    this.events[event].splice(index, 1);
+  }
+
   trigger(event) {
     if(!this.events[event]) return;
     this.events[event].forEach(fn => fn.apply(null, Array.from(arguments).splice(1)));
@@ -159,20 +164,17 @@ class Lobby extends Component {
     let game = this.games.find(g => g.id == data.id);
     if(!game) return;
     game.teams = data.teams;
-    console.log('team selected and game updated')
   }
 
   gameIsReady(data) {
     let game = this.games.find(g => g.id == data.id);
     if(!game) return;
-    console.log('gameIsReady gameIsReady');
     game.start();
     this.update();
     this.trigger('game ready', game);
   }
 
   gameDidStart(data) {
-    console.log('gameDidStart', data)
     let game = this.games.find(u => u.id == data.id);
     this.update();
     if(game.users.find(u => u.id == this.localUser.id)) {
@@ -189,7 +191,6 @@ class Lobby extends Component {
   }
 
   startSpectate(game) {
-    console.log('startSpectate')
     this.trigger('start spectate', game);
   }
 
@@ -212,13 +213,10 @@ class Lobby extends Component {
   }
 
   addGames(games) {
-    console.log('adding games', games)
     games.forEach(g => {
       let index = this.games.findIndex(g2 => g2.id == g.id);
-      console.log('index', index)
       if(~index) {
         this.games[index] = Game.create(g);
-        console.log('replacing existing game', this.games[index])
       } else {
         let game = Game.create(g);
         if(!g.users.length) {
@@ -238,7 +236,6 @@ class Lobby extends Component {
   didEnter(data) {
     let user = User.create(data);
     this.users.push(user);
-    console.log('user did enter', user, this);
     if(user.name == this.localUserName) {
       this.localUser = user;
     }
@@ -283,7 +280,6 @@ class Lobby extends Component {
   }
 
   gameCreated(data) {
-    console.log('gameCreated', data)
     let user = this.users.find(u => u.id == data.owner.id);
     let game = Game.create(data);
     game.owner = user;
@@ -307,49 +303,22 @@ class Lobby extends Component {
   }
 
   createLocalAIVSAIGame(level = 1) {
-    let v1 = new TeamViewer('Pick Team 1');
-    let v2 = new TeamViewer();
-    v1.render(this.tags.container);
-    v1.on('done', team1 => {
-      v2.title = `<div>${team1.name} Picked</div>Now, Pick Team 2`;
-      v2.render(this.tags.container);
-      v2.on('done', team2 => {
-        this.hide();
-        this.trigger('ai vs ai game', team1, team2, level);
-      });
-    });
+    this.trigger('ai vs ai game', level);
   }
 
   createLocalAIGame(level = 1) {
-    let v1 = new TeamViewer('Pick team to play against');
-    v1.render(this.tags.container);
-    v1.on('done', team1 => {
-      this.hide();
-      this.trigger('human vs ai game', team1, level);
-    });
+    this.trigger('human vs ai game', level);
   }
 
   createMatch() {
-    let match = new Match(() => {
-      console.log('created match', match);
-      this.gameui.remove(match.tag);
-      this.trigger('start match', match);
-    }, () => {
-      this.gameui.remove(match.tag);
-      this.gameui.showLobby();
-    });
-    this.gameui.showMatch();
-    match.render(this.gameui.container);
-
+    this.trigger('start match');
   }
 
   didJoinGame(data) {
-    console.log('didJoinGame', data)
     let game = this.games.find(g => g.id == data.game.id);
     let user = this.users.find(u => u.id == data.user.id);
     game.join(user);
     if(game.full && game.type == 'play by post' && game.users.find(u => u.id == this.localUser.id)) {
-      console.log('game full');
       this.trigger('play by post', game);
     }
     this.update();
@@ -393,7 +362,6 @@ class Lobby extends Component {
 
   renderGame(game) {
     if(!this.localUser) return '';
-    console.log('render game', game)
     let c = document.createElement('div');
     c.className = 'game';
     if(game.type == 'play by post') {
