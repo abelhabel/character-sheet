@@ -5,13 +5,15 @@ const Component = require('Component.js');
 const Sprite = require('Sprite.js');
 const MonsterCard = require('MonsterCard.js');
 const Match = require('Match.js');
+const Gauntlet = require('Gauntlet.js');
 const icons = require('icons.js');
-const teamSelect = new Component();
-const match = new Component();
-const battle = new Component();
-const unitPlacement = new Component();
-const waitingRoom = new Component();
-const teamView = new Component();
+const teamSelect = new Component(false, 'team-select');
+const match = new Component(false, 'match');
+const battle = new Component(false, 'battle');
+const unitPlacement = new Component(false, 'unit-placement');
+const waitingRoom = new Component(false, 'waiting-room');
+const teamView = new Component(false, 'team-view');
+const gauntlet = new Component(false, 'gauntlet');
 class GameUI extends Component {
   style() {
     return html`<style>
@@ -31,6 +33,44 @@ class GameUI extends Component {
         width: 100%;
         height: 100%;
       }
+
+      .component.team-select, .component.battle {
+        background: url(Hell2.jpg);
+        background-size: cover;
+        background-repeat: no-repeat;
+        width: 100%;
+        height: 100%;
+      }
+
+      .component.battle #battle-canvas {
+        position: absolute;
+        left: 50%;
+        top: 50px;
+        display: block;
+        transform: translateX(-50%);
+        width: 630px;
+        height: 504px;
+      }
+
+      .component.battle #battle-canvas canvas {
+        position: absolute;
+        top: 0px;
+        display: block;
+      }
+
+      .component.battle #battle-menu {
+        position: absolute;
+      }
+
+      .component.battle #battle-menu div {
+        display: inline-block;
+      }
+
+      .component.battle #battle-menu canvas {
+        position: static;
+        display: inline-block;
+      }
+
       #board-damage-preview {
         position: absolute;
         display: inline-block;
@@ -49,6 +89,7 @@ class GameUI extends Component {
   constructor() {
     super(true);
     this.addStyle(Match.style);
+    this.addStyle(Gauntlet.style);
     this.id = ++ID;
     this.lobby = new Lobby(this);
     this.lobby.render();
@@ -60,6 +101,7 @@ class GameUI extends Component {
       new View('unit placement', unitPlacement),
       new View('waiting room', waitingRoom),
       new View('team view', teamView),
+      new View('gauntlet', gauntlet),
     ];
     this.inView = null;
     this.cursor = new Sprite(icons.find(i => i.bio.name == 'Ability Cursor').bio.sprite);

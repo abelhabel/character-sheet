@@ -19,6 +19,7 @@ const arenas = require('arenas.js');
 const icons = require('icons.js');
 const animations = require('animations.js');
 const elements = require('elements.js');
+const guid = require('guid.js');
 class TurnOrder extends Array {
   constructor() {
     super();
@@ -233,7 +234,7 @@ class R extends Array {
         border-radius: 3px;
         width: 60%;
         overflow: hidden;
-        height: 214px;
+        height: 235px;
       }
 
       .toggle-control {
@@ -324,15 +325,15 @@ class R extends Array {
       <div id='cards'></div>
     </div>
     `;
-    tag.querySelector('.toggle-button').addEventListener('click', e => {
+    this.battle.addDOMEvent(tag.querySelector('.toggle-button'), 'click', e => {
       this.cardSize = this.cardSize == 'small' ? 'big' : 'small';
       this.render(battle);
     });
-    tag.querySelector('#next').addEventListener('click', e => {
+    this.battle.addDOMEvent(tag.querySelector('#next'), 'click', e => {
       this.scrollIndex = Math.min(this.battle.monsterCards.length - 3, this.scrollIndex + 1);
       this.render(battle);
     })
-    tag.querySelector('#prev').addEventListener('click', e => {
+    this.battle.addDOMEvent(tag.querySelector('#prev'), 'click', e => {
       this.scrollIndex = Math.max(-1, this.scrollIndex - 1);
       this.render(battle);
     })
@@ -391,6 +392,7 @@ class Action {
 
 class Battle {
   constructor(team1, team2, tw, th, container, arena, mode) {
+    this.DOMEvents = [];
     this.container = container;
     this.mode = mode || 'standard';
     this.mouse = {
@@ -556,22 +558,9 @@ class Battle {
     let {w, h, tw, th} = this;
     var board = document.createElement('canvas');
     var effects = document.createElement('canvas');
-    var container = this.container;
-    board.style.position = effects.style.position = 'absolute';
-    board.style.left = effects.style.left = '0px';
-    board.style.top = effects.style.top = '0px';
+    var container = html`<section id='battle-canvas'></section>`;
     board.id = 'board';
     effects.id = 'effects';
-    Object.assign(board.style, {
-      display: 'block',
-      border: '1px solid green',
-      width: w * tw,
-      height: h * th,
-      left: '50%',
-      transform: 'translateX(-50%)',
-
-    });
-    board.style.copyTo(effects.style);
     board.style.zIndex = 1;
     effects.style.zIndex = 2;
     container.appendChild(effects);
@@ -585,32 +574,46 @@ class Battle {
     this.effects.height = this.h * this.th;
 
     this.animationCanvas = new Canvas(this.w * this.tw, this.h * this.th);
-    this.board.style.copyTo(this.animationCanvas.canvas.style);
     this.animationCanvas.canvas.style.zIndex = 4;
     this.animationCanvas.canvas.id = 'animation';
 
-    this.inputCanvas = document.createElement('canvas');
+    this.inputCanvas = board.clone();
     this.inputCanvas.id = 'input';
-    this.inputCanvas.width = this.board.width;
-    this.inputCanvas.height = this.board.height;
-    this.board.style.copyTo(this.inputCanvas.style);
     this.inputCanvas.style.zIndex = 100;
-    this.board.parentNode.appendChild(this.inputCanvas);
 
-    this.terrainCanvas = document.createElement('canvas');
+    this.terrainCanvas = board.clone();;
     this.terrainCanvas.id = 'terrain';
-    this.terrainCanvas.width = this.board.width;
-    this.terrainCanvas.height = this.board.height;
-    this.board.style.copyTo(this.terrainCanvas.style);
     this.terrainCanvas.style.zIndex = 0;
 
+    this.board.parentNode.appendChild(this.inputCanvas);
     this.board.parentNode.appendChild(this.animationCanvas.canvas);
     this.board.parentNode.insertBefore(this.terrainCanvas, this.board);
-
+    this.container.appendChild(container);
 
   }
 
+  addDOMEvent(tag, event, fn) {
+    let id = guid();
+    this.DOMEvents.push({id, tag, event, fn});
+    tag.addEventListener(event, fn);
+  }
+
+  removeDOMEvent(id) {
+    let index = this.DOMEvents.findIndex(item => item.id == id);
+    if(!~index) return;
+    let item = this.DOMEvents[index];
+    item.tag.removeEventListener(item.event, item.fn);
+    this.DOMEvents.splice(index, 1);
+  }
+
+  removeDOMEvents() {
+    Array.from(this.DOMEvents).forEach(item => {
+      this.removeDOMEvent(item.id);
+    })
+  }
+
   destroy() {
+    this.removeDOMEvents();
     let keys = Object.keys(this);
     keys.forEach(key => delete this[key]);
   }
@@ -669,7 +672,7 @@ class Battle {
     var attacked = false;
     var mp = 0;
     var actor = null;
-    this.inputCanvas.addEventListener('click', (e) => {
+    this.addDOMEvent(this.inputCanvas, 'click', (e) => {
       let x = Math.floor(e.offsetX / this.tw);
       let y = Math.floor(e.offsetY / this.th);
       let a = this.currentActor;
@@ -704,7 +707,7 @@ class Battle {
       }
     })
 
-    window.addEventListener('keyup', (e) => {
+    this.addDOMEvent(window, 'keyup', (e) => {
       switch(e.key) {
         case 'd':
           return this.addAction(new Action('defend'))
@@ -750,12 +753,12 @@ class Battle {
     var hoverx = 0;
     var hovery = 0;
     var currentPath = [];
-    this.inputCanvas.addEventListener('mouseout', (e) => {
+    this.addDOMEvent(this.inputCanvas, 'mouseout', (e) => {
       var c = this.effects.getContext('2d');
       c.clearRect(0, 0, this.w * this.tw, this.h * this.th);
     });
 
-    this.inputCanvas.addEventListener('contextmenu', e => {
+    this.addDOMEvent(this.inputCanvas, 'contextmenu', e => {
       e.preventDefault();
       this.monsterCards.forEach(c => {
         if(!c.cached) return;
@@ -766,7 +769,7 @@ class Battle {
       })
     })
 
-    this.inputCanvas.addEventListener('mousemove', (e) => {
+    this.addDOMEvent(this.inputCanvas, 'mousemove', (e) => {
       let a = this.currentActor;
       if(!a || a.ai) return;
       let x = Math.floor(e.offsetX / this.tw);
@@ -837,7 +840,7 @@ class Battle {
       '
     >
     </div>`;
-    window.addEventListener('keyup', e => {
+    this.addDOMEvent(window, 'keyup', e => {
       if(e.key != 'Escape') return;
       tag.style.display = 'none';
     });
@@ -861,12 +864,9 @@ class Battle {
     let container = html`<div></div>`;
     container.id = 'battle-menu';
     this.board.parentNode.appendChild(container);
-    this.board.style.copyTo(container.style);
     Object.assign(container.style, {
-      width: this.w * this.tw + 'px',
-      height: this.h * this.th + 'px'
+      top: this.h * this.th + 4 + 'px',
     });
-    Object.assign(outer.style, {position: 'relative', left: '100%'});
     container.appendChild(outer);
 
   }
@@ -1975,7 +1975,8 @@ class Battle {
     this.onGameEnd({
       winningTeam,
       monstersLeft: Array.from(this.tr),
-      results: this.br
+      results: this.br,
+      team: this.currentTeam
     });
   }
 
@@ -2071,14 +2072,14 @@ class Battle {
     var ox = 0;
     var oy = 0;
     var state = 'up';
-    container.addEventListener('mousedown', (e) => {
+    this.addDOMEvent(container, 'mousedown', (e) => {
       sx = e.screenX;
       sy = e.screenY;
       ox = e.offsetX;
       oy = e.offsetY;
       state = 'down';
     });
-    window.addEventListener('mousemove', (e) => {
+    this.addDOMEvent(window, 'mousemove', (e) => {
       if(e.target != container) return;
       if(state != 'down') return;
       var x = e.x;
@@ -2086,10 +2087,10 @@ class Battle {
       container.style.left = x - ox + 'px';
       container.style.top = y - oy + 'px';
     });
-    container.addEventListener('mouseup', (e) => {
+    this.addDOMEvent(container, 'mouseup', (e) => {
       state = 'up';
     });
-    window.addEventListener('mouseup', (e) => {
+    this.addDOMEvent(window, 'mouseup', (e) => {
       state = 'up';
     });
   }

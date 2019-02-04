@@ -7,8 +7,10 @@ const Arena = require('Arena.js');
 const UnitPlacement = require('UnitPlacement.js');
 const Team = require('Team.js');
 const Match = require('Match.js');
+const Gauntlet = require('Gauntlet.js');
 const arenas = require('arenas.js');
 const monsters = require('monsters.js');
+const matches = require('matches.js');
 const tw = 42;
 const th = 42;
 const cash = 600;
@@ -48,6 +50,121 @@ function placeUnits(arenaTpl, team, side, viewer) {
     })
     arena.drawObstacles();
   })
+}
+
+gameModes.gauntlet = function(lobby, viewer) {
+  lobby.on('gauntlet', gauntlet => {
+    viewer.show('gauntlet');
+    let completed = [];
+    gauntlet = new Gauntlet([
+      Match.create(matches.find(m => m.id == "3abc70b3-8069-2f04-6eb6-b9a815ecefd7")),
+      Match.create(matches.find(m => m.id == "f5b950dc-f752-aa87-ed6b-447b64639e00")),
+      Match.create(matches.find(m => m.id == "81ec0747-ea40-94d5-ebd7-17183a6d486c")),
+      Match.create(matches.find(m => m.id == "e6a4deb7-25f6-4010-8449-3a05c229d396")),
+      Match.create(matches.find(m => m.id == "e2999f4a-d5e3-cdc2-0e0f-4fd3a860d80d")),
+      Match.create(matches.find(m => m.id == "664d6ae7-cabd-78c2-d3eb-4de3684758bc")),
+      Match.create(matches.find(m => m.id == "fdba3714-ead7-1cb8-cb84-230ff621e203")),
+      Match.create(matches.find(m => m.id == "34b8fa41-651a-f67b-d458-86127c79f6e0")),
+      Match.create(matches.find(m => m.id == "b9f48a76-8c0e-087f-4598-50103e931bba")),
+    ]);
+    viewer.append(gauntlet.render());
+    gauntlet.on('done', match => {
+      console.log(match)
+      match.gameui = viewer;
+      viewer.show('unit placement');
+      createRNG();
+      let {mode, cash, time, maxMonster} = match.settings.settings;
+      let prep = Promise.resolve();
+      if(mode == 'standard') {
+        if(match.team1.actor == 'human') {
+          prep = prep.then(() => {
+            return placeUnits(match.arena.arena, match.team1.team, 'left', viewer)
+          });
+        }
+        if(match.team2.actor == 'human') {
+          prep = prep.then(() => {
+            return placeUnits(match.arena.arena, match.team2.team, 'right', viewer)
+          });
+        }
+      }
+      prep.then(() => {
+        viewer.clear('unit placement');
+        viewer.show('battle');
+        let battle = Battle.fromMatch(match);
+        battle.onGameEnd = (o) => {
+          console.log('match over', match, o)
+          o.results.winningTeam(o.winningTeam == 'team1' ? 'You' : 'AI');
+          if(o.team == match.team1.team) {
+            if(match.team1.actor == 'human') gauntlet.completeStage(match.id);
+
+          } else {
+            if(match.team2.actor == 'human') gauntlet.completeStage(match.id);
+          }
+          let report = o.results.report(() => {
+            battle.destroy();
+            gauntlet.clear();
+            viewer.clear('gauntlet');
+            viewer.show('gauntlet');
+            viewer.append(gauntlet.render());
+          });
+          viewer.append(report);
+        };
+        battle.start();
+        window.battle = battle;
+      });
+    }, () => {
+      viewer.clear('match');
+      viewer.showLobby();
+    });
+  })
+};
+
+gameModes.importMatch = function(lobby, viewer) {
+  lobby.on('import match', (m) => {
+    // let m = matches[1];
+    console.log('importing match', m)
+    let match = Match.create(m, viewer, () => {
+      viewer.clear('match');
+      console.log('created match', match);
+      viewer.show('unit placement');
+      createRNG();
+      let {mode, cash, time, maxMonster} = match.settings.settings;
+      let prep = Promise.resolve();
+      if(mode == 'standard') {
+        if(match.team1.actor == 'human') {
+          prep = prep.then(() => {
+            return placeUnits(match.arena.arena, match.team1.team, 'left', viewer)
+          });
+        }
+        if(match.team2.actor == 'human') {
+          prep = prep.then(() => {
+            return placeUnits(match.arena.arena, match.team2.team, 'right', viewer)
+          });
+        }
+      }
+      prep.then(() => {
+        viewer.clear('unit placement');
+        viewer.show('battle');
+        let battle = Battle.fromMatch(match);
+        battle.onGameEnd = (o) => {
+          o.results.winningTeam(o.winningTeam == 'team1' ? 'You' : 'AI');
+          let report = o.results.report(() => {
+            battle.destroy();
+            viewer.clear('battle');
+            viewer.show('lobby');
+          });
+          document.body.appendChild(report);
+        };
+        battle.start();
+        window.battle = battle;
+      });
+    }, () => {
+      viewer.clear('match');
+      viewer.showLobby();
+    });
+    viewer.show('match');
+    match.onDone(match);
+  });
 }
 
 gameModes.startMatch = function(lobby, viewer) {

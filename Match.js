@@ -1,6 +1,8 @@
 const arenas = require('arenas.js');
 const monsters = require('monsters.js');
+const guid = require('guid.js');
 const TeamSelect = require('TeamSelect.js');
+const Team = require('Team.js');
 class MatchSection {
   constructor(name, match) {
     this.name = name;
@@ -65,6 +67,16 @@ class ArenaSection extends MatchSection {
     this.tag = null;
   }
 
+  static create(match, arenaId) {
+    let a = new ArenaSection(match);
+    a.arena = arenas.find(a => a.id == arenaId);
+    return a;
+  }
+
+  import(arenaId) {
+    this.arena = arenas.find(a => a.id == arenaId);
+  }
+
   updateArena() {
     this.preview.src = this.arena.png;
   }
@@ -106,6 +118,18 @@ class TeamSection extends MatchSection {
     this.tag = null;
   }
 
+  static create(match, team) {
+    let t = new TeamSection(match);
+    t.actor = team.actor;
+    t.team = Team.create(team.team);
+    return t;
+  }
+
+  import(team) {
+    this.actor = team.actor;
+    this.team = Team.create(team.team);
+  }
+
   onDone(team) {
     this.team = team;
     this.onClose();
@@ -113,12 +137,12 @@ class TeamSection extends MatchSection {
   }
 
   onClose() {
-    this.match.gameui.showMatch();
+    this.match.gameui.show('match');
   }
 
   openTeamSelect() {
 
-    this.match.gameui.showTeamSelect();
+    this.match.gameui.show('team select');
 
     let container = html`<div id='team-select'></div>`;
     let cash = Number(this.match.settings.settings.cash);
@@ -128,11 +152,11 @@ class TeamSection extends MatchSection {
         this.team = t;
         this.updateTeam();
         this.match.gameui.remove(container);
-        this.match.gameui.showMatch();
+        this.match.gameui.show('match');
       },
       () => {
         this.match.gameui.remove(container);
-        this.match.gameui.showMatch();
+        this.match.gameui.show('match');
       }
     );
     this.match.gameui.append(container);
@@ -182,7 +206,7 @@ class ControlsSection extends MatchSection {
   onDone() {
     let {team1, team2} = this.match;
     if(team1.team && team1.team.units.length && team2.team && team2.team.units.length) {
-      return this.match.onDone();
+      return this.match.onDone(this.match);
     }
     this.tag.querySelector('.info').textContent = 'To start the game, you have to select monsters for both teams.';
   }
@@ -218,6 +242,16 @@ class SettingsSection extends MatchSection {
       maxMonsters: 8
     };
     this.tag = null;
+  }
+
+  static create(match, settings) {
+    let s = new SettingsSection(match);
+    Object.assign(s.settings, settings);
+    return s;
+  }
+
+  import(settings) {
+    Object.assign(this.settings, settings);
   }
 
   update(name, val) {
@@ -278,6 +312,7 @@ class SettingsSection extends MatchSection {
 
 class Match {
   constructor(gameui, onDone, onCancel) {
+    this.id = guid();
     this.gameui = gameui;
     this.onDone = onDone;
     this.onCancel = onCancel;
@@ -287,6 +322,16 @@ class Match {
     this.arena = new ArenaSection(this);
     this.settings = new SettingsSection(this);
     this.controls = new ControlsSection(this);
+  }
+
+  static create(match, gameui, onDone, onCancel) {
+    let m = new Match(gameui, onDone, onCancel);
+    m.id = match.id;
+    m.team1.import(match.teams[0]);
+    m.team2.import(match.teams[1]);
+    m.arena.import(match.arena);
+    m.settings.import(match.settings);
+    return m;
   }
 
   static get style() {
@@ -411,6 +456,10 @@ class Match {
     outer.appendChild(startGame);
     this.tag = outer;
     this.gameui.append(outer);
+  }
+
+  renderStage() {
+
   }
 
 }

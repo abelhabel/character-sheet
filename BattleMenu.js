@@ -39,7 +39,7 @@ class BattleMenu {
     this.tags.abilities.innerHTML = '';
     abilities.forEach((a, i) => {
       let canvas = a.canvas.clone();
-      canvas.addEventListener('click', e => this.selectAbility(a, canvas));
+      this.battle.addDOMEvent(canvas, 'click', e => this.selectAbility(a, canvas));
       if(a == a.owner.selectedAbility) {
         canvas.style.outline = '3px solid #45692b';
       } else {
@@ -57,7 +57,7 @@ class BattleMenu {
   }
 
   addToolTip(canvas, tip) {
-    canvas.addEventListener('mouseenter', e => {
+    this.battle.addDOMEvent(canvas, 'mouseenter', e => {
       let bb = canvas.getBoundingClientRect();
       this.toolTip = html`<div style='
         position: fixed;
@@ -78,10 +78,10 @@ class BattleMenu {
       </div>`;
       document.body.appendChild(this.toolTip);
     });
-    canvas.addEventListener('mouseout', e => {
+    this.battle.addDOMEvent(canvas, 'mouseout', e => {
       this.removeToolTip();
     })
-    canvas.addEventListener('mousedown', e => {
+    this.battle.addDOMEvent(canvas, 'mousedown', e => {
       this.removeToolTip();
     })
   }
@@ -89,34 +89,34 @@ class BattleMenu {
   render() {
     let ability = new Sprite(_ability.bio.sprite);
     this.addToolTip(ability.canvas, 'Character Sheet');
-    ability.canvas.addEventListener('click', () => {
+    this.battle.addDOMEvent(ability.canvas, 'click', () => {
       this.battle.toggleAbilityBook();
     });
     let defend = new Sprite(_defend.bio.sprite);
     this.addToolTip(defend.canvas, 'Defend');
-    defend.canvas.addEventListener('click', e => {
+    this.battle.addDOMEvent(defend.canvas, 'click', e => {
       let action = this.battle.createAction({type: 'defend'});
       this.battle.addAction(action);
     });
     let wait = new Sprite(_wait.bio.sprite);
     this.addToolTip(wait.canvas, 'Wait');
-    wait.canvas.addEventListener('click', e => {
+    this.battle.addDOMEvent(wait.canvas, 'click', e => {
       let action = this.battle.createAction({type: 'wait'});
       this.battle.addAction(action);
     });
     let surrender = new Sprite(_surrender.bio.sprite);
     this.addToolTip(surrender.canvas, 'Surrender');
-    surrender.canvas.addEventListener('click', e => {
+    this.battle.addDOMEvent(surrender.canvas, 'click', e => {
       let action = this.battle.createAction({type: 'surrender'});
       this.battle.addAction(action);
     });
     let cursor = new Sprite(_cursor.bio.sprite);
-    let top = html`<div style='cursor: url(${cursor.canvas.clone(24, 24).toPNG()}), auto'></div>`;
+    let top = html`<div></div>`;
     top.appendChild(ability.canvas);
     top.appendChild(defend.canvas);
     top.appendChild(wait.canvas);
     top.appendChild(surrender.canvas);
-    let abilities = html`<div style='width: 32px;'></div>`;
+    let abilities = html`<div></div>`;
     let outer = html`<div></div>`;
     outer.appendChild(top);
     outer.appendChild(abilities);

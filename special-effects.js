@@ -31,8 +31,6 @@ module.exports.knockback = {
       battle.grid.remove(target.x, target.y);
       target.move(tiles[0].x, tiles[0].y);
       battle.grid.setItem(target);
-    } else {
-      console.log('could not find tile in line')
     }
     return new Special();
   }
@@ -43,14 +41,11 @@ module.exports.pullIn = {
   fn: function (battle, caster, target, ability, power, triggeredPower, selections, triggeredBy) {
     tiles = battle.grid.inLOS(caster.x, caster.y, target.x, target.y);
     // tiles = battle.grid.inLOS(target.x, target.y, caster.x, caster.y);
-    console.log(tiles)
     tiles = tiles.filter(t => !t.item);
     if(tiles.length) {
       battle.grid.remove(target.x, target.y);
       target.move(tiles[0].x, tiles[0].y);
       battle.grid.setItem(target);
-    } else {
-      console.log('could not find tile in line')
     }
     return new Special();
   }
@@ -158,7 +153,6 @@ module.exports.giveEffectAsAbility = {
     battle.addAura(a);
     return new Special(function() {
       let index = target.abilities.findIndex(b => b.id == a.id);
-      console.log('removing ability', index)
       target.abilities.splice(index, 1);
       battle.removeAura(a);
     });
@@ -202,7 +196,6 @@ module.exports.stealBlessing = {
 module.exports.transferCurse = {
   when: 'per target',
   fn: function (battle, caster, target, ability, power, triggeredPower, selections, triggeredBy) {
-    console.log('transferCurse')
     let effects = caster.activeEffects.filter(e => !e.expired && e.ability.stats.source == 'curse');
 
     let effect = effects[0];
@@ -234,7 +227,6 @@ module.exports.cleanse = {
   when: 'per target',
   description: 'Removes all permanent ailments',
   fn: function (battle, caster, target, ability, power, triggeredPower, selections, triggeredBy) {
-    console.log('cleanse', target.bio.name)
     target.removePermanentAilments();
 
     return new Special();
@@ -275,7 +267,6 @@ module.exports.blink = {
   when: 'per use',
   fn: function (battle, caster, target, ability, power, triggeredPower, selections, triggeredBy) {
     let tile = selections[0];
-    console.log('blink', tile.x, tile.y, caster.x, caster.y)
     battle.grid.remove(caster.x, caster.y);
     caster.x = tile.x;
     caster.y = tile.y;
@@ -333,7 +324,6 @@ module.exports.chain = {
     let cost = ability.stats.resourceCost;
     let nextTarget = battle.grid.inRadius(target.x, target.y, ability.stats.range)
     .find(p => p.item && !~ability.chains.indexOf(p.item) && p.item.team == target.team);
-    console.log('chain', nextTarget)
     if(!nextTarget || ability.chains.length > 4) {
       ability.chains = [];
       ability.stats.resourceCost = cost;
@@ -348,7 +338,6 @@ module.exports.chain = {
 module.exports.reflectArrows = {
   when: 'per target',
   fn: function (battle, caster, target, ability, power, triggeredPower, selections, triggeredBy) {
-    console.log('reflectArrows', triggeredBy)
     if(triggeredBy.stats.source != 'attack' || triggeredBy.stats.range < 2) {
       target.triggerCount -= 1;
       return;

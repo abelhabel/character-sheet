@@ -17,6 +17,7 @@ const files = {
   'arenas.js': () => wrap.pre() + require('./arenas.js')() + wrap.post('arenas.js'),
   'icons.js': () => wrap.pre() + require('./icons.js')() + wrap.post('icons.js'),
   'teams.js': () => wrap.pre() + require('./teams.js')() + wrap.post('teams.js'),
+  'matches.js': () => wrap.pre() + require('./matches.js')() + wrap.post('matches.js'),
   'animations.js': () => wrap.pre() + require('./animations.js')() + wrap.post('animations.js'),
   'leaders.js': () => wrap.pre() + require('./leaders.js')() + wrap.post('leaders.js'),
   'socket-worker.js': fs.readFileSync(__dirname + '/socket-worker.js'),
@@ -25,6 +26,7 @@ const files = {
   'init-animation.js': fs.readFileSync(__dirname + '/init-animation.js'),
   'init-ability-compendium.js': fs.readFileSync(__dirname + '/init-ability-compendium.js'),
   'init-bestiary.js': fs.readFileSync(__dirname + '/init-bestiary.js'),
+  'init-team.js': fs.readFileSync(__dirname + '/init-team.js'),
 }
 // console.log(files['abilities.js'])
 var ruleLinks = [
@@ -94,6 +96,7 @@ loadFile('UnitPlacement.js');
 loadFile('FixedList.js');
 loadFile('View.js');
 loadFile('GameUI.js');
+loadFile('Gauntlet.js');
 loadFile('Component.js');
 loadFile('init-sound.js');
 loadFile('game-modes.js');
@@ -114,6 +117,7 @@ loadFile('rules.html', addRuleLinks);
 loadFile('battle.html');
 loadFile('animation.html');
 loadFile('arena.html');
+loadFile('team.html');
 loadFile('lobby.html');
 loadFile('bestiary.html');
 loadFile('ability-compendium.html');
@@ -205,6 +209,12 @@ const server = http.createServer(function(req, res) {
   }
   if(name == 'saveArena') {
     return saveData(req, res, 'arenas', url);
+  }
+  if(name == 'saveTeam') {
+    return saveData(req, res, 'teams', url);
+  }
+  if(name == 'saveMatch') {
+    return saveData(req, res, 'matches', url);
   }
   if(name == 'saveIcon') {
     return saveData(req, res, 'icons', url);

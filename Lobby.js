@@ -104,7 +104,9 @@ class Lobby extends Component {
       'play by post': [],
       'human vs ai game': [],
       'ai vs ai game': [],
-      'start match': []
+      'start match': [],
+      'import match': [],
+      'gauntlet': []
     };
     this.cursor = new Sprite(icons.find(i => i.bio.name == 'Ability Cursor').bio.sprite);
   }
@@ -314,6 +316,10 @@ class Lobby extends Component {
     this.trigger('start match');
   }
 
+  createGauntlet() {
+    this.trigger('gauntlet');
+  }
+
   didJoinGame(data) {
     let game = this.games.find(g => g.id == data.game.id);
     let user = this.users.find(u => u.id == data.user.id);
@@ -519,6 +525,10 @@ class Lobby extends Component {
       {
         text: 'Custom Game',
         fn: () => this.createMatch()
+      },
+      {
+        text: 'Gauntlet',
+        fn: () => this.createGauntlet()
       },
       {
         text: 'Bestiary',

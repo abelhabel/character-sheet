@@ -22,15 +22,16 @@ class TeamUnit {
 }
 
 class Team {
-  constructor(name, units) {
+  constructor(name, units, max = 600) {
     this.name = name || 'team1';
+    this.max = max;
     this.picked = [];
     this.units = [];
     units && units.length && this.units.push.apply(this.units, units.map(t => new TeamUnit(t.suuid, t.templateId, t.stacks, t.x, t.y)));
   }
 
   static create(team) {
-    return new Team(team.name, team.units);
+    return new Team(team.name, team.units, team.max);
   }
 
   static fromMonsters(name, monsters) {
