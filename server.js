@@ -97,6 +97,7 @@ loadFile('FixedList.js');
 loadFile('View.js');
 loadFile('GameUI.js');
 loadFile('Gauntlet.js');
+loadFile('CardList.js');
 loadFile('Component.js');
 loadFile('init-sound.js');
 loadFile('game-modes.js');

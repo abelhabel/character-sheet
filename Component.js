@@ -30,6 +30,10 @@ class Component extends Events {
     return this.tags.inner;
   }
 
+  unmount() {
+    this.tags.outer.parentNode.removeChild(this.tags.outer);
+  }
+
   addInner(o = {}) {
     let tag = html`<div class='inner'></div>`;
     if(o.id) tag.id = o.id;
@@ -59,7 +63,6 @@ class Component extends Events {
   }
 
   append(tag) {
-    console.log('append', {tag})
     if(this.tags.inner) {
       this.tags.inner.appendChild(tag)
     } else {

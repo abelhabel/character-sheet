@@ -83,6 +83,10 @@ class Ability {
     return Math.ceil(am * max);
   }
 
+  get isDamaging() {
+    return this.stats.multiplier && (this.stats.source == 'attack' || this.stats.source == 'spell');
+  }
+
   get isAura() {
     return this.bio.type == 'passive' && (this.stats.shape == 'circle' || this.stats.shape == 'square') && this.stats.radius;
   }

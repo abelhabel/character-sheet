@@ -661,8 +661,14 @@ class Battle {
     }
     let min = ability.stats.source == 'attack' ? this.attackRollMin(a, b, ability) : this.spellRollMin(a, b, ability);
     let max = ability.stats.source == 'attack' ? this.attackRollMax(a, b, ability) : this.spellRollMax(a, b, ability);
-    let tag = html`<div id='board-damage-preview' style='top: ${p.y}px; left: ${p.x}px;'>${min} - ${max}</div>`;
-    console.log(tag)
+    let killsMin = Math.floor(min / b.stats.health);
+    if(min - killsMin * b.stats.health >= b.health) killsMin += 1;
+    let killsMax = Math.floor(max / b.stats.health);
+    if(max - killsMax * b.stats.health >= b.health) killsMax += 1;
+    let kills = ability.isDamaging ? ` <span style='font-weight: 400'>(kills ${killsMin}-${killsMax})</span>` : '';
+    let damage = ability.isDamaging ? `damages ${min} - ${max}` : '';
+    if(!kills && !damage) damage = ability.bio.name;
+    let tag = html`<div id='board-damage-preview' style='font-weight: 600;top: ${p.y}px; left: ${p.x}px;'>${damage}${kills}</div>`;
     c.appendChild(tag);
     return tag;
   }
@@ -841,10 +847,6 @@ class Battle {
       '
     >
     </div>`;
-    this.addDOMEvent(window, 'keyup', e => {
-      if(e.key != 'Escape') return;
-      tag.style.display = 'none';
-    });
     document.body.appendChild(tag);
     return tag;
   }

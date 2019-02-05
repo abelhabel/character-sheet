@@ -1,20 +1,13 @@
 const teams = require('teams.js');
 const Sprite = require('Sprite.js');
 const templates = require('monsters.js');
-class TeamViewer {
+const Component = require('Component.js');
+
+class TeamViewer extends Component {
   constructor(title) {
+    super(true);
     this.title = title || 'Pick Team';
     this.events = {};
-  }
-
-  on(event, fn) {
-    if(!this.events[event]) this.events[event] = [];
-    this.events[event].push(fn);
-  }
-
-  trigger(event) {
-    if(!Array.isArray(this.events[event])) return;
-    this.events[event].forEach(fn => fn.apply(null, Array.from(arguments).splice(1)));
   }
 
   render(container) {
@@ -46,8 +39,8 @@ class TeamViewer {
       <div id='close-team-select'style=''>Close</div>
       <div class='title'>${this.title}</div>
     </div>`;
-    let o = html`<span></span>`;
-    let shadow = o.attachShadow({mode: 'open'});
+    let o = this.tags.outer;
+    let shadow = this.shadow;
     shadow.appendChild(style);
     shadow.appendChild(c);
     teams.forEach(t => {

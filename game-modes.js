@@ -103,6 +103,7 @@ gameModes.gauntlet = function(lobby, viewer) {
           let report = o.results.report(() => {
             battle.destroy();
             gauntlet.clear();
+            viewer.clear('battle');
             viewer.clear('gauntlet');
             viewer.show('gauntlet');
             viewer.append(gauntlet.render());
@@ -328,8 +329,12 @@ gameModes.localMultiplayer = function(lobby, viewer) {
         })
       });
     }
+    var onClose = () => {
+      viewer.clear('team select');
+      viewer.show('lobby');
+    }
     viewer.show('team select');
-    var teamSelect = new TeamSelect(monsters, viewer.container, tw, th, cash, 8, ['team1', 'team2'], onDone, viewer.showLobby.bind(viewer))
+    var teamSelect = new TeamSelect(monsters, viewer.container, tw, th, cash, 8, ['team1', 'team2'], onDone, onClose)
   });
 }
 

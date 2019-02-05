@@ -623,7 +623,7 @@ class Monster {
   }
 
   get health() {
-    return this.totalHealth % this.stats.health;
+    return this.totalHealth % this.stats.health || this.stats.health;
   }
 
   get stacks() {

@@ -4,7 +4,32 @@ const MonsterCard = require('MonsterCard.js');
 const Team = require('Team.js');
 const guid = require('guid.js');
 const TeamViewer = require('TeamViewer.js');
+const CardList = require('CardList.js');
 class TeamSelect  {
+  static get style() {
+    return html`<style>
+      #team-select-top {
+        background-image: url(sheet_of_old_paper_horizontal.png);
+        border-radius: 10px;
+      }
+      #team-select-top input, #team-select-top button {
+        padding: 10px;
+        border: none;
+        font-size: 20px;
+        font-weight: bold;
+        margin: 4px;
+        box-shadow: 0px 2px 4px -1px rgba(0,0,0,0.5);
+        border-radius: 4px;
+        background-color: rgba(0,0,0,0);
+        cursor: inherit;
+        text-align: center;
+      }
+      #team-select-top button:hover {
+        background-color: rgba(0,0,0,0.1);
+      }
+    </style>`;
+  }
+
   constructor(items, container, tw, th, cash, max, teamNames, onDone, onExit) {
     this.onDone = onDone;
     this.onExit = onExit;
@@ -16,37 +41,28 @@ class TeamSelect  {
     this.cash = cash || 200;
     this.spent = 0;
     this.max = max || 8;
+    this.top = html`<div id='team-select-top'></div>`;
+    this.container.appendChild(TeamSelect.style);
+    this.container.appendChild(this.top);
     this.picked = document.createElement('canvas');
     this.picked.width = this.max * this.tw;
     this.picked.height = th;
     this.picked.addEventListener('click', (e) => this.sell(e))
-    this.container.appendChild(this.picked);
+    this.top.appendChild(this.picked);
     this.monsters = [];
     this.maxTeams = this.teamNames.length;
     this.teams = [];
     this.images = {};
     var loading = {};
-
-    this.teamName = html`<input type='text' value='${this.teamNames[this.teams.length ? this.teams.length-1 : 0]}'
-      style='padding: 10px;
-        border: none;
-        font-size: 20px;
-        font-weight: bold;
-        margin: 4px;
-        box-shadow: 0px 2px 4px -1px rgba(0,0,0,0.5);
-        border-radius: 4px;
-        background-color: rgba(0,0,0,0);
-        cursor: inherit;
-        background: url(sheet_of_old_paper_horizontal.png);
-        text-align: center;'
-    >`;
+    this.cardList = new CardList();
+    this.teamName = html`<input type='text' value='${this.teamNames[this.teams.length ? this.teams.length-1 : 0]}'>`;
     this.teamName.addEventListener('keyup', e => {
       let i = this.teams.length;
       this.teamNames[i] = this.teamName.value;
     })
     this.sumSpent = html`<div style='user-select:none;color:white;font-size:24px;'></div>`;
-    this.container.appendChild(this.sumSpent);
-    this.container.appendChild(this.teamName);
+    this.top.appendChild(this.sumSpent);
+    this.top.appendChild(this.teamName);
     this.selectedFamily = 'all';
     var familySelect = html`<select><option value='all'>All</option></select>`;
     var families = [];
@@ -59,12 +75,16 @@ class TeamSelect  {
 
     familySelect.addEventListener('change', e => {
       this.selectedFamily = familySelect.value;
+      this.cardList.reset();
       this.monsterCards.forEach(c => {
-        c.cached.style.display = 'inline-block';
+        // c.cached.style.display = 'inline-block';
         if(this.selectedFamily != 'all' && c.item.bio.family != this.selectedFamily) {
-          c.cached.style.display = 'none';
+          // c.cached.style.display = 'none';
+        } else {
+          this.cardList.add(c.cached);
         }
       })
+      this.cardList.render();
     });
 
     let preset = html`<button>Choose Preset</button>`;
@@ -77,9 +97,12 @@ class TeamSelect  {
         })
         this.done();
       });
+      ts.on('close', () => {
+        ts.unmount();
+      })
       ts.render(this.container);
     })
-    this.container.appendChild(preset);
+    this.top.appendChild(preset);
     let menu = new Menu([
       {
         text: 'Share',
@@ -97,24 +120,27 @@ class TeamSelect  {
       }
     ]);
     this.container.appendChild(menu.render());
-    this.container.appendChild(familySelect);
+    this.top.appendChild(familySelect);
+
     this.monsterCards = this.items.map(item => {
       var monster = new Monster(item);
       var card = new MonsterCard(monster);
       var c = document.createElement('div');
-      c.style.display = 'inline-block';
+      c.display = 'inline-block';
       card.state = 'big';
       card.render(c, true);
-      c.addEventListener('click', (e) => this.buy(e, item, monster));
-      c.addEventListener('mouseover', () => {
-        c.style.backgroundColor = 'pink';
+      card.cached.addEventListener('click', (e) => this.buy(e, item, monster));
+      card.cached.addEventListener('mouseover', () => {
+        card.cached.style.backgroundColor = 'pink';
       })
-      c.addEventListener('mouseout', () => {
-        c.style.backgroundColor = 'transparent';
+      card.cached.addEventListener('mouseout', () => {
+        card.cached.style.backgroundColor = 'transparent';
       })
-      this.container.appendChild(c);
+      // this.container.appendChild(c);
+      this.cardList.add(card.cached);
       return card;
     });
+    this.container.appendChild(this.cardList.render());
     this.render();
     container.appendChild(this.container);
   }
