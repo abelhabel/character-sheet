@@ -646,7 +646,7 @@ class Battle {
   }
 
   removeDamagePreview() {
-    let c = this.container.querySelector('#battle-menu');
+    let c = this.container.querySelector('#battle-canvas');
     let d = this.container.querySelector('#board-damage-preview')
     if(d) {
       c.removeChild(d);
@@ -654,7 +654,7 @@ class Battle {
   }
 
   drawDamagePreview(a, b, ability, p) {
-    let c = this.container.querySelector('#battle-menu');
+    let c = this.container.querySelector('#battle-canvas');
     let d = this.container.querySelector('#board-damage-preview')
     if(d) {
       c.removeChild(d);
@@ -662,6 +662,7 @@ class Battle {
     let min = ability.stats.source == 'attack' ? this.attackRollMin(a, b, ability) : this.spellRollMin(a, b, ability);
     let max = ability.stats.source == 'attack' ? this.attackRollMax(a, b, ability) : this.spellRollMax(a, b, ability);
     let tag = html`<div id='board-damage-preview' style='top: ${p.y}px; left: ${p.x}px;'>${min} - ${max}</div>`;
+    console.log(tag)
     c.appendChild(tag);
     return tag;
   }
