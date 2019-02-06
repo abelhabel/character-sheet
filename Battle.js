@@ -101,6 +101,16 @@ class R extends Array {
     return this.current.waiting.find(b => b.id == a.id);
   }
 
+  canWait(actor) {
+    if(actor.movesLeft < actor.totalStat('movement')) {
+      return;
+    }
+    if(~this.current.waiting.indexOf(actor)) {
+      return;
+    }
+    return true;
+  }
+
   wait(actor) {
     if(actor.movesLeft < actor.totalStat('movement')) {
       logger.log(actor.bio.name, 'has already moved');
@@ -190,6 +200,7 @@ class R extends Array {
   }
 
   nextRound() {
+
   }
 
   nextTurn() {
@@ -467,17 +478,15 @@ class Battle {
       m.arena.arena,
       m.settings.settings.mode
     );
-    if(m.team1.actor == 'AI - level 1') {
-      b.team1.forEach(u => u.addAI(1));
-    } else
-    if(m.team1.actor == 'AI - level 2') {
-      b.team1.forEach(u => u.addAI(2));
+    let actor1 = m.team1.actor.match(/AI - level (\d)/);
+    let actor2 = m.team2.actor.match(/AI - level (\d)/);
+    if(actor1) {
+      console.log('actor 1 ai', actor1[1])
+      b.team1.forEach(u => u.addAI(parseInt(actor1[1])));
     }
-    if(m.team2.actor == 'AI - level 1') {
-      b.team2.forEach(u => u.addAI(1));
-    } else
-    if(m.team2.actor == 'AI - level 2') {
-      b.team2.forEach(u => u.addAI(2));
+    if(actor2) {
+      console.log('actor 2 ai', actor2[1])
+      b.team2.forEach(u => u.addAI(parseInt(actor2[1])));
     }
     return b;
   }
@@ -1344,6 +1353,10 @@ class Battle {
     })
   }
 
+  canWait(a) {
+    return this.tr.canWait(a);
+  }
+
   canWalkTo(a, b) {
     let path = this.grid.path(a.x, a.y, b.x, b.y);
     let length = path.length - 1;
@@ -1650,7 +1663,8 @@ class Battle {
     a.activeEffects.forEach(e => {
       var {source} = e.ability.stats;
       if(e.ability.stats.source == 'attack' || e.ability.stats.source == 'spell') {
-        e.power && this.dealDamage(e.source, a, e.power, e.ability, true);
+        // e.power && this.dealDamage(e.source, a, e.power, e.ability, true);
+        this.useAbility(e.source, [a], e.ability, false, 0, null, true);
       }
     })
 
@@ -1743,7 +1757,7 @@ class Battle {
       let position = positions[0];
       let actor = this.currentActor;
       let p;
-      if(type == 'surrender') {
+      if(type == 'surrender' && window.confirm('Are you sure you want to surrender?')) {
         let enemyTeam = this.getEnemyTeam(actor.team);
         this.endGame(enemyTeam[0].team);
         return Promise.resolve();
@@ -1801,12 +1815,7 @@ class Battle {
     })
   }
 
-  /*
-    how do you trigger an ability on yourself that is triggered when
-    you hit with with a specific attack.
-  */
-
-  useAbility(a, positions, ability, fromEffect, triggeredPower, triggeredBy) {
+  useAbility(a, positions, ability, triggered, triggeredPower, triggeredBy, fromEffect) {
     return new Promise((resolve, reject) => {
       ability = ability || a.selectedAbility;
       let actions = positions.map(b => {
@@ -1827,16 +1836,16 @@ class Battle {
             }
             var power = 0;
             if(ability.stats.source == 'attack') {
-              power = this.dealAttackDamage(a, t, ability, fromEffect);
+              power = this.dealAttackDamage(a, t, ability, triggered);
             }
             if(ability.stats.source == 'spell') {
-              power = this.dealSpellDamage(a, t, ability, fromEffect);
+              power = this.dealSpellDamage(a, t, ability, triggered);
             }
             if(ability.stats.source == 'curse') {
-              power = this.dealAttributeDamage(a, t, ability, fromEffect);
+              power = this.dealAttributeDamage(a, t, ability, triggered);
             }
             if(ability.stats.source == 'blessing') {
-              power = this.dealAttributeDamage(a, t, ability, fromEffect);
+              power = this.dealAttributeDamage(a, t, ability, triggered);
             }
 
 
@@ -1844,7 +1853,7 @@ class Battle {
               specialResult = special.fn(this, a, t, ability, power, triggeredPower, positions, triggeredBy);
             }
 
-            t.addEffect(a, ability, power, fromEffect, triggeredPower, positions, specialResult);
+            !fromEffect && t.addEffect(a, ability, power, triggered, triggeredPower, positions, specialResult);
 
             if(special && special.when == 'per target, after effect') {
               specialResult = special.fn(this, a, t, ability, power, triggeredPower, positions, triggeredBy);
@@ -1863,7 +1872,7 @@ class Battle {
             specialResult = special.fn(this, a, b, ability, power, triggeredPower, positions, triggeredBy);
           }
           !targets.actors.length && targets.tiles.length &&
-          !fromEffect && a.addEffect(a, ability, power, fromEffect, triggeredPower, positions, specialResult);
+          !triggered && a.addEffect(a, ability, power, triggered, triggeredPower, positions, specialResult);
           if(ability.stats.attribute == 'initiative') {
             this.initiativeChanged('useAbility');
           }

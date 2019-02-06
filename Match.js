@@ -182,6 +182,7 @@ class TeamSection extends MatchSection {
         <option value='human'>Human</option>
         <option value='AI - level 1'>AI - level 1</option>
         <option value='AI - level 2'>AI - level 2</option>
+        <option value='AI - level 3'>AI - level 3</option>
       </select>
       <div class='team-preview'></div>
       <div class='button'>Select Team</div>

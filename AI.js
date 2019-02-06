@@ -159,7 +159,6 @@ class AI {
     })
     let t = enemies[0];
     actor.selectAbility(ability);
-    console.log(abilities[0].bio.name, ability && ability.bio.name)
     let shouldMoveBeforeRangedAttack = ability && actor.potentialRange > 1 && abilities.length > 1 && abilities[0].stats.range < ability.stats.range;
     if(ability && enemy && !shouldMoveBeforeRangedAttack) {
       return battle.addAction(new Action('use ability', [enemy], ability.template.id));
@@ -175,6 +174,16 @@ class AI {
     } else {
       return this.routine1(Action);
     }
+  }
+
+  routine3(Action) {
+    console.log('routine3')
+    let {actor, battle} = this;
+    if(!battle.tr.currentRound && battle.canWait(actor)) {
+      console.log('wait')
+      return battle.addAction(battle.createAction({type: 'wait'}));
+    }
+    return this.routine2(Action);
   }
 }
 

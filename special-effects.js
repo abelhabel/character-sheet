@@ -267,6 +267,10 @@ module.exports.blink = {
   when: 'per use',
   fn: function (battle, caster, target, ability, power, triggeredPower, selections, triggeredBy) {
     let tile = selections[0];
+    if(battle.grid.get(tile.x, tile.y)) tile = battle.grid.closestEmpty(tile.x, tile.y);
+    if(!tile) {
+      return console.log('no empty tiles')
+    }
     battle.grid.remove(caster.x, caster.y);
     caster.x = tile.x;
     caster.y = tile.y;
@@ -278,12 +282,12 @@ module.exports.blink = {
 module.exports.lifeLeech = {
   when: 'per target',
   fn: function (battle, caster, target, ability, power, triggeredPower, selections, triggeredBy) {
-    // if(!triggeredPower) return;
     if(triggeredPower) {
       caster.heal(Math.ceil(triggeredPower/2))
     } else {
       caster.heal(Math.ceil(power/2))
     }
+
   }
 };
 

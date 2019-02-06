@@ -55,7 +55,7 @@ function placeUnits(arenaTpl, team, side, viewer) {
 gameModes.gauntlet = function(lobby, viewer) {
   lobby.on('gauntlet', gauntlet => {
     viewer.show('gauntlet');
-    let completed = [];
+    let completed = localStorage.gauntlet ? JSON.parse(localStorage.gauntlet) : [];
     gauntlet = new Gauntlet([
       Match.create(matches.find(m => m.id == "3abc70b3-8069-2f04-6eb6-b9a815ecefd7")),
       Match.create(matches.find(m => m.id == "f5b950dc-f752-aa87-ed6b-447b64639e00")),
@@ -67,6 +67,7 @@ gameModes.gauntlet = function(lobby, viewer) {
       Match.create(matches.find(m => m.id == "34b8fa41-651a-f67b-d458-86127c79f6e0")),
       Match.create(matches.find(m => m.id == "b9f48a76-8c0e-087f-4598-50103e931bba")),
     ]);
+    completed.forEach(id => gauntlet.completeStage(id));
     viewer.append(gauntlet.render());
     gauntlet.on('done', match => {
       console.log(match)
@@ -96,10 +97,10 @@ gameModes.gauntlet = function(lobby, viewer) {
           o.results.winningTeam(o.winningTeam == 'team1' ? 'You' : 'AI');
           if(o.team == match.team1.team) {
             if(match.team1.actor == 'human') gauntlet.completeStage(match.id);
-
           } else {
             if(match.team2.actor == 'human') gauntlet.completeStage(match.id);
           }
+          localStorage.gauntlet = JSON.stringify(gauntlet.completed);
           let report = o.results.report(() => {
             battle.destroy();
             gauntlet.clear();
@@ -194,7 +195,7 @@ gameModes.startMatch = function(lobby, viewer) {
         viewer.show('battle');
         let battle = Battle.fromMatch(match);
         battle.onGameEnd = (o) => {
-          o.results.winningTeam(o.winningTeam == 'team1' ? 'You' : 'AI');
+          o.results.winningTeam(o.winningTeam);
           let report = o.results.report(() => {
             battle.destroy();
             viewer.clear('battle');

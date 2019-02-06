@@ -7,9 +7,7 @@ class Gauntlet extends Component {
   }
 
   completeStage(matchId) {
-    console.log('completeStage', matchId);
     this.completed.push(matchId);
-    console.log(this)
   }
 
   static get style() {
@@ -34,7 +32,7 @@ class Gauntlet extends Component {
         padding: 10px;
       }
 
-      .stage.available:hover {
+      .stage.available:hover, .stage.complete:hover {
         box-shadow: 0px 0px 5px 2px rgba(0,0,0,0.75);
       }
 
@@ -94,7 +92,7 @@ class Gauntlet extends Component {
         let team = t.querySelector('.team2');
         team.appendChild(unit.monster.canvas.clone());
       })
-      if(state == 'available') {
+      if(state != 'locked') {
         t.addEventListener('click', e => this.trigger('done', m));
       }
       c.appendChild(t);

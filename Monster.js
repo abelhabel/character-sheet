@@ -147,7 +147,6 @@ class Monster {
     let triggers = this.triggersOnHit;
     let triggerMight = 0;
     triggers.forEach(t => triggerMight += t.might);
-    console.log(base, triggerMight);
     return base + triggerMight;
   }
 
