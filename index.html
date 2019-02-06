@@ -175,7 +175,7 @@ Module.loaders = [];
       window.animation = animation;
       let template = require("animation-tpl.js");
       var cs  = new CS(template, document.body, null, (c, i, v) => {
-        // console.log(c, i, 'changed', v)
+        console.log(c, i, 'changed', v)
         animation[i.exportAs] = v;
       });
       cs.render();

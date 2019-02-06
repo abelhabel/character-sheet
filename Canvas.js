@@ -15,6 +15,10 @@ class Canvas {
     return this.canvas.getContext('2d');
   }
 
+  setAlpha(a = 1) {
+    this.context.globalAlpha = a;
+  }
+
   drawLine(sx, sy, ex, ey, color = '#000') {
     let c = this.context;
     c.strokeStyle = color;

@@ -65,6 +65,18 @@ var tpl = {
           exportAs: 'elevationStart',
           type: 'slider',
           initial: 50
+        },
+        {
+          name: 'Alpha Start',
+          exportAs: 'alphaStart',
+          type: 'slider',
+          initial: 100
+        },
+        {
+          name: 'Alpha End',
+          exportAs: 'alphaEnd',
+          type: 'slider',
+          initial: 100
         }
       ]
     }

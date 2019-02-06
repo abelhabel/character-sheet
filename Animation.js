@@ -1,24 +1,32 @@
 const Sprite = require('Sprite.js');
+const guid = require('guid.js');
 class Animation {
-  constructor(sx, sy, ex, ey, sprite, t) {
+  constructor(sx, sy, ex, ey, sprite, t, endOn = 'travelled', w, h) {
+    this.id = guid();
     this.speed = 20;
     this.sx = sx;
     this.sy = sy;
     this.ex = ex;
     this.ey = ey;
+    this.endOn = endOn;
     this.pos = {
       x: sx,
       y: sy
     };
+    this.alpha = 1;
     this.size = 1;
     this.sprite = sprite;
-    this.speedStart = t.speedStart || 0.5;
-    this.speedEnd = t.speedEnd || 0.5;
-    this.speedEase = t.speedEase || 0.5;
-    this.sizeStart = t.sizeStart || 1;
-    this.sizeEnd = t.sizeEnd || 1;
-    this.elevation = t.elevation || 0.5;
-    this.elevationStart = t.elevationStart || 0.5;
+    this.w = w || this.sprite.w;
+    this.h = h || this.sprite.h;
+    this.speedStart = typeof t.speedStart == 'number' ? t.speedStart : 0.5;
+    this.speedEnd = typeof t.speedEnd == 'number' ? t.speedEnd : 0.5;
+    this.speedEase = typeof t.speedEase == 'number' ? t.speedEase : 0.5;
+    this.sizeStart = typeof t.sizeStart == 'number' ? t.sizeStart : 1;
+    this.sizeEnd = typeof t.sizeEnd == 'number' ? t.sizeEnd : 1;
+    this.elevation = typeof t.elevation == 'number' ? t.elevation : 0.5;
+    this.elevationStart = typeof t.elevationStart == 'number' ? t.elevationStart : 0.5;
+    this.alphaStart = typeof t.alphaStart == 'number' ? t.alphaStart : 1;
+    this.alphaEnd = typeof t.alphaEnd == 'number' ? t.alphaEnd : 1;
     this.events = {};
     this.t = 0;
   }
@@ -68,7 +76,8 @@ class Animation {
 
   move() {
     let {pos, elevationStart, elevation, speedEase,
-    speedStart, speedEnd, sizeStart, sizeEnd, speed} = this;
+    speedStart, speedEnd, sizeStart, sizeEnd, speed,
+    alphaStart, alphaEnd} = this;
     let distance = this.distance;
     let travelled = this.travelled;
     this.t += 1/60;
@@ -93,12 +102,20 @@ class Animation {
     // let startEase = (1 - speedEase) * 2;
     // let endEase = speedEase * 2;
     // pos.x += dirx * speed * (sx * speedStart * startEase + ex * speedEnd * endEase);
-    if(this.t > 1 || travelled > distance) {
-      this.reset();
-      this.trigger('end');
+    if(this.endOn == 'travelled' && travelled > distance) {
+      return this.stop();
+    }
+    if(this.t > 1) {
+      return this.stop();
     }
     // // size
     this.size = this.bezier(this.t, sizeStart, (sizeStart + sizeEnd)/2, sizeEnd);
+    this.alpha = this.bezier(this.t, alphaStart, (alphaStart + alphaEnd)/2, alphaEnd);
+  }
+
+  stop() {
+    this.reset();
+    this.trigger('end');
   }
 
   playAndEnd(canvas) {
@@ -126,12 +143,15 @@ class Animation {
 
   draw(canvas) {
     let {pos, size, sprite} = this;
+    let w = this.w || sprite.w;
+    let h = this.h || sprite.h;
+    canvas.setAlpha(this.alpha);
     canvas.drawSprite(
       this.sprite,
-      Math.round(pos.x) + (Math.ceil(sprite.w - size * sprite.w) / 2),
-      Math.round(pos.y) + (Math.ceil(sprite.h - size * sprite.h) / 2),
-      Math.ceil(size * sprite.w),
-      Math.ceil(size * sprite.h)
+      Math.round(pos.x) + (Math.ceil(w - size * w) / 2),
+      Math.round(pos.y) + (Math.ceil(h - size * h) / 2),
+      Math.ceil(size * w),
+      Math.ceil(size * h)
     );
   }
 }

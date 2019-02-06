@@ -20,6 +20,49 @@ const icons = require('icons.js');
 const animations = require('animations.js');
 const elements = require('elements.js');
 const guid = require('guid.js');
+
+const hitAnimationTemplate = animations.find(a => a.id == '1e5eaf56-808d-980a-5e48-c6b2de6844e2');
+const bloodTemplate = icons.find(i => i.id == 'b4987d53-02d6-06b6-e0f8-79d896bf3860');
+const hitBackgroundTemplate = icons.find(i => i.id == 'c9215451-5896-1ea0-4e9e-1f9a575a7ff3');
+class AnimationPlayer {
+  constructor(canvas) {
+    this.canvas = canvas;
+    this.animations = [];
+    this.paused = false;
+  }
+
+  add(animation) {
+    this.animations.push(animation);
+    return new Promise((resolve, reject) => {
+      animation.on('end', () => {
+        animation.ended = true;
+        this.remove(animation.id);
+        resolve();
+      });
+    })
+  }
+
+  remove(animationId) {
+    let index = this.animations.findIndex(a => a.id == animationId);
+    this.animations.splice(index, 1);
+  }
+
+  loop() {
+    this.render();
+    this.paused || window.requestAnimationFrame(() => this.loop());
+  }
+
+  render() {
+    let {w, h} = this.canvas;
+    this.canvas.clear();
+    this.animations.forEach(a => {
+      a.move();
+      a.draw(this.canvas);
+    })
+  }
+
+}
+
 class TurnOrder extends Array {
   constructor() {
     super();
@@ -436,6 +479,8 @@ class Battle {
     this.tw = tw;
     this.th = th;
     this.createCanvases();
+    this.ap = new AnimationPlayer(this.animationCanvas);
+    this.ap.loop();
     this.hasActed = [];
     this.terrain = new PL(this.w, this.h);
     this.images = {};
@@ -1295,7 +1340,7 @@ class Battle {
       let {sprite, template} = ability.animation;
       if(!sprite) sprite = new Sprite(ability.bio.sprite);
       let anim = new Animation(a.x * this.tw, a.y*this.th, b.x*this.tw, b.y*this.th, sprite, template.stats);
-      return anim.playAndEnd(this.animationCanvas)
+      return this.ap.add(anim)
       .then(() => this.playHitAnimation(a, b, ability))
       .catch(e => console.log('animation error', e))
     }
@@ -1304,7 +1349,15 @@ class Battle {
 
   playHitAnimation(a, b, ability) {
     return new Promise((resolve, reject) => {
-      this.sounds.attack.play();
+      if(this.sounds[ability.stats.source]) {
+        this.sounds[ability.stats.source].play();
+      } else {
+        this.sounds.hit.play();
+      }
+      let template = hitAnimationTemplate;
+      let sprite = new CompositeSprite([hitBackgroundTemplate.bio.sprite, ability.bio.sprite]);
+      let anim = new Animation(b.x * this.tw, b.y*this.th, b.x*this.tw, b.y*this.th, sprite, template.stats, 'time', this.tw, this.th);
+      return this.ap.add(anim).then(resolve, reject);
       var counter = 5;
       var max = counter;
       var c = this.effects.getContext('2d');
@@ -1983,6 +2036,7 @@ class Battle {
   }
 
   endGame(winningTeam) {
+    this.sounds.victory.play();
     if(typeof this.onGameEnd !== 'function') return;
     this.onGameEnd({
       winningTeam,
@@ -2171,15 +2225,32 @@ class Battle {
   }
 
   loadSounds() {
-    var attack = new Audio();
-    attack.src = 'sounds/attack.wav';
+    var spell = new Audio();
+    spell.src = 'sounds/spell.wav';
     var move = new Audio();
     move.src = 'sounds/move.wav';
     var death = new Audio();
     death.src = 'sounds/death.wav';
     var victory = new Audio();
     victory.src = 'sounds/victory.wav';
-    this.sounds = {attack, move, death, victory};
+    var hit = new Audio();
+    hit.src = 'sounds/hit.wav';
+    var blessing = new Audio();
+    blessing.src = 'sounds/blessing.wav';
+    var curse = new Audio();
+    curse.src = 'sounds/curse.wav';
+    var hits = [];
+    for(let i = 1; i < 5; i++) {
+      let a = new Audio();
+      a.src = 'sounds/hit_' + i + '.wav';
+      hits.push(a);
+    }
+    this.sounds = {move, spell, death, victory, hit, blessing, curse};
+    Object.defineProperty(this.sounds, 'attack', {
+      get: () => {
+        return hits[Math.floor(Math.random() * hits.length)];
+      }
+    })
   }
 
   render() {

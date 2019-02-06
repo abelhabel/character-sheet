@@ -7,6 +7,7 @@ class Gauntlet extends Component {
   }
 
   completeStage(matchId) {
+    if(~this.completed.indexOf(matchId)) return;
     this.completed.push(matchId);
   }
 
@@ -30,6 +31,7 @@ class Gauntlet extends Component {
         border-radius: 14px;
         box-shadow: 0px 0px 5px 1px rgba(0,0,0,0.75);
         padding: 10px;
+        margin: 5px;
       }
 
       .stage.available:hover, .stage.complete:hover {
