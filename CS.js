@@ -446,6 +446,7 @@ class CS {
       }
       this.setState(c, item, currentVal);
       console.log(currentVal)
+      if(item.onSelect) item.onSelect(currentVal);
     })
 
     o.appendChild(name);

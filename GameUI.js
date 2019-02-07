@@ -62,7 +62,7 @@ class GameUI extends Component {
         position: absolute;
       }
 
-      .component.battle #battle-menu div {
+      .component.battle #battle-menu .buttons {
         display: inline-block;
       }
 

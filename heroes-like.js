@@ -1,4 +1,5 @@
 var abilities = require('abilities.js');
+var sounds = require('sounds.js');
 var tpl = {
   name: "HEROES LIKE",
   folder: "monsters",
@@ -69,6 +70,23 @@ var tpl = {
           type: 'multiselect',
           values: abilities.map(a => a.bio.name).sort((a, b) => a < b ? -1 : 1),
           exportAs: 'abilities'
+        }
+      ]
+    },
+    {
+      name: "Sounds",
+      exportAs: 'sounds',
+      items: [
+        {
+          name: 'Turn Start',
+          type: 'select',
+          values: ['', ...sounds.sort((a, b) => a < b ? -1 : 1)],
+          exportAs: 'turnStart',
+          onSelect(val) {
+            let a = new Audio();
+            a.src = 'sounds/'+val;
+            a.play();
+          }
         }
       ]
     },

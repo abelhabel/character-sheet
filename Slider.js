@@ -1,16 +1,7 @@
-function html(strings, ...values) {
-  let out = '';
-  strings.forEach((s, i) => {
-    out += s + values[i];
-  })
-
-  let d = document.createElement('div');
-  d.innerHTML = out;
-  return d.firstElementChild;
-}
 class Slider {
-  constructor(name, initial, state, key) {
+  constructor(name, initial, state, key, hideLabel) {
     this.name = name;
+    this.hideLabel = hideLabel;
     this.value = initial || 50;
     this.width = 200;
     this.buttonWidth = 64;
@@ -63,7 +54,7 @@ class Slider {
       ox = e.offsetX;
       state = 'down';
     });
-    window.addEventListener('mousemove', (e) => {
+    container.addEventListener('mousemove', (e) => {
       if(e.target != container) return;
       if(state != 'down') return;
       this.valueChanged(e);
@@ -71,7 +62,7 @@ class Slider {
     // container.addEventListener('mouseup', (e) => {
     //   state = 'up';
     // });
-    window.addEventListener('mouseup', (e) => {
+    container.addEventListener('mouseup', (e) => {
       // if(e.target != container) return;
       state = 'up';
       if(state != 'down') return;
@@ -90,6 +81,7 @@ class Slider {
       <p
         style='
           font-weight: bold;
+          display: ${this.hideLabel ? 'none' : 'block'}
         '
       >
         ${this.name}

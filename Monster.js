@@ -106,6 +106,9 @@ class Monster {
     this.abilities = {
       abilities: t.abilities.abilities
     };
+    this.sounds = {
+      start_turn: t.sounds && t.sounds.turnStart,
+    };
     this.stats = {
       health: t.stats.health,
       mana: t.stats.mana || 1,

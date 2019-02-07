@@ -4,6 +4,8 @@ const backup = require("./backup");
 const URL = require('url').URL;
 const fs = require('fs');
 const PORT = process.env.PORT || 5000;
+const Folder = require('./Folder.js');
+const soundNames = new Folder('sounds');
 const wrap = {
   pre: () => '(function (module) {\n module.pre = function() {',
   post: (name) => `\n}})(Module.modules["${name}"])`
@@ -64,6 +66,12 @@ function loadFile(name, transform) {
     }
   }
 }
+
+soundNames.readFileNames().then(fileNames => {
+  console.log('sounds', fileNames)
+  files['sounds.js'] = wrap.pre() + 'module.exports=' + JSON.stringify(fileNames) + wrap.post('sounds.js');
+})
+.catch(err => console.log(err))
 
 loadFile('CS.js');
 loadFile('PositionList2d.js');
@@ -226,6 +234,11 @@ const server = http.createServer(function(req, res) {
   if(name.match('.wav')) {
     console.log('loading sound', name)
     res.writeHead(200, {'Content-Type': 'audio/wav'})
+    return fs.createReadStream(name).pipe(res);
+  }
+  if(name.match('.mp3')) {
+    console.log('loading sound', name)
+    res.writeHead(200, {'Content-Type': 'audio/mp3'})
     return fs.createReadStream(name).pipe(res);
   }
 

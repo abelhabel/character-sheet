@@ -1,10 +1,12 @@
 const Sprite = require('Sprite.js');
+const Slider = require("Slider.js");
 const icons = require('icons.js');
 const _ability = icons.find(ic => ic.bio.name == 'Ability Book');
 const _defend = icons.find(ic => ic.bio.name == 'Defend');
 const _wait = icons.find(ic => ic.bio.name == 'Wait');
 const _surrender = icons.find(ic => ic.bio.name == 'Surrender');
 const _cursor = icons.find(ic => ic.bio.name == 'Ability Cursor');
+const _volume = icons.find(ic => ic.bio.name == 'Sound');
 
 class BattleMenu {
   constructor(battle) {
@@ -110,13 +112,26 @@ class BattleMenu {
       let action = this.battle.createAction({type: 'surrender'});
       this.battle.addAction(action);
     });
+    let volume = new Sprite(_volume.bio.sprite);
+    this.addToolTip(volume.canvas, 'Volume');
+    let slider;
+    this.battle.addDOMEvent(volume.canvas, 'click', e => {
+      if(slider) {
+        outer.removeChild(slider.tags.container);
+        slider = null;
+        return;
+      }
+      slider = new Slider("Volume", Math.round(this.battle.sp.volume*100), this.battle.sp, 'volume', true);
+      outer.appendChild(slider.render());
+    });
     let cursor = new Sprite(_cursor.bio.sprite);
-    let top = html`<div></div>`;
+    let top = html`<div class='buttons'></div>`;
     top.appendChild(ability.canvas);
     top.appendChild(defend.canvas);
     top.appendChild(wait.canvas);
     top.appendChild(surrender.canvas);
-    let abilities = html`<div></div>`;
+    top.appendChild(volume.canvas);
+    let abilities = html`<div class='buttons'></div>`;
     let outer = html`<div></div>`;
     outer.appendChild(top);
     outer.appendChild(abilities);

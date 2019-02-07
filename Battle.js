@@ -19,6 +19,7 @@ const arenas = require('arenas.js');
 const icons = require('icons.js');
 const animations = require('animations.js');
 const elements = require('elements.js');
+const soundNames = require('sounds.js');
 const guid = require('guid.js');
 
 const hitAnimationTemplate = animations.find(a => a.id == '1e5eaf56-808d-980a-5e48-c6b2de6844e2');
@@ -61,6 +62,35 @@ class AnimationPlayer {
     })
   }
 
+}
+
+class SoundPlayer {
+  constructor() {
+    this.volume = 0.1;
+    this.sounds = {
+      spell: 'spell.wav',
+      battle_begin: 'battle_begin.wav',
+      move: 'move.wav',
+      death: 'death.wav',
+      victory: 'victory.wav',
+      attack: 'attack.wav',
+      blessing: 'blessing.wav',
+      curse: 'curse.wav',
+      open_book: 'open_book.wav'
+    };
+    this.audio = {};
+  }
+
+  play(event, sounds = {}, preventDefault = false) {
+    let src = (sounds && sounds[event]) || (!preventDefault && this.sounds[event]);
+    if(!src) return;
+    let a = this.audio[src] || new Audio();
+    this.audio[src] = a;
+    if(!this.audio[src].paused) return;
+    a.src = 'sounds/' + src;
+    a.volume = this.volume;
+    a.play();
+  }
 }
 
 class TurnOrder extends Array {
@@ -460,15 +490,15 @@ class Battle {
     this.teamColors = {
       team1: {
         aura: 'rgba(22, 88, 110, 0.5)',
-        selected: 'rgba(22, 88, 110, 0.5)'
+        selected: 'rgba(22, 88, 110, 1)'
       },
       team2: {
         aura: 'rgba(110, 22, 33, 0.5)',
-        selected: 'rgba(110, 22, 33, 0.5)'
+        selected: 'rgba(110, 22, 33, 1)'
       },
       neutral: {
         aura: 'rgba(110, 110, 22, 0.5)',
-        selected: 'rgba(110, 110, 22, 0.5)'
+        selected: 'rgba(110, 110, 22, 1)'
       }
     };
     arena = arena || arenas[1];
@@ -481,6 +511,7 @@ class Battle {
     this.createCanvases();
     this.ap = new AnimationPlayer(this.animationCanvas);
     this.ap.loop();
+    this.sp = new SoundPlayer();
     this.hasActed = [];
     this.terrain = new PL(this.w, this.h);
     this.images = {};
@@ -612,7 +643,7 @@ class Battle {
     let {w, h, tw, th} = this;
     var board = document.createElement('canvas');
     var effects = document.createElement('canvas');
-    var container = html`<section id='battle-canvas'></section>`;
+    var container = html`<section id='battle-canvas' style='width: ${w*tw}px;height: ${h*th}px;'></section>`;
     board.id = 'board';
     effects.id = 'effects';
     board.style.zIndex = 1;
@@ -733,6 +764,16 @@ class Battle {
     var attacked = false;
     var mp = 0;
     var actor = null;
+    this.addDOMEvent(this.inputCanvas, 'contextmenu', (e) => {
+      let x = Math.floor(e.offsetX / this.tw);
+      let y = Math.floor(e.offsetY / this.th);
+
+      var t = this.grid.get(x, y);
+      if(t instanceof Monster) {
+        this.toggleAbilityBook(t);
+      }
+      e.preventDefault();
+    });
     this.addDOMEvent(this.inputCanvas, 'click', (e) => {
       let x = Math.floor(e.offsetX / this.tw);
       let y = Math.floor(e.offsetY / this.th);
@@ -757,6 +798,7 @@ class Battle {
         });
       } else
       if(!a.selectedAbility && a.canMove && !this.grid.get(x, y)) {
+        this.sp.play('confirm_move', a);
         let action = new Action('move', [{x,y}], a.template.id);
         this.addAction(action)
         .then(() => {
@@ -913,6 +955,8 @@ class Battle {
       c.style.display = 'block';
     else
       c.style.display = 'none';
+
+    this.sp.play('open_book');
   }
 
   drawBattleMenu() {
@@ -1349,11 +1393,8 @@ class Battle {
 
   playHitAnimation(a, b, ability) {
     return new Promise((resolve, reject) => {
-      if(this.sounds[ability.stats.source]) {
-        this.sounds[ability.stats.source].play();
-      } else {
-        this.sounds.hit.play();
-      }
+      this.sp.play(ability.stats.source, ability.sounds);
+      this.sp.play('hurt', b.sounds, true);
       let template = hitAnimationTemplate;
       let sprite = new CompositeSprite([hitBackgroundTemplate.bio.sprite, ability.bio.sprite]);
       let anim = new Animation(b.x * this.tw, b.y*this.th, b.x*this.tw, b.y*this.th, sprite, template.stats, 'time', this.tw, this.th);
@@ -1980,7 +2021,7 @@ class Battle {
   }
 
   kill(a) {
-    this.sounds.death.play();
+    this.sp.play('death');
     this.tr.remove(a);
     this.grid.remove(a.x,a.y);
     this.render();
@@ -2021,7 +2062,7 @@ class Battle {
         }
         this.grid.setItem(a);
         this.render();
-        this.sounds.move.play();
+        this.sp.play('move');
         if(!path.length) {
           clearInterval(int);
           resolve();
@@ -2036,7 +2077,7 @@ class Battle {
   }
 
   endGame(winningTeam) {
-    this.sounds.victory.play();
+    this.sp.play('victory');
     if(typeof this.onGameEnd !== 'function') return;
     this.onGameEnd({
       winningTeam,
@@ -2063,6 +2104,9 @@ class Battle {
   startTurn() {
     var a = this.tr.actor;
     logger.log('Turn start for', a.bio.name);
+    if(!a.ai) {
+      this.sp.play('start_turn', a.sounds, true);
+    }
     this.currentActor = a;
     var turn = new Turn(a);
     this.turns.push(turn);
@@ -2200,7 +2244,6 @@ class Battle {
   start() {
     logger.minimized = false;
     logger.redraw();
-    this.loadSounds();
     this.createMonsterCardContainer();
 
     return this.loadSpriteSheets()
@@ -2212,6 +2255,7 @@ class Battle {
     })
     .then(() => {
       this.render();
+      this.sp.play('battle_begin');
       return this.act();
     })
     .catch(e => {
@@ -2222,35 +2266,6 @@ class Battle {
   clearCanvases() {
     let b = this.board.getContext('2d');
     b.clearRect(0, 0, this.board.width, this.board.height);
-  }
-
-  loadSounds() {
-    var spell = new Audio();
-    spell.src = 'sounds/spell.wav';
-    var move = new Audio();
-    move.src = 'sounds/move.wav';
-    var death = new Audio();
-    death.src = 'sounds/death.wav';
-    var victory = new Audio();
-    victory.src = 'sounds/victory.wav';
-    var hit = new Audio();
-    hit.src = 'sounds/hit.wav';
-    var blessing = new Audio();
-    blessing.src = 'sounds/blessing.wav';
-    var curse = new Audio();
-    curse.src = 'sounds/curse.wav';
-    var hits = [];
-    for(let i = 1; i < 5; i++) {
-      let a = new Audio();
-      a.src = 'sounds/hit_' + i + '.wav';
-      hits.push(a);
-    }
-    this.sounds = {move, spell, death, victory, hit, blessing, curse};
-    Object.defineProperty(this.sounds, 'attack', {
-      get: () => {
-        return hits[Math.floor(Math.random() * hits.length)];
-      }
-    })
   }
 
   render() {
