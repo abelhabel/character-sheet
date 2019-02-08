@@ -3,6 +3,7 @@ const monsters = require('monsters.js');
 const guid = require('guid.js');
 const TeamSelect = require('TeamSelect.js');
 const Team = require('Team.js');
+const Component = require('Component.js');
 class MatchSection {
   constructor(name, match) {
     this.name = name;
@@ -207,13 +208,13 @@ class ControlsSection extends MatchSection {
   onDone() {
     let {team1, team2} = this.match;
     if(team1.team && team1.team.units.length && team2.team && team2.team.units.length) {
-      return this.match.onDone(this.match);
+      return this.match.trigger('done', this.match);
     }
     this.tag.querySelector('.info').textContent = 'To start the game, you have to select monsters for both teams.';
   }
 
   onCancel() {
-    this.match.onCancel();
+    this.match.trigger('close');
   }
 
   render() {
@@ -311,13 +312,12 @@ class SettingsSection extends MatchSection {
   }
 }
 
-class Match {
-  constructor(gameui, onDone, onCancel) {
+class Match extends Component {
+  constructor(gameui) {
+    super();
     this.id = guid();
     this.gameui = gameui;
-    this.onDone = onDone;
-    this.onCancel = onCancel;
-    this.mode = 'standard'; //standard, portal mayhem
+    this.mode = 'standard'; //standard, portal
     this.team1 = new TeamSection(this);
     this.team2 = new TeamSection(this);
     this.arena = new ArenaSection(this);
@@ -325,8 +325,8 @@ class Match {
     this.controls = new ControlsSection(this);
   }
 
-  static create(match, gameui, onDone, onCancel) {
-    let m = new Match(gameui, onDone, onCancel);
+  static create(match, gameui) {
+    let m = new Match(gameui);
     m.id = match.id;
     m.team1.import(match.teams[0]);
     m.team2.import(match.teams[1]);
@@ -427,6 +427,7 @@ class Match {
         outline: none;
         border: none;
         border-bottom: 1px solid black;
+        max-width: 100%;
       }
     </style>`;
   }
@@ -443,8 +444,29 @@ class Match {
     this.onDone();
   }
 
-  render(container) {
-    let outer = html`<div id='match'></div>`;
+  renderStage(state, i) {
+    let name = this.name || 'Stage ' + (i+1);
+    let t = html`<div class='stage ${state}'>
+      <div class='stage-name'>${name}</div>
+      <div class='team team1'></div>
+      <div class='vs'>VS</div>
+      <div class='team team2'></div>
+      <div class='state'>${state}</div>
+    </div>`;
+    this.team1.team.units.forEach(unit => {
+      let team = t.querySelector('.team1');
+      team.appendChild(unit.monster.canvas.clone());
+    });
+    this.team2.team.units.forEach(unit => {
+      let team = t.querySelector('.team2');
+      team.appendChild(unit.monster.canvas.clone());
+    })
+    return t;
+  }
+
+  render() {
+    let {outer} = this.tags;
+    outer.id = 'match';
     let arena = this.arena.render();
     let team1 = this.team1.render();
     let team2 = this.team2.render();
@@ -455,14 +477,14 @@ class Match {
     outer.appendChild(team1);
     outer.appendChild(team2);
     outer.appendChild(startGame);
-    this.tag = outer;
     this.gameui.append(outer);
   }
 
-  renderStage() {
-
-  }
-
 }
-
+Match.MatchSection = MatchSection;
+Match.TeamSection = TeamSection;
+Match.TeamSection = TeamSection;
+Match.ArenaSection = ArenaSection;
+Match.SettingsSection = SettingsSection;
+Match.ControlsSection = ControlsSection;
 module.exports = Match;

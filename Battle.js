@@ -1757,8 +1757,14 @@ class Battle {
     a.activeEffects.forEach(e => {
       var {source} = e.ability.stats;
       if(e.ability.stats.source == 'attack' || e.ability.stats.source == 'spell') {
-        // e.power && this.dealDamage(e.source, a, e.power, e.ability, true);
-        this.useAbility(e.source, [a], e.ability, false, 0, null, true);
+        if(e.power) {
+          this.dealDamage(e.source, a, e.power, e.ability, true);
+          let special = specialEffects[e.ability.stats.special];
+          if(special &&special.recurring) {
+            special.fn(this, e.source, a, e.ability, e.power, 0, [a], null);
+          }
+        }
+        // this.useAbility(e.source, [a], e.ability, false, 0, null, true);
       }
     })
 

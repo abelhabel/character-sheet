@@ -20,6 +20,7 @@ const files = {
   'icons.js': () => wrap.pre() + require('./icons.js')() + wrap.post('icons.js'),
   'teams.js': () => wrap.pre() + require('./teams.js')() + wrap.post('teams.js'),
   'matches.js': () => wrap.pre() + require('./matches.js')() + wrap.post('matches.js'),
+  'gauntlets.js': () => wrap.pre() + require('./gauntlets.js')() + wrap.post('gauntlets.js'),
   'animations.js': () => wrap.pre() + require('./animations.js')() + wrap.post('animations.js'),
   'leaders.js': () => wrap.pre() + require('./leaders.js')() + wrap.post('leaders.js'),
   'socket-worker.js': fs.readFileSync(__dirname + '/socket-worker.js'),
@@ -68,7 +69,6 @@ function loadFile(name, transform) {
 }
 
 soundNames.readFileNames().then(fileNames => {
-  console.log('sounds', fileNames)
   files['sounds.js'] = wrap.pre() + 'module.exports=' + JSON.stringify(fileNames) + wrap.post('sounds.js');
 })
 .catch(err => console.log(err))
@@ -224,6 +224,9 @@ const server = http.createServer(function(req, res) {
   }
   if(name == 'saveMatch') {
     return saveData(req, res, 'matches', url);
+  }
+  if(name == 'saveGauntlet') {
+    return saveData(req, res, 'gauntlets', url);
   }
   if(name == 'saveIcon') {
     return saveData(req, res, 'icons', url);

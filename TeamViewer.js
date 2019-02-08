@@ -24,6 +24,7 @@ class TeamViewer extends Component {
         transform:translate(-50%,-50%);
         z-index:2000;
         background-color: darkslategray;
+        overflow-y: scroll;
       }
       .title {
         font-size:24px;

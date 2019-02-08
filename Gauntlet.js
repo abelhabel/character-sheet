@@ -1,14 +1,41 @@
 const Component = require('Component.js');
+const Menu = require('Menu.js');
+const Match = require('Match.js');
+const guid = require('guid.js');
+const matches = require('matches.js');
 class Gauntlet extends Component {
-  constructor(matches) {
+  constructor(name, matches, menuItems) {
     super(false, 'gauntlet');
+    this.name = name || 'Skirmishes';
     this.matches = matches;
+    this.menuItems = menuItems;
     this.completed = [];
   }
 
+  static create(g, menuItems) {
+    let ms = g.matchIds.map(id => Match.create(matches.find(m => m.id == id)));
+    let gauntlet = new Gauntlet(g.name, ms, menuItems);
+    gauntlet.id = g.id;
+    return gauntlet;
+  }
+
   completeStage(matchId) {
+    if(!this.matches.find(m => m.id == matchId)) return;
     if(~this.completed.indexOf(matchId)) return;
     this.completed.push(matchId);
+  }
+
+  addMatch(match) {
+    if(!this.matches.find(m => m.id == match.id)) {
+      this.matches.push(match);
+
+    }
+  }
+
+  removeMatch(matchId) {
+    let index = this.matches.findIndex(m => m.id == matchId);
+    if(!~index) return;
+    this.matches.splice(index, 1);
   }
 
   static get style() {
@@ -20,10 +47,15 @@ class Gauntlet extends Component {
         background-size: contain;
         padding: 10px;
       }
-      .gauntlet * {
+      .gauntlet-inner {
+        width: 100%;
+        height: 100%;
+      }
+      .gauntlet-inner * {
         vertical-align: top;
       }
       .stage {
+        user-select: none;
         position: relative;
         display: inline-block;
         width: 260px;
@@ -32,6 +64,7 @@ class Gauntlet extends Component {
         box-shadow: 0px 0px 5px 1px rgba(0,0,0,0.75);
         padding: 10px;
         margin: 5px;
+        vertical-align: top;
       }
 
       .stage.available:hover, .stage.complete:hover {
@@ -72,34 +105,24 @@ class Gauntlet extends Component {
   }
 
   render() {
-    console.log('render', this)
-    let c = html`<div class='gauntlet'>
+    let c = html`<div class='gauntlet-inner'>
       <div>Completed ${this.completed.length} / ${this.matches.length} stages</div>
     </div>`;
     this.matches.forEach((m, i) => {
       let state = ~this.completed.indexOf(m.id) ? 'complete' : 'locked';
       if(i == this.completed.length) state = 'available';
-      let t = html`<div class='stage ${state}'>
-        <div class='stage-name'>Stage ${i}</div>
-        <div class='team team1'></div>
-        <div class='vs'>VS</div>
-        <div class='team team2'></div>
-        <div class='state'>${state}</div>
-      </div>`;
-      m.team1.team.units.forEach(unit => {
-        let team = t.querySelector('.team1');
-        team.appendChild(unit.monster.canvas.clone());
-      });
-      m.team2.team.units.forEach(unit => {
-        let team = t.querySelector('.team2');
-        team.appendChild(unit.monster.canvas.clone());
-      })
+
+      let t = m.renderStage(state, i);
       if(state != 'locked') {
         t.addEventListener('click', e => this.trigger('done', m));
       }
       c.appendChild(t);
     })
     this.shadow.appendChild(c);
+    if(this.menuItems) {
+      let menu = new Menu(this.menuItems);
+      this.append(menu.render());
+    }
     return this.tags.outer;
   }
 }

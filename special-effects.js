@@ -281,6 +281,7 @@ module.exports.blink = {
 
 module.exports.lifeLeech = {
   when: 'per target',
+  recurring: true,
   fn: function (battle, caster, target, ability, power, triggeredPower, selections, triggeredBy) {
     if(triggeredPower) {
       caster.heal(Math.ceil(triggeredPower/2))
@@ -293,6 +294,7 @@ module.exports.lifeLeech = {
 
 module.exports.manaLeech = {
   when: 'per target',
+  recurring: true,
   fn: function (battle, caster, target, ability, power, triggeredPower, selections, triggeredBy) {
     // if(!triggeredPower) return;
     if(triggeredPower) {

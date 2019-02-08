@@ -11,6 +11,7 @@ const Gauntlet = require('Gauntlet.js');
 const arenas = require('arenas.js');
 const monsters = require('monsters.js');
 const matches = require('matches.js');
+const gauntlets = require('gauntlets.js');
 const tw = 42;
 const th = 42;
 const cash = 600;
@@ -56,17 +57,17 @@ gameModes.gauntlet = function(lobby, viewer) {
   lobby.on('gauntlet', gauntlet => {
     viewer.show('gauntlet');
     let completed = localStorage.gauntlet ? JSON.parse(localStorage.gauntlet) : [];
-    gauntlet = new Gauntlet([
-      Match.create(matches.find(m => m.id == "3abc70b3-8069-2f04-6eb6-b9a815ecefd7")),
-      Match.create(matches.find(m => m.id == "f5b950dc-f752-aa87-ed6b-447b64639e00")),
-      Match.create(matches.find(m => m.id == "81ec0747-ea40-94d5-ebd7-17183a6d486c")),
-      Match.create(matches.find(m => m.id == "e6a4deb7-25f6-4010-8449-3a05c229d396")),
-      Match.create(matches.find(m => m.id == "e2999f4a-d5e3-cdc2-0e0f-4fd3a860d80d")),
-      Match.create(matches.find(m => m.id == "664d6ae7-cabd-78c2-d3eb-4de3684758bc")),
-      Match.create(matches.find(m => m.id == "fdba3714-ead7-1cb8-cb84-230ff621e203")),
-      Match.create(matches.find(m => m.id == "34b8fa41-651a-f67b-d458-86127c79f6e0")),
-      Match.create(matches.find(m => m.id == "b9f48a76-8c0e-087f-4598-50103e931bba")),
-    ]);
+    let menu = [
+      {
+        text: 'Back',
+        fn: () => {
+          viewer.clear('gauntlet');
+          viewer.show('lobby');
+        }
+      }
+    ];
+    let oois = gauntlets.find(g => g.id == '67935b8e-e527-65f2-df1f-f3054688b696');
+    gauntlet = Gauntlet.create(oois, menu);
     completed.forEach(id => gauntlet.completeStage(id));
     viewer.append(gauntlet.render());
     gauntlet.on('done', match => {
@@ -94,7 +95,7 @@ gameModes.gauntlet = function(lobby, viewer) {
         let battle = Battle.fromMatch(match);
         battle.onGameEnd = (o) => {
           console.log('match over', match, o)
-          o.results.winningTeam(o.winningTeam == 'team1' ? 'You' : 'AI');
+          o.results.winningTeam(o.winningTeam);
           if(o.team == match.team1.team) {
             if(match.team1.actor == 'human') gauntlet.completeStage(match.id);
           } else {
@@ -125,7 +126,8 @@ gameModes.importMatch = function(lobby, viewer) {
   lobby.on('import match', (m) => {
     // let m = matches[1];
     console.log('importing match', m)
-    let match = Match.create(m, viewer, () => {
+    let match = Match.create(m);
+    match.on('done', () => {
       viewer.clear('match');
       console.log('created match', match);
       viewer.show('unit placement');
@@ -160,7 +162,8 @@ gameModes.importMatch = function(lobby, viewer) {
         battle.start();
         window.battle = battle;
       });
-    }, () => {
+    })
+    match.on('close', () => {
       viewer.clear('match');
       viewer.showLobby();
     });
@@ -171,7 +174,8 @@ gameModes.importMatch = function(lobby, viewer) {
 
 gameModes.startMatch = function(lobby, viewer) {
   lobby.on('start match', () => {
-    let match = new Match(viewer, () => {
+    let match = new Match(viewer);
+    match.on('done', () => {
       viewer.clear('match');
       console.log('created match', match);
       viewer.show('unit placement');
@@ -206,7 +210,8 @@ gameModes.startMatch = function(lobby, viewer) {
         battle.start();
         window.battle = battle;
       });
-    }, () => {
+    });
+    match.on('close', () => {
       viewer.clear('match');
       viewer.showLobby();
     });
