@@ -106,6 +106,7 @@ class Gauntlet extends Component {
 
   render() {
     let c = html`<div class='gauntlet-inner'>
+      <h2>${this.name}</h2>
       <div>Completed ${this.completed.length} / ${this.matches.length} stages</div>
     </div>`;
     this.matches.forEach((m, i) => {

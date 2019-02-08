@@ -7,7 +7,9 @@ const Arena = require('Arena.js');
 const UnitPlacement = require('UnitPlacement.js');
 const Team = require('Team.js');
 const Match = require('Match.js');
+const Menu = require('Menu.js');
 const Gauntlet = require('Gauntlet.js');
+const CardList = require('CardList.js');
 const arenas = require('arenas.js');
 const monsters = require('monsters.js');
 const matches = require('matches.js');
@@ -56,8 +58,7 @@ function placeUnits(arenaTpl, team, side, viewer) {
 gameModes.gauntlet = function(lobby, viewer) {
   lobby.on('gauntlet', gauntlet => {
     viewer.show('gauntlet');
-    let completed = localStorage.gauntlet ? JSON.parse(localStorage.gauntlet) : [];
-    let menu = [
+    let menu = new Menu([
       {
         text: 'Back',
         fn: () => {
@@ -65,13 +66,8 @@ gameModes.gauntlet = function(lobby, viewer) {
           viewer.show('lobby');
         }
       }
-    ];
-    let oois = gauntlets.find(g => g.id == '67935b8e-e527-65f2-df1f-f3054688b696');
-    gauntlet = Gauntlet.create(oois, menu);
-    completed.forEach(id => gauntlet.completeStage(id));
-    viewer.append(gauntlet.render());
-    gauntlet.on('done', match => {
-      console.log(match)
+    ]);
+    var onDone = (match, gauntlet) => {
       match.gameui = viewer;
       viewer.show('unit placement');
       createRNG();
@@ -94,31 +90,42 @@ gameModes.gauntlet = function(lobby, viewer) {
         viewer.show('battle');
         let battle = Battle.fromMatch(match);
         battle.onGameEnd = (o) => {
-          console.log('match over', match, o)
           o.results.winningTeam(o.winningTeam);
           if(o.team == match.team1.team) {
             if(match.team1.actor == 'human') gauntlet.completeStage(match.id);
           } else {
             if(match.team2.actor == 'human') gauntlet.completeStage(match.id);
           }
-          localStorage.gauntlet = JSON.stringify(gauntlet.completed);
+          localStorage['gauntlet' + gauntlet.id] = JSON.stringify(gauntlet.completed);
           let report = o.results.report(() => {
             battle.destroy();
             gauntlet.clear();
-            viewer.clear('battle');
             viewer.clear('gauntlet');
-            viewer.show('gauntlet');
-            viewer.append(gauntlet.render());
+            viewer.clear('battle');
+            lobby.trigger('gauntlet', gauntlet);
           });
           viewer.append(report);
         };
         battle.start();
         window.battle = battle;
       });
-    }, () => {
+    }
+    var onClose = () => {
       viewer.clear('match');
       viewer.showLobby();
-    });
+    }
+    let list = new CardList();
+    list.pageSize = 1;
+    gauntlets.forEach(t => {
+      let g = Gauntlet.create(t);
+      let completed = JSON.parse(localStorage['gauntlet' + g.id] || "[]");
+      completed.forEach(id => g.completeStage(id));
+      list.add(g.render());
+      g.on('done', (m) => onDone(m, g));
+      g.on('close', onClose);
+    })
+    viewer.append(list.render());
+    viewer.append(menu.render());
   })
 };
 

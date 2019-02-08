@@ -56,12 +56,13 @@ class CardList extends Component {
   }
 
   get lastPage() {
-    return Math.floor(this.cards.length / this.pageSize);
+    return Math.ceil(this.cards.length / this.pageSize) - 1;
   }
 
   setPage(page) {
+    console.log(page, this.pageSize, this.cards.length, this.lastPage)
     if(page < 0) page = 0;
-    if((page) * this.pageSize > this.cards.length) page = this.lastPage;
+    if((page) * this.pageSize >= this.cards.length) page = this.lastPage;
     this.page = page;
     this.render();
   }
