@@ -750,10 +750,12 @@ class Battle {
     if(min - killsMin * b.stats.health >= b.health) killsMin += 1;
     let killsMax = Math.floor(max / b.stats.health);
     if(max - killsMax * b.stats.health >= b.health) killsMax += 1;
-    let kills = ability.isDamaging ? ` <span style='font-weight: 400'>(kills ${killsMin}-${killsMax})</span>` : '';
-    let damage = ability.isDamaging ? `damages ${min} - ${max}` : '';
+    let kills = ability.isDamaging ? ` <span>(kills ${killsMin}-${killsMax})</span>` : '';
+    let damage = ability.isDamaging ? `${min} - ${max}` : '';
     if(!kills && !damage) damage = ability.bio.name;
-    let tag = html`<div id='board-damage-preview' style='font-weight: 600;top: ${p.y}px; left: ${p.x}px;'>${damage}${kills}</div>`;
+    let tag = html`<div id='board-damage-preview' style='top: ${p.y}px; left: ${p.x}px;'>
+      <span>${damage}${kills}</span>
+    </div>`;
     c.appendChild(tag);
     return tag;
   }

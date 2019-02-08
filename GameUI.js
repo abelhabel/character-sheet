@@ -77,10 +77,16 @@ class GameUI extends Component {
         padding: 4px;
         background-image: url(sheet_of_old_paper.png);
         background-repeat: no-repeat;
-        overflow: hidden;
+        overflow: visible;
         border-radius: 2px;
         z-index: 1000;
         box-shadow: 0px 0px 5px 1px rgba(0,0,0,0.75);
+        font-weight: 600;
+        white-space: nowrap;
+      }
+      #board-damage-preview span span {
+        font-size: 0.8em;
+        font-weight: 400;
       }
       ${MonsterCard.style}
     </style>`;
