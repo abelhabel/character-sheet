@@ -1,5 +1,7 @@
-class UnitPlacement {
+const Component = require('Component.js');
+class UnitPlacement extends Component {
   constructor(arena, team, side) {
+    super();
     this.arena = arena;
     this.team = team;
     this.units = this.team.monsters;
@@ -12,6 +14,9 @@ class UnitPlacement {
     this.ymax = arena.h;
     this.positions = [];
     this.placed = [];
+
+    let Battle = require('Battle.js');
+    this.tags.popup = Battle.prototype.popup();
   }
 
   initPos() {
@@ -49,28 +54,35 @@ class UnitPlacement {
     if(this.current) {
       this.arena.highlight(x, y);
     }
+    if(this.tags.popup.style.display == 'block') {
+      this.openCS();
+    }
     this.arena.drawObstacles();
   }
 
-  render(container) {
-    let outer = html`<div style='
-      width: 300px;
-      position: absolute;
-      left: 10px;
-      bottom: 10px;
-      background: url(sheet_of_old_paper_horizontal.png);
-      z-index: 3002;
-      user-select: none;
-      color: black;
-      padding: 10px;
-      border-radius: 10px;
-      box-shadow: 0px 2px 4px -1px rgba(0,0,0,0.5);
-    '>
-      ${this.team.name}:
-      <p>Click on one of your units to select/deselect it. Then click on an empty tile to place it there.</p>
-      <p>You can only place units on the 2 first columns of tiles on your side.</p>
-      <p>Click done when you have placed all your units.</p>
-      <button style='
+  openCS() {
+    if(!this.current) return;
+    this.tags.popup.innerHTML = '';
+    this.tags.popup.style.display = 'block';
+    this.current.drawMonsterCS(this.tags.popup, () => this.tags.popup.style.display = 'none');
+  }
+
+  static get style() {
+    return html`<style>
+      #unit-placement-controls {
+        width: 300px;
+        position: absolute;
+        left: 10px;
+        bottom: 10px;
+        background: url(sheet_of_old_paper_horizontal.png);
+        z-index: 3002;
+        user-select: none;
+        color: black;
+        padding: 10px;
+        border-radius: 10px;
+        box-shadow: 0px 2px 4px -1px rgba(0,0,0,0.5);
+      }
+      #unit-placement-controls button {
         padding: 10px;
         border: none;
         font-size: 20px;
@@ -80,16 +92,27 @@ class UnitPlacement {
         border-radius: 4px;
         background-color: rgba(0,0,0,0);
         cursor: inherit;
-      '>
-        Done
-      </button>
-    </div>`;
-    outer.querySelector('button').addEventListener('click', e => {
-      if(!this.onDone) return;
-      container.removeChild(outer);
-      this.onDone();
+      }
+    </style>`;
+  }
+
+  render() {
+    this.tags.outer.id = 'unit-placement-controls';
+    this.shadow.appendChild(html`<div>
+      ${this.team.name}:
+      <p>Click on one of your units to select/deselect it. Then click on an empty tile to place it there.</p>
+      <p>You can only place units on the 2 first columns of tiles on your side.</p>
+      <p>Click done when you have placed all your units.</p>
+      <button id='done'>Done</button>
+      <button id='open-cs'>Character Sheet</button>
+    </div>`);
+    this.shadow.querySelector('#done').addEventListener('click', e => {
+      this.trigger('done');
     });
-    container.appendChild(outer);
+    this.shadow.querySelector('#open-cs').addEventListener('click', e => {
+      this.openCS();
+    });
+    return this.tags.outer;
   }
 
 }

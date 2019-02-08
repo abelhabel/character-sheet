@@ -6,6 +6,7 @@ const Sprite = require('Sprite.js');
 const MonsterCard = require('MonsterCard.js');
 const Match = require('Match.js');
 const Gauntlet = require('Gauntlet.js');
+const UnitPlacement = require('UnitPlacement.js');
 const icons = require('icons.js');
 const teamSelect = new Component(false, 'team-select');
 const match = new Component(false, 'match');
@@ -34,7 +35,7 @@ class GameUI extends Component {
         height: 100%;
       }
 
-      .component.team-select, .component.battle {
+      .component.team-select, .component.battle, .component.unit-placement {
         background: url(Hell2.jpg);
         background-size: cover;
         background-repeat: no-repeat;
@@ -96,6 +97,7 @@ class GameUI extends Component {
     super(true);
     this.addStyle(Match.style);
     this.addStyle(Gauntlet.style);
+    this.addStyle(UnitPlacement.style);
     this.id = ++ID;
     this.lobby = new Lobby(this);
     this.lobby.render();

@@ -39,11 +39,11 @@ function placeUnits(arenaTpl, team, side, viewer) {
     let up = new UnitPlacement(arena, team, side);
     up.initPos();
 
-    up.onDone = () => {
+    up.on('done', () => {
       viewer.remove(canvas);
       resolve(team);
-    };
-    up.render(document.body);
+    });
+    viewer.append(up.render());
     canvas.addEventListener('click', e => {
       let x = Math.floor(e.offsetX / arena.tw);
       let y = Math.floor(e.offsetY / arena.th);
