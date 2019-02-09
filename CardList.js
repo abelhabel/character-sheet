@@ -60,7 +60,6 @@ class CardList extends Component {
   }
 
   setPage(page) {
-    console.log(page, this.pageSize, this.cards.length, this.lastPage)
     if(page < 0) page = 0;
     if((page) * this.pageSize >= this.cards.length) page = this.lastPage;
     this.page = page;

@@ -279,12 +279,8 @@ var tpl = {
           type: 'select',
           values: [
             '',
-            'intimidating', //25% increased damage dealt to adjacent enemies
-            'prepared', //25% reduced damage taken from adjacent enemies
-            'precise', //25% increased damage dealt to enemies far away
-            'hidden', //25% reduced damage taken from enemies far away,
-            'illuminated',
-            'engorged'
+            'intimidating', 'prepared', 'precise', 'hidden', 'illuminated',
+            'engorged', 'grounded', 'charged'
           ],
           initial: '',
           exportAs: 'vigor'

@@ -561,7 +561,6 @@ class Battle {
       b.team1.forEach(u => u.addAI(parseInt(actor1[1])));
     }
     if(actor2) {
-      console.log('actor 2 ai', actor2[1])
       b.team2.forEach(u => u.addAI(parseInt(actor2[1])));
     }
     return b;
@@ -1533,6 +1532,13 @@ class Battle {
     }
   }
 
+  ailmentThreshold(a, b) {
+    let base = 95;
+    if(a.hasVigor('charged')) base -= 30;
+
+    return base;
+  }
+
   dealDamage(a, b, d, ability, fromEffect) {
     var c = 'damaged';
     if(this.isHarmful(b, ability)) {
@@ -1542,7 +1548,10 @@ class Battle {
       d = b.heal(d);
       c = 'healed';
     }
-    if(this.roll(1, 100) > 95) this.applyElementalAilment(a, b, ability);
+    let ailmentRoll = this.roll(1, 100);
+    let ailmentThreshold = this.ailmentThreshold(a, b);
+    console.log('ailmentRoll > ailmentThreshold', ailmentRoll, ailmentThreshold)
+    if(ailmentRoll > ailmentThreshold) this.applyElementalAilment(a, b, ability);
     logger.log(`${a.bio.name} ${c} ${b.bio.name} ${d} (${ability.stats.element}) with ${ability.bio.name} (${b.totalHealth})`);
     if(!b.alive) logger.log(b.bio.name, 'died!');
     if(!fromEffect) {
@@ -1582,7 +1591,7 @@ class Battle {
     if(!b.alive) this.kill(b);
   }
 
-  vigorMultiplier(a, b) {
+  vigorMultiplier(a, b, ability) {
     let d = this.grid.squareRadius(a.x, a.y, b.x, b.y);
     let m = 1;
     if(a.hasVigor('intimidating') && d <= 1) {
@@ -1597,6 +1606,13 @@ class Battle {
     if(b.hasVigor('hidden') && d > 5) {
       m -= 0.25;
     }
+    if(b.hasVigor('grounded') && ability.stats.element == 'air') {
+      m *= 0.5;
+    }
+    if(a.hasVigor('engorged') && ability.stats.source == 'spell' ) {
+      m *= 1.5;
+    }
+
     return m;
   }
 
@@ -1620,6 +1636,9 @@ class Battle {
     }
     if(ability.stats.element == 'fire' && b.hasAilment('singed')) {
       m += 0.25;
+    }
+    if(a.hasAilment('soaked')) {
+      m *= 0.75;
     }
     return m;
   }
@@ -1707,9 +1726,9 @@ class Battle {
     let bonusDamage = a.totalStat("damage");
     let abilityDamage = effectPower || ability.roll(bonusDamage);
     let spellPower = 1 + a.totalStat('spellPower') / 10;
-    let soaked = a.hasAilment('soaked') ? 0.75 : 1;
-    let engorged = a.hasVigor('engorged') ? 1.5 : 1;
-    let d = Math.ceil(abilityDamage * stacks * spellPower * soaked * engorged);
+    let vigorMultiplier = this.vigorMultiplier(a, b, ability);
+    let ailmentMultiplier = this.ailmentMultiplier(a, b, ability);
+    let d = Math.ceil(abilityDamage * stacks * spellPower * vigorMultiplier * ailmentMultiplier);
     return d;
   }
 
@@ -1718,9 +1737,9 @@ class Battle {
     let bonusDamage = a.totalStat("damage");
     let abilityDamage = ability.minPower(bonusDamage);
     let spellPower = 1 + a.totalStat('spellPower') / 10;
-    let soaked = a.hasAilment('soaked') ? 0.75 : 1;
-    let engorged = a.hasVigor('engorged') ? 1.5 : 1;
-    let d = Math.ceil(abilityDamage * stacks * spellPower * soaked * engorged);
+    let vigorMultiplier = this.vigorMultiplier(a, b, ability);
+    let ailmentMultiplier = this.ailmentMultiplier(a, b, ability);
+    let d = Math.ceil(abilityDamage * stacks * spellPower * vigorMultiplier * ailmentMultiplier);
     return d;
   }
 
@@ -1729,9 +1748,9 @@ class Battle {
     let bonusDamage = a.totalStat("damage");
     let abilityDamage = ability.maxPower(bonusDamage);
     let spellPower = 1 + a.totalStat('spellPower') / 10;
-    let soaked = a.hasAilment('soaked') ? 0.75 : 1;
-    let engorged = a.hasVigor('engorged') ? 1.5 : 1;
-    let d = Math.ceil(abilityDamage * stacks * spellPower * soaked * engorged);
+    let vigorMultiplier = this.vigorMultiplier(a, b, ability);
+    let ailmentMultiplier = this.ailmentMultiplier(a, b, ability);
+    let d = Math.ceil(abilityDamage * stacks * spellPower * vigorMultiplier * ailmentMultiplier);
     return d;
   }
 
@@ -1955,7 +1974,7 @@ class Battle {
               specialResult = special.fn(this, a, t, ability, power, triggeredPower, positions, triggeredBy);
             }
 
-            !fromEffect && t.addEffect(a, ability, power, triggered, triggeredPower, positions, specialResult);
+            t.addEffect(a, ability, power, triggered, triggeredPower, positions, specialResult);
 
             if(special && special.when == 'per target, after effect') {
               specialResult = special.fn(this, a, t, ability, power, triggeredPower, positions, triggeredBy);
@@ -1963,6 +1982,7 @@ class Battle {
 
             if(ability.stats.special != 'giveEffectAsAbility' && ability.stats.effect) {
               t = ability.stats.effect.stats.target == 'self' ? a : t;
+              console.log('ability effect', ability.stats.effect)
               this.useAbility(a, [t], ability.stats.effect, true, power);
             }
             return this.playAbilityAnimation(a, t, ability);

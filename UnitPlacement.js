@@ -24,8 +24,6 @@ class UnitPlacement extends Component {
       u.x = this.x;
       u.y = i;
       let teamUnit = this.team.get(u.suuid);
-      // s.drawStack(u.stacks);
-      console.log(u)
       u.sprite.drawStack(u.stacks);
       teamUnit.x = u.x;
       teamUnit.y = u.y;
