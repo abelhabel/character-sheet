@@ -21,6 +21,7 @@ const files = {
   'teams.js': () => wrap.pre() + require('./teams.js')() + wrap.post('teams.js'),
   'matches.js': () => wrap.pre() + require('./matches.js')() + wrap.post('matches.js'),
   'gauntlets.js': () => wrap.pre() + require('./gauntlets.js')() + wrap.post('gauntlets.js'),
+  'adventures.js': () => wrap.pre() + require('./adventures.js')() + wrap.post('adventures.js'),
   'animations.js': () => wrap.pre() + require('./animations.js')() + wrap.post('animations.js'),
   'leaders.js': () => wrap.pre() + require('./leaders.js')() + wrap.post('leaders.js'),
   'socket-worker.js': fs.readFileSync(__dirname + '/socket-worker.js'),
@@ -230,6 +231,9 @@ const server = http.createServer(function(req, res) {
   }
   if(name == 'saveGauntlet') {
     return saveData(req, res, 'gauntlets', url);
+  }
+  if(name == 'saveAdventure') {
+    return saveData(req, res, 'adventures', url);
   }
   if(name == 'saveIcon') {
     return saveData(req, res, 'icons', url);

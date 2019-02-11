@@ -13,6 +13,8 @@ const selectSprite = new Sprite(selectedIcon.bio.sprite);
 class Adventure extends Component {
   constructor(w, h) {
     super(true);
+    this.id = '';
+    this.name = "Adventure";
     this.tw = 12;
     this.th = 12;
     this.w = w;
@@ -21,23 +23,28 @@ class Adventure extends Component {
     this.layers = {
       ground: {
         items: new PL(this.w, this.h),
-        canvas: new Canvas(this.tw * this.w, this.th * this.h)
+        canvas: new Canvas(this.tw * this.w, this.th * this.h),
+        animations: [],
       },
       obstacles :{
         items: new PL(this.w, this.h),
-        canvas: new Canvas(this.tw * this.w, this.th * this.h)
+        canvas: new Canvas(this.tw * this.w, this.th * this.h),
+        animations: [],
       },
       select: {
         items: new PL(this.w, this.h),
-        canvas: new Canvas(this.tw * this.w, this.th * this.h)
+        canvas: new Canvas(this.tw * this.w, this.th * this.h),
+        animations: [],
       },
       grid: {
         items: null,
-        canvas: new Canvas(this.tw * this.w, this.th * this.h)
+        canvas: new Canvas(this.tw * this.w, this.th * this.h),
+        animations: [],
       },
       preselect: {
         items: new PL(this.w, this.h),
         canvas: new Canvas(this.tw * this.w, this.th * this.h),
+        animations: [],
       }
     };
     this.mouse = {
@@ -45,7 +52,6 @@ class Adventure extends Component {
       down: null,
       move: null
     };
-    this.selectedTile = null;
 
   }
 
@@ -56,6 +62,7 @@ class Adventure extends Component {
         width: ${a.tw * a.w}px;
         height: ${a.th * a.h}px;
         border: 1px solid black;
+        margin-bottom: 64px;
       }
       .adventure canvas {
         position: absolute;
@@ -66,13 +73,85 @@ class Adventure extends Component {
       .foot {
         position: fixed;
         bottom: 0px;
+        background-color: lightgray;
       }
 
       .tools {
         user-select: none;
         display: inline-block;
+        vertical-align: top;
       }
     </style>`;
+  }
+
+  static create(t) {
+    let a = new Adventure(t.w, t.h);
+    a.id = t.id;
+    a.name = t.name;
+    let ter = t.layers.ground.lookup.map(id => {
+      let tpl = terrains.find(t => t.id == id);
+      let item = new Terrain(tpl);
+      return item;
+    })
+    t.layers.ground.items.forEach((n, i) => {
+      let xy = a.layers.ground.items.xy(i);
+      if(n === null) return;
+      let item = ter[n];
+      a.layers.ground.items.set(xy.x, xy.y, item);
+    });
+    ter = t.layers.obstacles.lookup.map(id => {
+      let tpl = terrains.find(t => t.id == id);
+      let item = new Terrain(tpl);
+      return item;
+    })
+    t.layers.obstacles.items.forEach((n, i) => {
+      let xy = a.layers.obstacles.items.xy(i);
+      if(n === null) return;
+      let item = ter[n];
+      a.layers.obstacles.items.set(xy.x, xy.y, item);
+    });
+    return a;
+  }
+
+  compressLayer(layer) {
+    let l = [];
+    let pl = new PL(layer.items.w, layer.items.h);
+    layer.items.each((item, i) => {
+      if(!item.item) return;
+      let id = item.item.template.id;
+      let index = l.indexOf(id);
+      if(!~index) {
+        index = l.push(id) - 1;
+      }
+      pl.set(item.x, item.y, index);
+    })
+    return {lookup: l, items: pl.items};
+  }
+
+  save() {
+    let body = {
+      name: this.name,
+      w: this.w,
+      h: this.h,
+      layers: {
+        ground: this.compressLayer(this.layers.ground),
+        obstacles: this.compressLayer(this.layers.obstacles),
+      }
+    };
+    let id = this.id;
+    let url = 'saveAdventure';
+    if(id) {
+      url += '?id=' + id;
+    }
+    return fetch(url, {
+      method: 'POST',
+      body: JSON.stringify(body)
+    })
+    .then(res => res.text())
+    .then(id => {
+      this.id = id;
+      console.log('saved adventure', id)
+    })
   }
 
   drawGuides() {
@@ -149,7 +228,6 @@ class Adventure extends Component {
     } else {
       tiles = layer.items.inRect(sx, sy, ex, ey);
     }
-    console.log(tiles.length)
     tiles.forEach(t => {
       layer.items.set(t.x, t.y, selectSprite);
     })
@@ -179,6 +257,7 @@ class Adventure extends Component {
 
   draw(layer) {
     layer.canvas.clear();
+    this.clearAnimations(layer);
     layer.items.each(item => {
       if(!item.item) return;
       if(item.item instanceof Sprite) {
@@ -186,8 +265,26 @@ class Adventure extends Component {
       }
       if(item.item instanceof Terrain) {
         layer.canvas.drawSprite(item.item.sprite, item.x * this.tw, item.y * this.th, this.tw, this.th);
+        if(item.item.stats.animation) {
+          this.animateTerrain(item, layer);
+        }
       }
+
     });
+  }
+
+  clearAnimations(layer) {
+    layer.animations.forEach(a => {
+      clearInterval(a);
+    });
+    layer.animations = [];
+  }
+
+  animateTerrain(item, layer) {
+    layer.animations[layer.animations.length] = setInterval(() => {
+      layer.canvas.clearRect(item.x * this.tw, item.y * this.th, this.tw, this.th);
+      layer.canvas.drawSprite(item.item.sprite, item.x * this.tw, item.y * this.th, this.tw, this.th);
+    }, item.item.fps);
   }
 
   remove(layer) {
@@ -196,6 +293,10 @@ class Adventure extends Component {
       layer.items.remove(item.x, item.y);
     });
     this.draw(layer);
+  }
+
+  setName(e) {
+    this.name = e.target.value;
   }
 
   render() {
@@ -224,8 +325,15 @@ class Adventure extends Component {
     let foot = html`<div class='foot'>
       <div class='tools' id='ground'><div>Ground</div></div>
       <div class='tools' id='obstacles'><div>Obstacles</div></div>
+      <div class='tools' id='obstacles'>
+        <div>Controls</div>
+        <button id='save-adventure'>Save</button>
+        <input id='adventure-name' value='${this.name}'>
+      </div>
     </div>`;
 
+    foot.querySelector('#save-adventure').addEventListener('click', this.save.bind(this));
+    foot.querySelector('#adventure-name').addEventListener('keyup', this.setName.bind(this));
     let ground = foot.querySelector('#ground');
     let obstacles = foot.querySelector('#obstacles');
     terrains.forEach(tpl => {

@@ -65,6 +65,11 @@ class Canvas {
     }
   }
 
+  clearRect(x, y, w, h) {
+    let c = this.context;
+    c.clearRect(x, y, w, h);
+  }
+
   drawGrid(tw, th, color) {
     console.time('drawGrid')
     let c = this.context;

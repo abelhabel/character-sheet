@@ -43,6 +43,12 @@ var tpl = {
           exportAs: 'cover',
           type: 'binary',
           initial: false
+        },
+        {
+          name: 'Animation',
+          exportAs: 'animation',
+          type: 'binary',
+          initial: false
         }
       ]
     }
