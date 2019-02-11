@@ -16,6 +16,35 @@ class PositionList2d {
     return n;
   }
 
+  transfer(pl, setOnly, unset) {
+    if(this.w != pl.w || this.h != pl.h) return;
+    for(var y = 0; y < this.h; y++) {
+      for(var x = 0; x < this.w; x++) {
+        let i = this.w * y + x;
+        if(setOnly && !this.items[i]) continue;
+        if(unset) {
+          pl.items[i] = null;
+        } else {
+          pl.items[i] = this.items[i];
+        }
+        this.items[i] = null;
+      }
+    }
+  }
+
+  invert(item) {
+    for(var y = 0; y < this.h; y++) {
+      for(var x = 0; x < this.w; x++) {
+        let i = this.w * y + x;
+        if(!this.items[i]) {
+          this.items[i] = item;
+        } else {
+          this.items[i] = null;
+        }
+      }
+    }
+  }
+
   purge() {
     for(var y = 0; y < this.h; y++) {
       for(var x = 0; x < this.w; x++) {
@@ -170,6 +199,18 @@ class PositionList2d {
     return out;
   }
 
+  inRect(sx, sy, ex, ey) {
+    var out = [];
+    for(var y = sy; y <= ey; y++) {
+      if(y < 0 || y > this.h-1) continue;
+      for(var x = sx; x <= ex; x++) {
+        if(x < 0 || x > this.w-1) continue;
+        out.push({item: this.get(x, y), x:x, y: y});
+      }
+    }
+    return out;
+  }
+
   inRadius(cx, cy, r = 1) {
     var out = [];
     for(var y = cy - r; y <= cy + r; y++) {
@@ -219,6 +260,28 @@ class PositionList2d {
       for(var x = 0; x < this.w; x++) {
         fn(x, y);
       }
+    }
+  }
+
+  each(fn) {
+    for(var y = 0; y < this.h; y++) {
+      for(var x = 0; x < this.w; x++) {
+        fn({item: this.get(x, y), x, y});
+      }
+    }
+  }
+
+  eachRow(fn) {
+    let x = 0;
+    for(var y = 0; y < this.h; y++) {
+      fn(x, y);
+    }
+  }
+
+  eachCol(fn) {
+    let y = 0;
+    for(var x = 0; x < this.w; x++) {
+      fn(x, y);
     }
   }
 

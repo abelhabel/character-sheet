@@ -7,6 +7,11 @@ class Canvas {
     this.h = h;
   }
 
+  resize(w, h) {
+    this.canvas.width = this.w = w;
+    this.canvas.height = this.h = h;
+  }
+
   on(e, fn) {
     this.canvas.addEventListener(e, fn);
   }
@@ -32,6 +37,19 @@ class Canvas {
     c.font = font;
     if(color) c.fillStyle = color;
     c.fillText(text, x, y);
+  }
+
+  drawCircle(x, y, r, fill = '#000', stroke = false) {
+    let c = this.context;
+    c.arc(x, y, r, 0, Math.PI * 2);
+    if(fill) {
+      c.fillStyle = fill;
+      c.fill();
+    }
+    if(stroke) {
+      c.strokeStyle = stroke;
+      c.stroke();
+    }
   }
 
   drawRect(x, y, w, h, fill = '#000', stroke = false) {
@@ -67,6 +85,10 @@ class Canvas {
 
   drawSprite(sprite, x = 0, y = 0, tw = this.w, th =  this.h) {
     this.context.drawImage(sprite.canvas, x, y, tw, th);
+  }
+
+  drawImage(img, x = 0, y = 0, tw = this.w, th =  this.h) {
+    this.context.drawImage(img, x, y, tw, th);
   }
 
   clear() {

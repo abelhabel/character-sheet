@@ -30,6 +30,7 @@ const files = {
   'init-ability-compendium.js': fs.readFileSync(__dirname + '/init-ability-compendium.js'),
   'init-bestiary.js': fs.readFileSync(__dirname + '/init-bestiary.js'),
   'init-team.js': fs.readFileSync(__dirname + '/init-team.js'),
+  'init-adventure.js': fs.readFileSync(__dirname + '/init-adventure.js'),
 }
 // console.log(files['abilities.js'])
 var ruleLinks = [
@@ -107,6 +108,7 @@ loadFile('GameUI.js');
 loadFile('Gauntlet.js');
 loadFile('CardList.js');
 loadFile('Component.js');
+loadFile('Adventure.js');
 loadFile('init-sound.js');
 loadFile('game-modes.js');
 loadFile('guid.js');
@@ -130,6 +132,7 @@ loadFile('team.html');
 loadFile('lobby.html');
 loadFile('bestiary.html');
 loadFile('ability-compendium.html');
+loadFile('adventure.html');
 loadFile('Aclonica.ttf');
 loadFile('DungeonCrawl_ProjectUtumnoTileset.png');
 loadFile('sheet_of_old_paper.png');

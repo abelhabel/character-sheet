@@ -1,3 +1,4 @@
+const Sprite = require('Sprite.js');
 class Terrain {
   constructor(t) {
     this.template = t;
@@ -8,7 +9,7 @@ class Terrain {
     this.stats = {
       walkable: t.stats.walkable
     };
-
+    this.sprites = this.bio.sprite.map(s => new Sprite(s));
   }
 
   get canvas() {
@@ -17,7 +18,7 @@ class Terrain {
 
   get sprite() {
     let i = Math.floor(_random() * this.bio.sprite.length);
-    return this.bio.sprite[i];
+    return this.sprites[i];
   }
 }
 
