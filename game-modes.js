@@ -64,9 +64,10 @@ gameModes.adventure = function(lobby, ui) {
       ui.show('adventure');
       let tpl = adventures.find(a => a.id == '1a1f19de-3da3-e850-3815-0a3bcb0c218f');
       let a = Adventure.create(tpl);
+      window.adventure = a;
       a.addPlayer(team)
       ui.append(a.render());
-      a.on('battle', enemyTeam => {
+      a.on('battle', (enemyTeam, tile) => {
         let aiteam = Team.create(enemyTeam.template);
         let aiLevel = 1;
         ui.show('unit placement');
@@ -82,7 +83,7 @@ gameModes.adventure = function(lobby, ui) {
             let report = o.results.report(() => {
               battle.destroy();
               ui.clear('battle');
-              a.killTeam(enemyTeam.aid);
+              a.killTeam(tile);
               ui.show('adventure');
             });
             ui.append(report);

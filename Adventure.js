@@ -252,6 +252,7 @@ class Adventure extends Component {
       ter = t.layers.monsters.lookup.map(id => {
         let tpl = teams.find(t => t.id == id);
         let item = Team.create(tpl);
+        item.aid = guid();
         return item;
       })
       t.layers.monsters.items.forEach((n, i) => {
@@ -379,12 +380,10 @@ class Adventure extends Component {
     });
   }
 
-  killTeam(aid) {
-    console.log('killTeam', aid);
+  killTeam(tile) {
+    console.log('killTeam', tile);
     let {monsters} = this.layers;
-    let item = monsters.items.find(item => item.item.aid == aid);
-    console.log(item);
-    monsters.items.remove(item.x, item.y);
+    let item = monsters.items.remove(tile[0], tile[1]);
     this.draw(monsters);
   }
 
@@ -403,11 +402,13 @@ class Adventure extends Component {
         if(!p) {
           return done(resolve);
         }
+        console.log(p[0], p[1])
         let item = monsters.items.get(p[0], p[1]);
         if(item && item != this.player) {
           console.log('battle ahead', item);
           item.aid = guid();
-          this.trigger('battle', item);
+          console.log(monsters.items.find(i => i.item.aid == item.aid))
+          this.trigger('battle', item, p);
           return done(resolve);
         }
         monsters.items.remove(this.pp.x, this.pp.y);
