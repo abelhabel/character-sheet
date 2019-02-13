@@ -16,11 +16,11 @@ class Terrain {
   }
 
   get canvas() {
-    return this.template.canvas;
+    return this.sprite.canvas;
   }
 
   get sprite() {
-    let i = Math.floor(_random() * this.bio.sprite.length);
+    let i = Math.floor(Math.random() * this.bio.sprite.length);
     this.index = i;
     return this.sprites[i];
   }

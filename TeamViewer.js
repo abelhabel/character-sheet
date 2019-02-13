@@ -16,7 +16,7 @@ class TeamViewer extends Component {
       .outer {
         color: black;
         border: 1px solid black;
-        position: absolute;
+        position: fixed;
         width: 600px;
         height: 600px;
         left: 50%;
@@ -53,14 +53,13 @@ class TeamViewer extends Component {
         d.appendChild(s.canvas);
       })
       d.addEventListener('click', e => {
-        container.removeChild(o);
         this.trigger('done', t);
       });
       c.appendChild(d);
     })
     c.querySelector('#close-team-select').addEventListener('click', e => this.trigger('close'));
-    container.appendChild(o);
-
+    container && container.appendChild(o);
+    return this.tags.outer;
   }
 }
 

@@ -333,7 +333,6 @@ class Monster {
   }
 
   addEffect(source, ability, power, triggered, triggeredPower, positions, special) {
-    console.log('adding effect')
     if(power < 1 && !ability.stats.ailment && !ability.stats.vigor && !special) return;
     if(ability.stats.source == 'blessing' && this.hasAilment('blinded')) {
       logger.log(ability.bio.name, 'failed because', this.bio.name, 'is blinded and cannot receive new blessings.');

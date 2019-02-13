@@ -95,6 +95,7 @@ class TeamSelect  {
         t.monsters.forEach(m => {
           this.monsters.push(new Monster(m.template, m.stacks));
         })
+        ts.unmount();
         this.done();
       });
       ts.on('close', () => {
@@ -103,6 +104,7 @@ class TeamSelect  {
       ts.render(this.container);
     })
     this.top.appendChild(preset);
+
     let menu = new Menu([
       {
         text: 'Share',
@@ -141,6 +143,9 @@ class TeamSelect  {
       return card;
     });
     this.container.appendChild(this.cardList.render());
+
+
+
     this.render();
     container.appendChild(this.container);
   }

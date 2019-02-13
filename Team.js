@@ -23,6 +23,8 @@ class TeamUnit {
 
 class Team {
   constructor(name, units, max = 600) {
+    this.template = null;
+    this.id = '';
     this.name = name || 'team1';
     this.max = max;
     this.picked = [];
@@ -31,7 +33,10 @@ class Team {
   }
 
   static create(team) {
-    return new Team(team.name, team.units, team.max);
+    let t = new Team(team.name, team.units, team.max);
+    t.id = team.id;
+    t.template = team;
+    return t;
   }
 
   static fromMonsters(name, monsters) {
@@ -72,6 +77,17 @@ class Team {
     console.log(unit)
     this.picked.push(unit.suuid);
     return unit.monster;
+  }
+
+  get first() {
+    return this.units[0].monster;
+  }
+
+  get highestTier() {
+    return this.monsters.sort((a, b) => {
+      if(a.tier == b.tier) return 0;
+      return a.tier > b.tier ? -1 : 1;
+    })[0];
   }
 
   get monsters() {

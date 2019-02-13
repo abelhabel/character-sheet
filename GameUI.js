@@ -15,6 +15,7 @@ const unitPlacement = new Component(false, 'unit-placement');
 const waitingRoom = new Component(false, 'waiting-room');
 const teamView = new Component(false, 'team-view');
 const gauntlet = new Component(false, 'gauntlet');
+const adventure = new Component(false, 'adventure');
 class GameUI extends Component {
   style() {
     return html`<style>
@@ -110,6 +111,7 @@ class GameUI extends Component {
       new View('waiting room', waitingRoom),
       new View('team view', teamView),
       new View('gauntlet', gauntlet),
+      new View('adventure', adventure),
     ];
     this.inView = null;
     this.cursor = new Sprite(icons.find(i => i.bio.name == 'Ability Cursor').bio.sprite);

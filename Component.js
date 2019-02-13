@@ -8,6 +8,13 @@ class Events {
     this.events[event].push(fn);
   }
 
+  off(event, fn) {
+    if(!this.events[event]) return;
+    let index = this.events[event].indexOf(fn);
+    if(!~index) return;
+    this.events[event].splice(index, 1);
+  }
+
   trigger(event) {
     if(!Array.isArray(this.events[event])) return;
     this.events[event].forEach(fn => fn.apply(null, Array.from(arguments).splice(1)));
@@ -32,6 +39,16 @@ class Component extends Events {
 
   unmount() {
     this.tags.outer.parentNode.removeChild(this.tags.outer);
+  }
+
+  get mounted() {
+    let elem = this.tags.outer;
+    do {
+      if (elem == document.documentElement) {
+         return true;
+      }
+    } while (elem = elem.parentNode)
+    return false;
   }
 
   addInner(o = {}) {

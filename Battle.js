@@ -1550,7 +1550,6 @@ class Battle {
     }
     let ailmentRoll = this.roll(1, 100);
     let ailmentThreshold = this.ailmentThreshold(a, b);
-    console.log('ailmentRoll > ailmentThreshold', ailmentRoll, ailmentThreshold)
     if(ailmentRoll > ailmentThreshold) this.applyElementalAilment(a, b, ability);
     logger.log(`${a.bio.name} ${c} ${b.bio.name} ${d} (${ability.stats.element}) with ${ability.bio.name} (${b.totalHealth})`);
     if(!b.alive) logger.log(b.bio.name, 'died!');

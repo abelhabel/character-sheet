@@ -95,19 +95,6 @@ class Lobby extends Component {
     this.channels = {
       'user entered': 'didEnter'
     };
-    this.events = {
-      'local game': [],
-      'remote game': [],
-      'game ready': [],
-      'battle action confirmed': [],
-      'start spectate': [],
-      'play by post': [],
-      'human vs ai game': [],
-      'ai vs ai game': [],
-      'start match': [],
-      'import match': [],
-      'gauntlet': []
-    };
     this.cursor = new Sprite(icons.find(i => i.bio.name == 'Ability Cursor').bio.sprite);
   }
 
@@ -127,23 +114,6 @@ class Lobby extends Component {
     this.tags.container.style.display = 'block';
     this.getGames();
     this.getUsers();
-  }
-
-  on(event, fn) {
-    if(!this.events[event]) return;
-    this.events[event].push(fn);
-  }
-
-  off(event, fn) {
-    if(!this.events[event]) return;
-    let index = this.events[event].indexOf(fn);
-    if(!~index) return;
-    this.events[event].splice(index, 1);
-  }
-
-  trigger(event) {
-    if(!this.events[event]) return;
-    this.events[event].forEach(fn => fn.apply(null, Array.from(arguments).splice(1)));
   }
 
   confirmBattleAction(data) {
@@ -318,6 +288,10 @@ class Lobby extends Component {
 
   createGauntlet() {
     this.trigger('gauntlet');
+  }
+
+  createAdventure() {
+    this.trigger('adventure');
   }
 
   didJoinGame(data) {
@@ -521,6 +495,10 @@ class Lobby extends Component {
             fn: () => this.createPlayByPostGame(this.localUser)
           }
         ]
+      },
+      {
+        text: 'Adventure',
+        fn: () => this.createAdventure()
       },
       {
         text: 'Custom Game',

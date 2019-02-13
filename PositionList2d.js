@@ -271,6 +271,17 @@ class PositionList2d {
     }
   }
 
+  find(fn) {
+    for(var y = 0; y < this.h; y++) {
+      for(var x = 0; x < this.w; x++) {
+        let item = this.get(x, y);
+        if(item && fn({item, x, y})) {
+          return {item, x, y};
+        }
+      }
+    }
+  }
+
   eachRow(fn) {
     let x = 0;
     for(var y = 0; y < this.h; y++) {
@@ -300,6 +311,17 @@ class PositionList2d {
     }
   }
 
+  _filled(fn) {
+    let out = [];
+    for(var y = 0; y < this.h; y++) {
+      for(var x = 0; x < this.w; x++) {
+        let item = this.get(x, y);
+        item && out.push({item, x, y});
+      }
+    }
+    return out;
+  }
+
   get matrix() {
     var grid = new PF.Grid(this.w, this.h);
     for(var y = 0; y < this.h; y++) {
@@ -317,6 +339,10 @@ class PositionList2d {
 
   _list() {
     return this.items.filter(item => item);
+  }
+
+  get count() {
+    return this._list.length;
   }
 
   filter(fn) {
