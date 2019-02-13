@@ -82,7 +82,7 @@ gameModes.adventure = function(lobby, ui) {
             let report = o.results.report(() => {
               battle.destroy();
               ui.clear('battle');
-              a.killTeam(aiteam.id);
+              a.killTeam(enemyTeam.aid);
               ui.show('adventure');
             });
             ui.append(report);

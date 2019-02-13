@@ -1,3 +1,4 @@
+const guid = require('guid.js');
 const Component = require('Component.js');
 const Canvas = require('Canvas.js');
 const Sprite = require('Sprite.js');
@@ -378,10 +379,10 @@ class Adventure extends Component {
     });
   }
 
-  killTeam(teamId) {
-    console.log('killTeam', teamId);
+  killTeam(aid) {
+    console.log('killTeam', aid);
     let {monsters} = this.layers;
-    let item = monsters.items.find(item => item.item.id == teamId);
+    let item = monsters.items.find(item => item.item.aid == aid);
     console.log(item);
     monsters.items.remove(item.x, item.y);
     this.draw(monsters);
@@ -405,6 +406,7 @@ class Adventure extends Component {
         let item = monsters.items.get(p[0], p[1]);
         if(item && item != this.player) {
           console.log('battle ahead', item);
+          item.aid = guid();
           this.trigger('battle', item);
           return done(resolve);
         }
@@ -424,8 +426,8 @@ class Adventure extends Component {
     if(this.mouse.leave) return;
     let e = this.mouse.move;
     if(!e) return;
-    let x = window.innerWidth - e.offsetX > 0 && e.offsetX > window.innerWidth - 50 ? -1 : (e.offsetX < 50 ? 1 : 0);
-    let y = e.offsetY > window.innerHeight - 50 ? -1 : (e.offsetY < 50 ? 1 : 0);
+    let x = window.innerWidth - e.clientX > 0 && e.clientX > window.innerWidth - 50 ? -1 : (e.clientX < 50 ? 1 : 0);
+    let y = window.innerHeight - e.clientY > 0 && e.clientY > window.innerHeight - 50 ? -1 : (e.clientY < 50 ? 1 : 0);
     this.pan(x, y);
   }
 
