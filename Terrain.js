@@ -1,4 +1,6 @@
 const Sprite = require('Sprite.js');
+const abilities = require('abilities.js');
+const Ability = require('Ability.js');
 class Terrain {
   constructor(t) {
     this.template = t;
@@ -10,9 +12,30 @@ class Terrain {
     this.stats = {
       walkable: t.stats.walkable,
       cover: t.stats.cover,
-      animation: t.stats.animation
+      animation: t.stats.animation,
+    };
+    this.adventure = {
+      event: t.adventure && t.adventure.event,
+      action: t.adventure && t.adventure.action,
+      actionAmount: t.adventure && t.adventure.actionAmount || 0
+    };
+    this.inventory = {
+      consumable: t.inventory && t.inventory.consumable,
+      event: t.inventory && t.inventory.event,
+      action: t.inventory && t.inventory.action,
+      target: t.inventory && t.inventory.target,
+      ability: t.inventory && t.inventory.ability,
     };
     this.sprites = this.bio.sprite.map(s => new Sprite(s));
+  }
+
+  get ability() {
+    if(!this.inventory.ability) return;
+    return new Ability(abilities.find(a => a.id == this.inventory.ability));
+  }
+
+  get hasGold() {
+    return this.adventure.action == 'give gold' && this.adventure.actionAmount;
   }
 
   get canvas() {

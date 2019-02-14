@@ -404,6 +404,8 @@ class Adventure extends Component {
     let mp = this.tpos(e);
     let {obstacles, transport, monsters, dialog} = this.layers;
     let item = obstacles.items.get(mp.x, mp.y);
+
+    // Movement
     if(obstacles.items.canWalkTo(this.pp.x, this.pp.y, mp.x, mp.y)) {
       let path = obstacles.items.path(this.pp.x, this.pp.y, mp.x, mp.y);
       this.walk(this.player.team, path)
@@ -414,16 +416,19 @@ class Adventure extends Component {
       });
     }
 
+    // Interactables
+    if(!item) return;
+    if(item.adventure.event != 'click') return;
     if(obstacles.items.distance(this.pp.x, this.pp.y, mp.x, mp.y) > 1) return;
-
-    if(item && item.bio.name == 'Treasure Chest') {
-      this.addGold(10);
+    console.log(item)
+    if(item && item.adventure.action == 'give gold') {
+      this.addGold(item.adventure.actionAmount);
       this.sp.play('gold');
       obstacles.items.remove(mp.x, mp.y);
       this.draw(obstacles);
       this.updateResources();
     }
-    if(item && item.bio.name == 'Tavern') {
+    if(item && item.adventure.action == 'open tavern') {
       this.sp.play('open_book');
       this.trigger('tavern');
     }
@@ -533,7 +538,15 @@ class Adventure extends Component {
     });
   }
 
-
+  centerOnPlayer() {
+    let left = this.pp.x * this.tw - window.innerWidth/2;
+    left = Math.max(0, left);
+    left = Math.min(this.w * this.tw - window.innerWidth, left);
+    let top = this.pp.y * this.th - window.innerWidth/2;
+    top = Math.max(0, top);
+    top = Math.min(this.h * this.th - window.innerHeight, top);
+    this.pan(-left / this.panSpeed, -top / this.panSpeed);
+  }
 
   edgeScrolling() {
     if(this.mouse.leave) return;
@@ -548,12 +561,16 @@ class Adventure extends Component {
     let a = this.shadow.querySelector('.adventure');
     this.pans.x += this.panSpeed * x;
     this.pans.y += this.panSpeed * y;
-    if(Math.abs(this.pans.x) < this.w * this.tw - window.innerWidth && this.pans.x < 0) {
-      a.style.left = this.pans.x + 'px';
+    if(this.pans.x > 0) this.pans.x = 0;
+    if(this.pans.y > 0) this.pans.y = 0;
+    if(this.pans.x < window.innerWidth - this.w * this.tw) {
+      this.pans.x = window.innerWidth - this.w * this.tw
     }
-    if(Math.abs(this.pans.y) < this.h * this.th - window.innerHeight && this.pans.y < 0) {
-      a.style.top = this.pans.y + 'px';
+    if(this.pans.y < window.innerHeight - this.h * this.th) {
+      this.pans.y = window.innerHeight - this.h * this.th;
     };
+    a.style.left = this.pans.x + 'px';
+    a.style.top = this.pans.y + 'px';
   }
 
   render() {

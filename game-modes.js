@@ -85,9 +85,11 @@ gameModes.adventure = function(lobby, ui) {
       a.addPlayer({
         gold: 0,
         vision: 8,
+        inventory: [],
         team,
       });
       ui.append(a.render());
+      a.centerOnPlayer();
       a.on('battle', (enemyTeam, tile) => {
         let aiteam = Team.create(enemyTeam.template);
         let aiLevel = 1;

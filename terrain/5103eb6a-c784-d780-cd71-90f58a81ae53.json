@@ -1,1 +1,1 @@
-{"bio":{"name":"Treasure Chest","sprite":[{"x":1376,"y":1440,"spritesheet":"DungeonCrawl_ProjectUtumnoTileset.png","w":32,"h":32}]},"stats":{"walkable":false,"cover":false,"animation":false}}
+{"bio":{"name":"Treasure Chest","sprite":[{"x":1376,"y":1440,"spritesheet":"DungeonCrawl_ProjectUtumnoTileset.png","w":32,"h":32}]},"stats":{"walkable":false,"cover":false,"animation":false},"adventure":{"event":"click","action":"give gold","actionAmount":20},"inventory":{"consumable":false,"event":"","target":"","action":"","ability":""}}

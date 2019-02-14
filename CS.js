@@ -290,7 +290,7 @@ class CS {
       console.log('changed binary', currentVal)
       this.setState(c, item, currentVal);
     })
-
+    val.checked = currentVal;
     o.appendChild(name);
     o.appendChild(val);
     this.binaryTags.push({
@@ -357,7 +357,8 @@ class CS {
     var currentVal = [];
     this.setState(c, item, currentVal);
     var tags = [];
-    item.values.forEach(v => {
+    item.values.forEach(o => {
+      let v = item.get ? item.get(o) : o;
       var d = document.createElement('div');
       Object.assign(d.style, {
         display: 'inline-block',
@@ -378,10 +379,12 @@ class CS {
         d.style.backgroundColor = 'black';
       };
       d.addEventListener('click', () => {
+        v = item.set ? item.set(o) : v;
         let index = currentVal.indexOf(v);
         if(!~index) {
           d.style.backgroundColor = 'black';
           currentVal.push(v);
+          console.log(currentVal)
         } else {
           d.style.backgroundColor = 'gray';
           currentVal.splice(index, 1);
@@ -430,7 +433,8 @@ class CS {
     name.textContent = item.name;
     var currentVal = item.initial || '';
     var options = [];
-    item.values.forEach(v => {
+    item.values.forEach(d => {
+      let v = item.get ? item.get(d) : d;
       var o = document.createElement('option');
       o.textContent = o.value = v;
       options.push(o);
@@ -439,13 +443,8 @@ class CS {
     val.value = currentVal;
     this.setState(c, item, currentVal);
     val.addEventListener('change', (e) => {
-      if(item.multiple) {
-        currentVal = Array.from(val.selectedOptions).map(o => o.value);
-      } else {
-        currentVal = val.value;
-      }
+      currentVal = item.set ? item.set(val.value) : val.value;
       this.setState(c, item, currentVal);
-      console.log(currentVal)
       if(item.onSelect) item.onSelect(currentVal);
     })
 

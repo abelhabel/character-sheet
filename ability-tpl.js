@@ -234,7 +234,7 @@ var tpl = {
           name: 'Attribute',
           type: 'select',
           values: ['', 'attack', 'defence', 'spellPower', 'spellResistance',
-          'movement', 'initiative', 'damage', 'mana', 'apr', 'tpr'],
+          'movement', 'initiative', 'damage', 'mana', 'health', 'apr', 'tpr'],
           initial: '',
           exportAs: 'attribute'
         },

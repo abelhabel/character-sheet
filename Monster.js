@@ -609,7 +609,7 @@ class Monster {
   }
 
   get maxHealth() {
-    return Math.round(this.initialStacks * this.stats.health);
+    return Math.round(this.initialStacks * this.totalStat('health'));
   }
 
   get totalHealth() {
@@ -625,11 +625,11 @@ class Monster {
   }
 
   get health() {
-    return this.totalHealth % this.stats.health || this.stats.health;
+    return this.totalHealth % this.totalStat('health') || this.totalStat('health');
   }
 
   get stacks() {
-    return Math.ceil(this.totalHealth / this.stats.health);
+    return Math.ceil(this.totalHealth / this.totalStat('health'));
   }
 
   renderCS() {
