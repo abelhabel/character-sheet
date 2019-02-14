@@ -11,6 +11,7 @@ const BattleResult = require('BattleResult.js');
 const BattleMenu = require('BattleMenu.js');
 const UnitPlacement = require('UnitPlacement.js');
 const Component = require('Component.js');
+const SoundPlayer = require('SoundPlayer.js');
 const specialEffects = require('special-effects.js');
 const abilities = require('abilities.js');
 const monsters = require('monsters.js');
@@ -62,35 +63,6 @@ class AnimationPlayer {
     })
   }
 
-}
-
-class SoundPlayer {
-  constructor() {
-    this.volume = 0.1;
-    this.sounds = {
-      spell: 'spell.wav',
-      battle_begin: 'battle_begin.wav',
-      move: 'move.wav',
-      death: 'death.wav',
-      victory: 'victory.wav',
-      attack: 'attack.wav',
-      blessing: 'blessing.wav',
-      curse: 'curse.wav',
-      open_book: 'open_book.wav'
-    };
-    this.audio = {};
-  }
-
-  play(event, sounds = {}, preventDefault = false) {
-    let src = (sounds && sounds[event]) || (!preventDefault && this.sounds[event]);
-    if(!src) return;
-    let a = this.audio[src] || new Audio();
-    this.audio[src] = a;
-    if(!this.audio[src].paused) return;
-    a.src = 'sounds/' + src;
-    a.volume = this.volume;
-    a.play();
-  }
 }
 
 class TurnOrder extends Array {

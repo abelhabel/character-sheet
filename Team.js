@@ -45,6 +45,10 @@ class Team {
     return t;
   }
 
+  merge(team) {
+    this.units.push.apply(this.units, team.units);
+  }
+
   get portal() {
     return this.units.find(u => u.templateId == portalTemplate.id);
   }

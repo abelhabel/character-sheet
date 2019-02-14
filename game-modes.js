@@ -58,14 +58,35 @@ function placeUnits(arenaTpl, team, side, ui) {
 }
 
 gameModes.adventure = function(lobby, ui) {
+  let tpl = adventures.find(a => a.id == '1a1f19de-3da3-e850-3815-0a3bcb0c218f');
+  let a = Adventure.create(tpl);
+  a.on('tavern', () => {
+    ui.show('team select');
+    let undead = monsters.filter(m => m.bio.family == 'Order of Idun');
+    let onDone = (team) => {
+      a.player.team.merge(team);
+      a.addGold(-ts.spent);
+      a.updateResources();
+      ui.clear('team select');
+      ui.show('adventure');
+    };
+    let onExit = () => {
+      ui.clear('team select');
+      ui.show('adventure');
+    };
+    let ts = new TeamSelect(undead, ui.container, 42, 42, a.player.gold, 8, ['Andreas'], onDone, onExit);
+  });
   lobby.on('adventure', () => {
     var onDone = (team) => {
       console.log(team);
+      ui.clear('team select');
       ui.show('adventure');
-      let tpl = adventures.find(a => a.id == '1a1f19de-3da3-e850-3815-0a3bcb0c218f');
-      let a = Adventure.create(tpl);
       window.adventure = a;
-      a.addPlayer(team)
+      a.addPlayer({
+        gold: 0,
+        vision: 8,
+        team,
+      });
       ui.append(a.render());
       a.on('battle', (enemyTeam, tile) => {
         let aiteam = Team.create(enemyTeam.template);
@@ -100,7 +121,6 @@ gameModes.adventure = function(lobby, ui) {
     }
     ui.show('team select');
     let ts = new TeamSelect(monsters, ui.container, 42, 42, 600, 8, ['Andreas'], onDone, onExit);
-    console.log('adventure');
   });
 }
 

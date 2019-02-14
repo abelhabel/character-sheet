@@ -38,7 +38,7 @@ class TeamSelect  {
     this.tw = tw;
     this.th = th;
     this.container = html`<div></div>`;
-    this.cash = cash || 200;
+    this.cash = typeof cash == 'number' ? cash : 200;
     this.spent = 0;
     this.max = max || 8;
     this.top = html`<div id='team-select-top'></div>`;

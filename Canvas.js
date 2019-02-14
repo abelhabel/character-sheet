@@ -7,6 +7,10 @@ class Canvas {
     this.h = h;
   }
 
+  clone() {
+    return this.canvas.clone();
+  }
+
   resize(w, h) {
     this.canvas.width = this.w = w;
     this.canvas.height = this.h = h;

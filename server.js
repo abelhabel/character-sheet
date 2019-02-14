@@ -97,6 +97,7 @@ loadFile('AI.js');
 loadFile('TeamSelect.js');
 loadFile('BattleResult.js');
 loadFile('BattleMenu.js');
+loadFile('SoundPlayer.js');
 loadFile('Menu.js');
 loadFile('Match.js');
 loadFile('DynamicSound.js');

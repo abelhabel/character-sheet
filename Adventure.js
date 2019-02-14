@@ -5,6 +5,7 @@ const Sprite = require('Sprite.js');
 const Terrain = require('Terrain.js');
 const Team = require('Team.js');
 const TeamViewer = require('TeamViewer.js');
+const SoundPlayer = require('SoundPlayer.js');
 const PL = require('PositionList2d.js');
 const icons = require('icons.js');
 const terrains = require('terrains.js');
@@ -13,9 +14,11 @@ const selectedIcon = icons.find(i => i.bio.name == 'Hit Background');
 const deselectIcon = icons.find(i => i.bio.name == 'Stop');
 const removeIcon = icons.find(i => i.bio.name == 'Delete');
 const invertIcon = icons.find(i => i.bio.name == 'Invert');
+const goldIcon = icons.find(i => i.bio.name == 'Gold');
 const tileTargetIcon = icons.find(i => i.bio.name == 'Tile Target');
 const selectSprite = new Sprite(selectedIcon.bio.sprite);
 const tileTargetSprite = new Sprite(tileTargetIcon.bio.sprite);
+const goldSprite = new Sprite(goldIcon.bio.sprite);
 class ControlPanel extends Component {
   constructor() {
     super(true);
@@ -39,7 +42,8 @@ class ControlPanel extends Component {
   }
 
   renderItem(item) {
-    let t = html`<div class='control-item'></div>`;
+    let t = html`<div class='control-item'>
+    </div>`;
     if(item.g) {
       t.appendChild(item.g.canvas.clone());
     }
@@ -47,20 +51,21 @@ class ControlPanel extends Component {
       t.appendChild(item.o.canvas.clone());
     }
     if(item.m) {
-      console.log(item)
       item.m.monsters.forEach(m => {
         t.appendChild(m.canvas.clone());
       })
     }
     if(item.d) {
-      console.log('render dialog', item.d)
       t.appendChild(item.d.render());
+    }
+    if(item.t) {
+      t.appendChild(html`<div>Transports to: ${item.t.x}, ${item.t.y}</div>`);
     }
     return t;
   }
 
   render(layers) {
-    let {select, dialog, ground, obstacles, monsters} = layers;
+    let {select, dialog, ground, obstacles, monsters, transport} = layers;
     this.clear();
     this.addStyle(ControlPanel.style);
     let c = html`<div id='control-panel'></div>`;
@@ -71,7 +76,8 @@ class ControlPanel extends Component {
       let g = ground.items.get(item.x, item.y);
       let o = obstacles.items.get(item.x, item.y);
       let m = monsters.items.get(item.x, item.y);
-      items.push({d,g,o,m});
+      let t = transport.items.get(item.x, item.y);
+      items.push({d,g,o,m,t});
     })
     items.forEach(item => {
       let t = this.renderItem(item);
@@ -114,6 +120,15 @@ class Dialog extends Component {
   }
 }
 
+class Layer {
+  constructor(name, w, h, tw, th) {
+    this.name = name;
+    this.items = new PL(w, h);
+    this.canvas = new Canvas(tw * w, th * h);
+    this.animations = [];
+  }
+}
+
 class Adventure extends Component {
   constructor(w, h, tw, th) {
     super(true);
@@ -126,49 +141,21 @@ class Adventure extends Component {
     this.zoomed = true;
     this.startPosition = {x: 0, y: 0};
     this.layers = {
-      ground: {
-        name: 'ground',
-        items: new PL(this.w, this.h),
-        canvas: new Canvas(this.tw * this.w, this.th * this.h),
-        animations: [],
-      },
-      obstacles: {
-        name: 'obstacles',
-        items: new PL(this.w, this.h),
-        canvas: new Canvas(this.tw * this.w, this.th * this.h),
-        animations: [],
-      },
-      select: {
-        name: 'select',
-        items: new PL(this.w, this.h),
-        canvas: new Canvas(this.tw * this.w, this.th * this.h),
-        animations: [],
-      },
-      grid: {
-        name: 'grid',
-        items: null,
-        canvas: new Canvas(this.tw * this.w, this.th * this.h),
-        animations: [],
-      },
-      preselect: {
-        name: 'preselect',
-        items: new PL(this.w, this.h),
-        canvas: new Canvas(this.tw * this.w, this.th * this.h),
-        animations: [],
-      },
-      dialog: {
-        name: 'dialog',
-        items: new PL(this.w, this.h),
-        canvas: null,
-        animations: [],
-      },
-      monsters: {
-        name: 'monsters',
-        items: new PL(this.w, this.h),
-        canvas: new Canvas(this.tw * this.w, this.th * this.h),
-        animations: [],
-      }
+      ground: new Layer('ground', this.w, this.h, this.tw, this.th),
+      obstacles: new Layer('obstacles', this.w, this.h, this.tw, this.th),
+      select: new Layer('select', this.w, this.h, this.tw, this.th),
+      grid: new Layer('grid', this.w, this.h, this.tw, this.th),
+      preselect: new Layer('preselect', this.w, this.h, this.tw, this.th),
+      dialog: new Layer('dialog', this.w, this.h, this.tw, this.th),
+      monsters: new Layer('monsters', this.w, this.h, this.tw, this.th),
+      transport: new Layer('transport', this.w, this.h, this.tw, this.th),
+      fog: new Layer('fog', this.w, this.h, this.tw, this.th)
     };
+    this.layers.fog.items.each(i => this.layers.fog.items.set(i.x, i.y, true));
+    this.resources = [
+
+    ];
+    this.tags.resources = new Component();
     this.panSpeed = 10;
     this.pans = {x: 0, y: 0};
     this.mouse = {
@@ -178,6 +165,7 @@ class Adventure extends Component {
     };
     this.player = null;
     this.pp = {x: 0, y: 0};
+    this.sp = new SoundPlayer();
   }
 
   static style(a) {
@@ -217,6 +205,46 @@ class Adventure extends Component {
       .control-item {
         border: 1px solid black;
         padding: 2px;
+      }
+
+      #resources {
+        position: fixed;
+        top: 0px;
+        left: 0px;
+        display: inline-block;
+        padding: 10px;
+        background-image: url(sheet_of_old_paper.png);
+        z-index: 10;
+      }
+
+      .message-box {
+        position: fixed;
+        z-index: 100;
+        width: 400px;
+        height: 300px;
+        left: 50%;
+        top: 50%;
+        transform: translate(-50%, -50%);
+        background-image: url(sheet_of_old_paper.png);
+        border-radius: 10px;
+        box-shadow: 1px 5px 7px 0px rgba(0,0,0,0.5);
+        font-size: 20px;
+        border: 2px solid rgba(72, 61, 10, 0.6);
+        padding: 20px;
+      }
+
+      .message-box button {
+        box-shadow: 0px 2px 4px -1px rgba(0,0,0,0.5);
+        background-color: transparent;
+        border: none;
+        outline: none;
+        padding: 10px;
+        cursor: inherit;
+        border-radius: 4px;
+      }
+
+      .message-box button:hover {
+        background-color: rgba(0,0,0,0.1);
       }
     </style>`;
   }
@@ -268,13 +296,20 @@ class Adventure extends Component {
       });
     }
 
+    if(t.layers.transport) {
+      t.layers.transport.forEach(item => {
+        a.layers.transport.items.set(item.x, item.y, item.item);
+      });
+    }
+
     return a;
   }
 
-  addPlayer(team) {
-    this.player = team;
-    this.pp = Object.assign({}, this.startPosition);
-    this.layers.monsters.items.set(this.pp.x, this.pp.y, team);
+  addPlayer(p) {
+    this.player = p;
+    this.movePlayer(this.startPosition.x, this.startPosition.y);
+    this.layers.monsters.items.set(this.pp.x, this.pp.y, p.team);
+    this.resources.push(new Resource('gold', this.player.gold, goldIcon));
     this.draw(this.layers.monsters);
   }
 
@@ -296,8 +331,27 @@ class Adventure extends Component {
     return {x, y};
   }
 
+  drawOne(layer, x, y) {
+    let item = layer.items.get(x, y);
+    layer.canvas.clearRect(x, y, this.tw, this.th);
+    if(!item) return;
+    if(item instanceof Sprite) {
+      layer.canvas.drawSprite(item, x * this.tw, y * this.th, this.tw, this.th);
+    }
+    if(item instanceof Terrain) {
+      layer.canvas.drawSprite(item.sprite, x * this.tw, y * this.th, this.tw, this.th);
+      if(item.stats.animation) {
+        this.animateTerrain({item,x,y}, layer);
+      }
+    }
+    if(item instanceof Team) {
+      layer.canvas.drawSprite(item.highestTier.sprite, x * this.tw, y * this.th, this.tw, this.th);
+    }
+  }
+
   draw(layer) {
-    layer.canvas && layer.canvas.clear();
+    if(!layer.canvas) return;
+    layer.canvas.clear();
     this.clearAnimations(layer);
     if(!layer.items) return;
     layer.items.each(item => {
@@ -313,6 +367,9 @@ class Adventure extends Component {
       }
       if(item.item instanceof Team) {
         layer.canvas.drawSprite(item.item.highestTier.sprite, item.x * this.tw, item.y * this.th, this.tw, this.th);
+      }
+      if(layer.name == 'fog') {
+        layer.canvas.drawRect(item.x * this.tw, item.y * this.th, this.tw, this.th);
       }
     });
   }
@@ -345,17 +402,62 @@ class Adventure extends Component {
   mouseUp(e) {
     this.mouse.up = e;
     let mp = this.tpos(e);
-    let {obstacles} = this.layers;
+    let {obstacles, transport, monsters, dialog} = this.layers;
+    let item = obstacles.items.get(mp.x, mp.y);
     if(obstacles.items.canWalkTo(this.pp.x, this.pp.y, mp.x, mp.y)) {
       let path = obstacles.items.path(this.pp.x, this.pp.y, mp.x, mp.y);
-      this.walk(this.player, path)
+      this.walk(this.player.team, path)
       .then(() => {
-        console.log('walk done');
       })
       .catch(e => {
         console.log('walk error', e);
       });
     }
+
+    if(obstacles.items.distance(this.pp.x, this.pp.y, mp.x, mp.y) > 1) return;
+
+    if(item && item.bio.name == 'Treasure Chest') {
+      this.addGold(10);
+      this.sp.play('gold');
+      obstacles.items.remove(mp.x, mp.y);
+      this.draw(obstacles);
+      this.updateResources();
+    }
+    if(item && item.bio.name == 'Tavern') {
+      this.sp.play('open_book');
+      this.trigger('tavern');
+    }
+
+    let trans = transport.items.get(mp.x, mp.y);
+    if(trans) {
+      let empty = obstacles.items.closestEmpty(trans.x, trans.y);
+      this.movePlayer(empty.x, empty.y);
+      this.draw(monsters);
+    }
+
+    let d = dialog.items.get(mp.x, mp.y);
+    if(d) {
+      let dtag = html`<div class='message-box'>
+        <p>${d.text}</p>
+        <button>Close</button>
+      </div>`;
+      dtag.querySelector('button').addEventListener('click', () => {
+        dtag.parentNode.removeChild(dtag);
+      })
+      this.append(dtag);
+      this.sp.play('open_book');
+    }
+  }
+
+  addGold(n) {
+    this.player.gold += n;
+    let r = this.resources.find(r => r.name == 'gold');
+    r.amount = this.player.gold;
+  }
+
+  updateResources() {
+    this.tags.resources.clear();
+    this.resources.forEach(r => this.tags.resources.append(r.render()));
   }
 
   mouseLeave(e) {
@@ -381,7 +483,6 @@ class Adventure extends Component {
   }
 
   killTeam(tile) {
-    console.log('killTeam', tile);
     let {monsters} = this.layers;
     let item = monsters.items.remove(tile[0], tile[1]);
     this.draw(monsters);
@@ -402,19 +503,14 @@ class Adventure extends Component {
         if(!p) {
           return done(resolve);
         }
-        console.log(p[0], p[1])
         let item = monsters.items.get(p[0], p[1]);
-        if(item && item != this.player) {
-          console.log('battle ahead', item);
-          item.aid = guid();
-          console.log(monsters.items.find(i => i.item.aid == item.aid))
+        if(item && item != a) {
           this.trigger('battle', item, p);
           return done(resolve);
         }
-        monsters.items.remove(this.pp.x, this.pp.y);
-        this.pp = {x: p[0], y: p[1]};
-        monsters.items.set(p[0], p[1], a);
-        this.draw(monsters);
+        this.movePlayer(p[0], p[1]);
+        this.sp.play('move');
+        // this.draw(monsters);
         if(!path.length) {
           done(resolve);
         }
@@ -422,6 +518,22 @@ class Adventure extends Component {
 
     })
   }
+
+  movePlayer(x, y) {
+    let {monsters, fog} = this.layers;
+    monsters.canvas.clearRect(this.pp.x * this.tw, this.pp.y * this.th, this.tw, this.th);
+    monsters.items.remove(this.pp.x, this.pp.y);
+    this.pp = {x, y};
+    monsters.items.set(x, y, this.player.team);
+    monsters.canvas.drawSprite(this.player.team.highestTier.sprite, this.pp.x * this.tw, this.pp.y * this.th, this.tw, this.th);
+    let reveal = fog.items.inRadius(x, y, this.player.vision);
+    reveal.forEach(item => {
+      fog.items.set(item.x, item.y, false);
+      fog.canvas.clearRect(item.x * this.tw, item.y * this.th, this.tw, this.th);
+    });
+  }
+
+
 
   edgeScrolling() {
     if(this.mouse.leave) return;
@@ -449,6 +561,9 @@ class Adventure extends Component {
     this.addStyle(Adventure.style(this));
 
     let a = html`<div class='adventure'></div>`;
+    this.tags.resources.id = 'resources';
+    this.append(this.tags.resources.tags.outer);
+    this.updateResources();
     Object.keys(this.layers).forEach(key => {
       this.layers[key]
       if(!this.layers[key].canvas) return;
@@ -463,10 +578,31 @@ class Adventure extends Component {
     a.addEventListener('mouseleave', this.mouseLeave.bind(this));
     this.append(a);
     setInterval(this.edgeScrolling.bind(this), 25);
+    this.draw(this.layers.fog);
     return this.tags.outer;
   }
 
 
+}
+
+class Resource extends Component {
+  constructor(name, amount, icon) {
+    super();
+    this.name = name;
+    this.amount = amount || 0;
+    this.sprite = new Sprite(icon.bio.sprite);
+  }
+
+  render() {
+    this.clear();
+    let t = html`<div id='resources'>
+      <span class='icon'></span>
+      <span class='amount'>${this.amount}</span>
+    </div>`;
+    t.querySelector('.icon').appendChild(this.sprite.canvas);
+    this.append(t);
+    return this.tags.outer;
+  }
 }
 
 class AdventureEditor extends Adventure {
@@ -508,6 +644,7 @@ class AdventureEditor extends Adventure {
         obstacles: this.compressLayer(this.layers.obstacles),
         monsters: this.compressLayer(this.layers.monsters),
         dialog: this.layers.dialog.items._filled(),
+        transport: this.layers.transport.items._filled()
       }
     };
     let id = this.id;
@@ -669,10 +806,35 @@ class AdventureEditor extends Adventure {
     })
   }
 
+  removeMonsters(e) {
+    let {monsters} = this.layers;
+    this.selected.forEach(item => {
+      monsters.items.remove(item.x, item.y);
+    })
+    this.draw(monsters);
+  }
+
   addStartPosition() {
     let selected = this.selected;
     if(selected.length != 1) return;
     this.startPosition = {x: selected[0].x, y: selected[0].y};
+  }
+
+  addTransport(e) {
+    let selected = this.selected;
+    if(selected.length != 2) return;
+    this.layers.transport.items.set(selected[1].x, selected[1].y, selected[0]);
+    this.layers.transport.items.set(selected[0].x, selected[0].y, selected[1]);
+    this.renderControlPanel();
+  }
+
+  removeTransport() {
+    let {transport} = this.layers;
+    this.selected.forEach(item => {
+      transport.items.remove(item.x, item.y);
+    })
+    this.renderControlPanel();
+    this.draw(transport);
   }
 
   render() {
@@ -708,8 +870,11 @@ class AdventureEditor extends Adventure {
         <button id='save-adventure'>Save</button>
         <input id='adventure-name' value='${this.name}'>
         <button id='add-dialog'>Dialog</button>
-        <button id='add-monsters'>Monsters</button>
+        <button id='add-monsters'>Add Monsters</button>
+        <button id='remove-monsters'>Remove Monsters</button>
         <button id='add-start-position'>Set Start</button>
+        <button id='add-transport'>Add Transport</button>
+        <button id='remove-transport'>Remove Transport</button>
       </div>
     </div>`;
 
@@ -717,7 +882,10 @@ class AdventureEditor extends Adventure {
     foot.querySelector('#adventure-name').addEventListener('keyup', this.setName.bind(this));
     foot.querySelector('#add-dialog').addEventListener('click', this.addDialog.bind(this));
     foot.querySelector('#add-monsters').addEventListener('click', this.addMonsters.bind(this));
+    foot.querySelector('#remove-monsters').addEventListener('click', this.removeMonsters.bind(this));
     foot.querySelector('#add-start-position').addEventListener('click', this.addStartPosition.bind(this));
+    foot.querySelector('#add-transport').addEventListener('click', this.addTransport.bind(this));
+    foot.querySelector('#remove-transport').addEventListener('click', this.removeTransport.bind(this));
     let ground = foot.querySelector('#ground');
     let obstacles = foot.querySelector('#obstacles');
     terrains.forEach(tpl => {
@@ -748,6 +916,15 @@ class AdventureEditor extends Adventure {
     obstacles.appendChild(invertSelection.canvas);
     this.append(a);
     this.append(foot);
+  }
+}
+
+class Transport {
+  constructor(p1, p2) {
+    this.tiles = [
+      {x: p1.x, y: p1.y},
+      {x: p2.x, y: p2.y}
+    ];
   }
 }
 

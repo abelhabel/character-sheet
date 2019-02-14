@@ -92,9 +92,9 @@ Module.loaders = [];
 Module.loadOrder = [];
 
 Module.onLoad(['DungeonCrawl_ProjectUtumnoTileset.png',
-  'icons.js', 'terrains.js', 'adventures.js', 'teams.js', 'monsters.js', 'abilities.js',
-  'PositionList2d.js', 'FixedList.js',
-  'Component.js', 'Canvas.js', 'Sprite.js', 'CompositeSprite.js', 'Terrain.js',
+  'icons.js', 'terrains.js', 'adventures.js', 'teams.js', 'monsters.js', 'abilities.js', 'sounds.js',
+  'PositionList2d.js', 'FixedList.js', 'guid.js',
+  'Component.js', 'Canvas.js', 'Sprite.js', 'CompositeSprite.js', 'Terrain.js', 'SoundPlayer.js',
   'AbilityEffect.js', 'Ability.js', 'Monster.js', 'Team.js', 'TeamViewer.js', 'Adventure.js'], () => {
   const Adventure = require('Adventure.js');
   const adventures = require('adventures.js');
