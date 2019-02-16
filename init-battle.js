@@ -2,8 +2,8 @@ HTMLCanvasElement.prototype.clone = function(w, h, style) {
   w = w || this.width;
   h = h || this.height;
   var c = document.createElement('canvas');
-  c.width = this.width;
-  c.height = this.height;
+  c.width = w;
+  c.height = h;
   c.getContext('2d').drawImage(this, 0, 0, w, h);
   this.style.copyTo(c.style);
   if(typeof style == 'object') {
@@ -121,8 +121,11 @@ Module.onLoad(['DungeonCrawl_ProjectUtumnoTileset.png', 'Hell2.jpg',
 'mythical_card.jpg', 'outlaws_card.jpg', 'undead_card.jpg', 'beasts_card.jpg', 'order_of_idun_card.jpg', 'aloysias_chosen_card.jpg', 'demons_card.jpg',
 'guid.js', 'sounds.js', 'adventures.js',
 'monsters.js', 'abilities.js', 'terrains.js', 'arenas.js', 'icons.js', 'animations.js', 'teams.js', 'elements.js', 'matches.js', 'gauntlets.js',
-'special-effects.js','FixedList.js', 'Component.js', 'ToolTip.js', 'CardList.js', 'Logger.js', 'Rand.js', 'Canvas.js', 'Sprite.js', 'CompositeSprite.js', 'AbilityEffect.js', 'Animation.js',
-'PositionList2d.js', 'pathfinding.js',  'Ability.js', 'AI.js', 'Monster.js', 'Terrain.js', 'Menu.js', 'Slider.js', 'BattleMenu.js',
+'special-effects.js','FixedList.js', 'Component.js', 'ToolTip.js', 'CardList.js', 'Logger.js', 'Rand.js',
+'Canvas.js', 'Sprite.js', 'CompositeSprite.js',
+'AbilityEffect.js', 'Animation.js', 'AdventureTime.js',
+'PositionList2d.js', 'pathfinding.js',  'Ability.js', 'AI.js', 'Monster.js', 'Terrain.js', 'Menu.js', 'Slider.js',
+'BattleMenu.js', 'AdventureMenu.js', 'Inventory.js',
 'Arena.js', 'MonsterCard.js', 'TeamViewer.js', 'Team.js', 'TeamSelect.js', 'UnitPlacement.js', 'BattleResult.js', 'Match.js', 'SoundPlayer.js',
 'Gauntlet.js', 'View.js', 'Lobby.js', 'Battle.js', 'Adventure.js', 'GameUI.js',
 'game-modes.js', 'lobby-channels-client.js' ], () => {

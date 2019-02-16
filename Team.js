@@ -9,6 +9,7 @@ class TeamUnit {
     this.stacks = stacks || 1;
     this.x = x;
     this.y = y;
+    this.abilities = [];
   }
 
   get monster() {
@@ -18,6 +19,10 @@ class TeamUnit {
     m.x = this.x;
     m.y = this.y;
     return m;
+  }
+
+  addAbility(abilityId) {
+    this.abilities.push(abilityId);
   }
 }
 
@@ -30,6 +35,12 @@ class Team {
     this.picked = [];
     this.units = [];
     units && units.length && this.units.push.apply(this.units, units.map(t => new TeamUnit(t.suuid, t.templateId, t.stacks, t.x, t.y)));
+  }
+
+  addAbility(abilityId, unitId) {
+    if(!unitId) {
+      this.units[0].addAbility(abilityId);
+    }
   }
 
   static create(team) {

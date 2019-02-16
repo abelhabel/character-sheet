@@ -219,6 +219,12 @@ class Monster {
     });
   }
 
+  addAbility(abilityId) {
+    let a = abilities.find(c => c.id == abilityId);
+    if(!a) return;
+    this.abilities.push(new Ability(a, this));
+  }
+
   get attacks() {
     return this.abilities.filter(a => a.bio.type == 'active' && a.stats.source == 'attack');
   }
@@ -441,7 +447,6 @@ class Monster {
     var out = new StatBonus(this);
     var stacks = {};
     this.battle && this.battle.auras.all.forEach(a => {
-      if(!a.owner.alive) return
       if(a.stats.attribute != name) return;
       var {source, targetFamily, multiplier, radius} = a.stats;
       var d = this.battle.grid.distance(this.x, this.y, a.owner.x, a.owner.y);

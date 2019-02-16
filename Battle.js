@@ -553,6 +553,9 @@ class Battle {
     this.originalTeam1.units.forEach(u => {
       let tpl = monsters.find(tpl => tpl.id == u.templateId);
       let m = new Monster(tpl, u.stacks, false, u.suuid);
+      if(u.abilities && u.abilities.length) {
+        u.abilities.forEach(a => m.addAbility(a));
+      }
       m.team = 'team1';
       m.battle = this;
       this.team1.push(m);
@@ -717,10 +720,11 @@ class Battle {
     }
     let min = ability.stats.source == 'attack' ? this.attackRollMin(a, b, ability) : this.spellRollMin(a, b, ability);
     let max = ability.stats.source == 'attack' ? this.attackRollMax(a, b, ability) : this.spellRollMax(a, b, ability);
-    let killsMin = Math.floor(min / b.stats.health);
-    if(min - killsMin * b.stats.health >= b.health) killsMin += 1;
-    let killsMax = Math.floor(max / b.stats.health);
-    if(max - killsMax * b.stats.health >= b.health) killsMax += 1;
+    let health = b.totalStat('health');
+    let killsMin = Math.floor(min / health);
+    if(min - killsMin * health >= b.health) killsMin += 1;
+    let killsMax = Math.floor(max / health);
+    if(max - killsMax * health >= b.health) killsMax += 1;
     let kills = ability.isDamaging ? ` <span>(kills ${killsMin}-${killsMax})</span>` : '';
     let damage = ability.isDamaging ? `${min} - ${max}` : '';
     if(!kills && !damage) damage = ability.bio.name;

@@ -1,5 +1,6 @@
 const Sprite = require('Sprite.js');
 const Slider = require("Slider.js");
+const Component = require("Component.js");
 const icons = require('icons.js');
 const _ability = icons.find(ic => ic.bio.name == 'Ability Book');
 const _defend = icons.find(ic => ic.bio.name == 'Defend');
@@ -8,14 +9,10 @@ const _surrender = icons.find(ic => ic.bio.name == 'Surrender');
 const _cursor = icons.find(ic => ic.bio.name == 'Ability Cursor');
 const _volume = icons.find(ic => ic.bio.name == 'Sound');
 
-class BattleMenu {
+class BattleMenu extends Component {
   constructor(battle) {
+    super();
     this.battle = battle;
-    this.tags = {
-      outer: null,
-      abilities: null,
-      default: null
-    };
     this.tw = 32;
     this.th = 32;
     this.selected = null;
@@ -132,13 +129,11 @@ class BattleMenu {
     top.appendChild(surrender.canvas);
     top.appendChild(volume.canvas);
     let abilities = html`<div class='buttons'></div>`;
-    let outer = html`<div></div>`;
-    outer.appendChild(top);
-    outer.appendChild(abilities);
-    this.tags.outer = outer;
+    this.append(top);
+    this.append(abilities);
     this.tags.top = top;
     this.tags.abilities = abilities;
-    return outer;
+    return this.tags.outer;
   }
 }
 

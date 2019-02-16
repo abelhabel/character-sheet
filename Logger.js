@@ -100,7 +100,7 @@ class Logger {
       this.container.style.height = '23px';
       this.min.textContent = 'maximize';
     } else {
-      this.container.style.height = '200px';
+      this.container.style.height = '120px';
       this.min.textContent = 'minimize';
     }
   }

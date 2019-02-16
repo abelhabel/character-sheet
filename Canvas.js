@@ -7,8 +7,8 @@ class Canvas {
     this.h = h;
   }
 
-  clone() {
-    return this.canvas.clone();
+  clone(w, h, style) {
+    return this.canvas.clone(w, h, style);
   }
 
   resize(w, h) {

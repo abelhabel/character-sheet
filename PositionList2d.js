@@ -217,7 +217,7 @@ class PositionList2d {
       if(y < 0 || y > this.h-1) continue;
       for(var x = cx - r; x <= cx + r; x++) {
         if(x < 0 || x > this.w-1) continue;
-        if(this.distance(cx, cy, x, y) > r) continue;
+        if(this.steps(cx, cy, x, y) > r) continue;
         out.push({item: this.get(x, y), x:x, y: y});
       }
     }
@@ -320,6 +320,14 @@ class PositionList2d {
       }
     }
     return out;
+  }
+
+  firstEmpty(fn) {
+    for(var y = 0; y < this.h; y++) {
+      for(var x = 0; x < this.w; x++) {
+        if(!this.get(x, y)) return {x,y};
+      }
+    }
   }
 
   get matrix() {
