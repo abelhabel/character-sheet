@@ -92,7 +92,7 @@ class Adventure extends Component {
     this.tags.resources = new Component(false, 'resources');
     this.tags.time = new AdventureTime();
     this.menu = new AdventureMenu();
-    this.menu.on('end turn', () => this.tags.time.nextDay());
+    this.menu.on('end turn', () => this.endTurn());
     this.menu.on('open inventory', () => this.openInventory());
     this.panSpeed = 10;
     this.pans = {x: 0, y: 0};
@@ -259,7 +259,7 @@ class Adventure extends Component {
         padding: 2px;
       }
 
-      .resources, .time {
+      .resources {
         position: fixed;
         top: 0px;
         left: 0px;
@@ -268,8 +268,15 @@ class Adventure extends Component {
         background-image: url(sheet_of_old_paper.png);
         z-index: 10;
       }
+
       .time {
-        left: 64px;
+        position: fixed;
+        top: 0px;
+        right: 60px;
+        display: inline-block;
+        padding: 10px;
+        background-image: url(sheet_of_old_paper.png);
+        z-index: 10;
       }
 
 
@@ -291,6 +298,13 @@ class Adventure extends Component {
         font-size: 20px;
         border: 2px solid rgba(72, 61, 10, 0.6);
         padding: 20px;
+        white-space: pre-line;
+        text-align: right;
+      }
+
+      .message-box p {
+        margin-top: 0px;
+        text-align: justify;
       }
 
       .message-box button {
@@ -365,13 +379,24 @@ class Adventure extends Component {
     return a;
   }
 
+  endTurn() {
+    this.tags.time.nextDay();
+    let {obstacles} = this.layers;
+    obstacles.items.each(item => {
+      if(!item.item) return;
+      if(item.item.adventure.chargeActivation == 'per turn') {
+        item.item.resetConsumption();
+      }
+    })
+  }
+
   openInventory() {
     this.append(this.player.inventory.render());
   }
 
   addObstacle(x, y, item) {
     let {obstacles} = this.layers;
-    let empty = obstacles.items.closestEmpty(x, y);
+    let empty = !obstacles.items.get(x, y) ? {x,y} : obstacles.items.closestEmpty(x, y);
     obstacles.items.set(empty.x, empty.y, item);
     this.draw(obstacles);
 
@@ -483,7 +508,7 @@ class Adventure extends Component {
     if(obstacles.items.canWalkTo(this.pp.x, this.pp.y, mp.x, mp.y)) {
       let path = obstacles.items.path(this.pp.x, this.pp.y, mp.x, mp.y);
       path.shift();
-      this.walk(this.player.team, path)
+      return this.walk(this.player.team, path)
       .then(() => {
       })
       .catch(e => {
@@ -501,34 +526,48 @@ class Adventure extends Component {
     }
 
     // Dialog
-    let d = dialog.items.get(mp.x, mp.y);
-    if(d) {
-      let dtag = html`<div class='message-box'>
-        <p>${d.text}</p>
-        <button>Close</button>
-      </div>`;
-      dtag.querySelector('button').addEventListener('click', () => {
-        dtag.parentNode.removeChild(dtag);
-      })
-      this.append(dtag);
-      this.sp.play('open_book');
-    }
-
+    // let d = dialog.items.get(mp.x, mp.y);
+    // if(d) {
+    //   let dtag = html`<div class='message-box'>
+    //     <p>${d.text}</p>
+    //     <button>Close</button>
+    //   </div>`;
+    //   dtag.querySelector('button').addEventListener('click', () => {
+    //     dtag.parentNode.removeChild(dtag);
+    //   })
+    //   this.append(dtag);
+    //   this.sp.play('open_book');
+    // }
 
     // Interactables
     if(!item) return;
     if(item.adventure.event != 'click') return;
     if(obstacles.items.distance(this.pp.x, this.pp.y, mp.x, mp.y) > 1) return;
+    console.log(item)
+
+    this.showMessage(item);
     if(item.adventure.action == 'give gold') {
       this.addGold(item.adventure.actionAmount);
       this.sp.play('gold');
       obstacles.items.remove(mp.x, mp.y);
+      item.consume();
       this.draw(obstacles);
       this.updateResources();
     }
     if(item.adventure.action == 'give item') {
-      this.player.inventory.add(new Terrain(item.template));
-      obstacles.items.remove(mp.x, mp.y);
+      let items = item.takeAdventureItems();
+      console.log(items)
+      items.forEach(i => this.player.inventory.add(i));
+      if(item.adventure.consumable && item.isConsumed) {
+        obstacles.items.remove(mp.x, mp.y);
+      }
+      item.consume();
+      this.draw(obstacles);
+      this.updateResources();
+    }
+    if(item.adventure.action == 'give movement' && !item.isConsumed) {
+      this.player.movesLeft += item.adventure.actionAmount;
+      item.consume();
       this.draw(obstacles);
       this.updateResources();
     }
@@ -537,6 +576,29 @@ class Adventure extends Component {
       this.trigger('tavern');
     }
 
+  }
+
+  showMessage(item) {
+    if(item.adventure.description) {
+      let t, n;
+      if(item.isConsumed) {
+        t = `${item.bio.name} can't offer anything else at this point.`;
+        n = '';
+      } else {
+        t = item.adventure.description;
+        n = `+${item.adventure.actionAmount} ${item.adventureItem.bio.name}`;
+      }
+      let dtag = html`<div class='message-box'>
+        <p>${t}</p>
+        <span>${n}</span>
+        <button>Close</button>
+      </div>`;
+      dtag.querySelector('button').addEventListener('click', () => {
+        dtag.parentNode.removeChild(dtag);
+      })
+      this.append(dtag);
+      this.sp.play('open_book');
+    }
   }
 
   addGold(n) {
@@ -548,6 +610,7 @@ class Adventure extends Component {
   updateResources() {
     this.tags.resources.clear();
     this.resources.forEach(r => this.tags.resources.append(r.render()));
+    this.tags.time.render();
   }
 
   mouseLeave(e) {
@@ -568,7 +631,7 @@ class Adventure extends Component {
     path.shift();
     let c = select.canvas;
     path.forEach((p, i) => {
-      if(!this.player.movesLeft || i > this.player.movesLeft) return;
+      if(!this.player.movesLeft || i > this.player.movesLeft - 1) return;
       c.drawSprite(tileTargetSprite, p[0] * this.tw, p[1] * this.th, this.tw, this.th);
     });
   }
@@ -708,6 +771,7 @@ class Resource extends Component {
       <span class='amount'>${this.amount}</span>
     </div>`;
     t.querySelector('.icon').appendChild(this.sprite.canvas);
+    addToolTip(this.sprite.canvas, this.name);
     this.append(t);
     return this.tags.outer;
   }

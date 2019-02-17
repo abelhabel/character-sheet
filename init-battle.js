@@ -31,6 +31,36 @@ function html(strings, ...values) {
   d.innerHTML = out;
   return d.content.firstElementChild;
 }
+function addToolTip(tag, tip) {
+  let toolTip;
+  tag.addEventListener('mouseenter', e => {
+    let bb = tag.getBoundingClientRect();
+    toolTip = html`<div style='
+      position: fixed;
+      top: ${bb.y + 3}px;
+      left: ${bb.x + bb.width + 2}px;
+      color: black;
+      z-index: 1010;
+      pointer-events: none;
+      padding: 4px;
+      background-image: url(sheet_of_old_paper.png);
+      background-repeat: no-repeat;
+      overflow: hidden;
+      border-radius: 2px;
+      box-shadow: 0px 0px 5px 1px rgba(0,0,0,0.75);
+      '
+    >
+      ${tip}
+    </div>`;
+    document.body.appendChild(toolTip);
+  });
+  tag.addEventListener('mouseout', e => {
+    toolTip && toolTip.parentNode && document.body.removeChild(toolTip);
+  })
+  tag.addEventListener('mousedown', e => {
+    toolTip && toolTip.parentNode && document.body.removeChild(toolTip);
+  })
+}
 class Module {
   constructor(name) {
     this.name = name;

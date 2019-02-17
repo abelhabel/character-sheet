@@ -28,11 +28,6 @@ class AdventureTime extends Component {
 
   render() {
     this.clear();
-    let time = sprites.time.canvas.clone();
-    time.addEventListener('click', () => {
-      this.nextDay();
-    });
-    this.append(time);
     this.append(html`<div>
       <span>${this.day}</span>
       <span>${this.player.movesLeft} / ${this.player.movement}</span>

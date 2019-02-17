@@ -1,7 +1,13 @@
 function sortAlphabetically(a, b) {
+  if(a == b) return 0;
   return a < b ? -1 : 1;
 }
+function sortOnName(a, b) {
+  if(a.bio.name == b.bio.name) return 0;
+  return a.bio.name < b.bio.name ? -1 : 1;
+}
 const abilities = require('abilities.js');
+const terrains = require('terrains.js');
 var tpl = {
   name: "Terrain",
   folder: "terrain",
@@ -70,7 +76,29 @@ var tpl = {
           exportAs: 'action',
           initial: '',
           type: 'select',
-          values: ['', 'give gold', 'give item', 'open tavern']
+          values: ['', 'give gold', 'give item', 'open tavern', 'give movement']
+        },
+        {
+          name: 'Item',
+          exportAs: 'item',
+          initial: '',
+          type: 'select',
+          values: ['', ...terrains.sort(sortOnName)],
+          get(item) {
+            if(!item) return '';
+            if(typeof item == 'string') {
+              let t = this.values.find(v => v && v.id == item);
+              if(t) return t.bio.name;
+              return item;
+            }
+            return item.bio.name;
+          },
+          set(name) {
+            if(!name) return '';
+            t = this.values.find(v => v && v.bio && v.bio.name == name);
+            if(t) return t.id;
+            return '';
+          }
         },
         {
           name: 'Action Amount',
@@ -79,7 +107,32 @@ var tpl = {
           type: 'increment',
           range: [0, 10000]
         },
-
+        {
+          name: 'Charges',
+          exportAs: 'charges',
+          initial: 0,
+          type: 'increment',
+          range: [0, 10000]
+        },
+        {
+          name: 'Charge Activation',
+          exportAs: 'chargeActivation',
+          type: 'select',
+          initial: '',
+          values: ['', 'per turn', 'per adventure']
+        },
+        {
+          name: 'Consumable',
+          exportAs: 'consumable',
+          initial: false,
+          type: 'binary'
+        },
+        {
+          name: 'Description',
+          exportAs: 'description',
+          initial: '',
+          type: 'text'
+        }
       ]
     },
     {
@@ -121,11 +174,18 @@ var tpl = {
           values: ['', ...abilities],
           get(item) {
             if(!item) return '';
+            if(typeof item == 'string') {
+              let t = this.values.find(v => v && v.id == item);
+              if(t) return t.bio.name;
+              return item;
+            }
             return item.bio.name;
           },
           set(name) {
             if(!name) return '';
-            return this.values.find(v => v && v.bio && v.bio.name == name).id;
+            t = this.values.find(v => v && v.bio && v.bio.name == name);
+            if(t) return t.id;
+            return '';
           }
         }
       ]

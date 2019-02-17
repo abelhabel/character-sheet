@@ -1,5 +1,6 @@
 const Sprite = require('Sprite.js');
 const abilities = require('abilities.js');
+const terrains = require('terrains.js');
 const Ability = require('Ability.js');
 class Terrain {
   constructor(t) {
@@ -17,7 +18,11 @@ class Terrain {
     this.adventure = {
       event: t.adventure && t.adventure.event,
       action: t.adventure && t.adventure.action,
-      actionAmount: t.adventure && t.adventure.actionAmount || 0
+      item: t.adventure && t.adventure.item,
+      actionAmount: t.adventure && t.adventure.actionAmount || 0,
+      charges: t.adventure && t.adventure.charges || 0,
+      chargeActivation: t.adventure && t.adventure.chargeActivation || '',
+      description: t.adventure && t.adventure.description || '',
     };
     this.inventory = {
       consumable: t.inventory && t.inventory.consumable,
@@ -27,6 +32,36 @@ class Terrain {
       ability: t.inventory && t.inventory.ability,
     };
     this.sprites = this.bio.sprite.map(s => new Sprite(s));
+    this.adventureItemCount = 0;
+  }
+
+  get isConsumed() {
+    return this.adventureItemCount >= this.adventure.charges * this.adventure.actionAmount;
+  }
+
+  consume() {
+    this.adventureItemCount += this.adventure.actionAmount;
+  }
+
+  resetConsumption() {
+    this.adventureItemCount = 0;
+  }
+
+  get adventureItem() {
+    let id = this.adventure.item || this.template.id;
+    let tpl = terrains.find(t => t.id == id);
+    return new Terrain(tpl);
+  }
+
+  takeAdventureItems() {
+    if(this.adventureItemCount >= this.adventure.charges * this.adventure.actionAmount) return [];
+    let out = [];
+    let max = this.adventure.actionAmount;
+    for(let i = 0; i < max; i++) {
+      out.push(this.adventureItem);
+    }
+    this.consume();
+    return out;
   }
 
   get ability() {

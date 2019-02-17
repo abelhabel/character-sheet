@@ -454,15 +454,9 @@ class CS {
       name: item.name,
       cname: c.name,
       update: (v) => {
-        currentVal = v;
-        val.value = v;
-        if(item.multiple && Array.isArray(v)) {
-          options.forEach(o => {
-            if(~v.indexOf(o.value)) {
-              o.selected = true;
-            }
-          })
-        }
+        console.log('select update', v)
+        currentVal = item.get ? item.get(v) : v;
+        val.value = currentVal;
       }
     });
     return o;
