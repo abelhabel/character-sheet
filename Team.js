@@ -1,6 +1,7 @@
 const guid = require('guid.js');
 const monsters = require('monsters.js');
 const Monster = require('Monster.js');
+const TeamSheet = require('TeamSheet.js');
 const portalTemplate = monsters.find(m => m.bio.name == 'Portal');
 class TeamUnit {
   constructor(suuid, templateId, stacks, x, y) {
@@ -34,6 +35,7 @@ class Team {
     this.max = max;
     this.picked = [];
     this.units = [];
+    this.cs = new TeamSheet(this);
     units && units.length && this.units.push.apply(this.units, units.map(t => new TeamUnit(t.suuid, t.templateId, t.stacks, t.x, t.y)));
   }
 

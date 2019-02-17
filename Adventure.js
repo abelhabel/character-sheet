@@ -94,6 +94,7 @@ class Adventure extends Component {
     this.menu = new AdventureMenu();
     this.menu.on('end turn', () => this.endTurn());
     this.menu.on('open inventory', () => this.openInventory());
+    this.menu.on('open team', () => this.openTeamSheet());
     this.panSpeed = 10;
     this.pans = {x: 0, y: 0};
     this.mouse = {
@@ -320,6 +321,15 @@ class Adventure extends Component {
       .message-box button:hover {
         background-color: rgba(0,0,0,0.1);
       }
+
+      .team-sheet {
+        position: fixed;
+        top: 50%;
+        left: 50%;
+        transform: translate(-50%,-50%);
+        width: 800px;
+        height: 600px;
+      }
     </style>`;
   }
 
@@ -392,6 +402,10 @@ class Adventure extends Component {
 
   openInventory() {
     this.append(this.player.inventory.render());
+  }
+
+  openTeamSheet() {
+    this.append(this.player.team.cs.render());
   }
 
   addObstacle(x, y, item) {

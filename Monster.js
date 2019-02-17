@@ -647,35 +647,19 @@ class Monster {
     return html;
   }
 
-  drawMonsterCS(popup, onClose) {
-    let m = this;
-    popup.innerHTML = '';
-    let {name, family, cost, maxStacks} = m.bio;
-    let names = {
-      health: 'Health', mana: 'Mana',
-      attack: 'Attack', defence: 'Defence',
-      spellPower: 'Spell Power', spellResistance: 'Spell Resistance',
-      initiative: 'Initiative', movement: 'Movement',
-      tpr: 'Triggers Per Turn', apr: 'Actions Per Turn',
-      damage: 'Bonus Damage'
-    };
-    let health = new Sprite(icons.find(i => i.bio.name == 'Health Stat').bio.sprite);
-    let mana = new Sprite(icons.find(i => i.bio.name == 'Mana Stat').bio.sprite);
-    let attack = new Sprite(icons.find(i => i.bio.name == 'Attack Stat').bio.sprite);
-    let defence = new Sprite(icons.find(i => i.bio.name == 'Defence Stat').bio.sprite);
-    let spellPower = new Sprite(icons.find(i => i.bio.name == 'Spell Power Stat').bio.sprite);
-    let spellResistance = new Sprite(icons.find(i => i.bio.name == 'Spell Resistance Stat').bio.sprite);
-    let initiative = new Sprite(icons.find(i => i.bio.name == 'Initiative Stat').bio.sprite);
-    let movement = new Sprite(icons.find(i => i.bio.name == 'Movement Stat').bio.sprite);
-    let apr = new Sprite(icons.find(i => i.bio.name == 'APR Stat').bio.sprite);
-    let tpr = new Sprite(icons.find(i => i.bio.name == 'TPR Stat').bio.sprite);
-    let damage = new Sprite(icons.find(i => i.bio.name == 'Damage Stat').bio.sprite);
-    let style = html`<style id='monster-cs-style'>
-      .outer {
+  static get csStyle() {
+    return html`<style id='monster-cs-style'>
+      * {
+        box-sizing: border-box;
+      }
+      .monster-cs-outer {
         font-weight: bold;
         font-size: 11px;
         position: relative;
         height: 100%;
+        background-image: url(sheet_of_old_paper.png);
+        border-radius: 10px;
+        padding: 10px;
       }
       .stat-column {
         width: 116px;
@@ -730,10 +714,34 @@ class Monster {
         cursor: pointer;
       }
     </style>`;
-    if(!document.getElementById('monster-cs-style')) {
-      document.head.appendChild(style);
-    }
-    let tag = html`<div class='outer'>
+  }
+
+  drawMonsterCS(popup, onClose) {
+    let m = this;
+    popup.innerHTML = '';
+    let {name, family, cost, maxStacks} = m.bio;
+    let names = {
+      health: 'Health', mana: 'Mana',
+      attack: 'Attack', defence: 'Defence',
+      spellPower: 'Spell Power', spellResistance: 'Spell Resistance',
+      initiative: 'Initiative', movement: 'Movement',
+      tpr: 'Triggers Per Turn', apr: 'Actions Per Turn',
+      damage: 'Bonus Damage'
+    };
+    let health = new Sprite(icons.find(i => i.bio.name == 'Health Stat').bio.sprite);
+    let mana = new Sprite(icons.find(i => i.bio.name == 'Mana Stat').bio.sprite);
+    let attack = new Sprite(icons.find(i => i.bio.name == 'Attack Stat').bio.sprite);
+    let defence = new Sprite(icons.find(i => i.bio.name == 'Defence Stat').bio.sprite);
+    let spellPower = new Sprite(icons.find(i => i.bio.name == 'Spell Power Stat').bio.sprite);
+    let spellResistance = new Sprite(icons.find(i => i.bio.name == 'Spell Resistance Stat').bio.sprite);
+    let initiative = new Sprite(icons.find(i => i.bio.name == 'Initiative Stat').bio.sprite);
+    let movement = new Sprite(icons.find(i => i.bio.name == 'Movement Stat').bio.sprite);
+    let apr = new Sprite(icons.find(i => i.bio.name == 'APR Stat').bio.sprite);
+    let tpr = new Sprite(icons.find(i => i.bio.name == 'TPR Stat').bio.sprite);
+    let damage = new Sprite(icons.find(i => i.bio.name == 'Damage Stat').bio.sprite);
+    let style = Monster.csStyle;
+
+    let tag = html`<div class='monster-cs-outer'>
       <section>
         <div id='close'>Close</div>
         <div class='bio' id='monster-image'></div>
@@ -808,6 +816,11 @@ class Monster {
       <section id='active-effects'>Active Effects <br></section>
       <section id='details'></section>
     </div>`;
+    if(!document.getElementById('monster-cs-style')) {
+      document.head.appendChild(style);
+    } else {
+      // tag.appendChild(style);
+    }
     tag.querySelector('#monster-image').appendChild(m.canvas.clone());
     tag.querySelector('.stat-img.health').appendChild(health.canvas);
     tag.querySelector('.stat-img.mana').appendChild(mana.canvas);

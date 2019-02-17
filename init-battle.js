@@ -156,7 +156,8 @@ Module.onLoad(['DungeonCrawl_ProjectUtumnoTileset.png', 'Hell2.jpg',
 'AbilityEffect.js', 'Animation.js', 'AdventureTime.js',
 'PositionList2d.js', 'pathfinding.js',  'Ability.js', 'AI.js', 'Monster.js', 'Terrain.js', 'Menu.js', 'Slider.js',
 'BattleMenu.js', 'AdventureMenu.js', 'Inventory.js',
-'Arena.js', 'MonsterCard.js', 'TeamViewer.js', 'Team.js', 'TeamSelect.js', 'UnitPlacement.js', 'BattleResult.js', 'Match.js', 'SoundPlayer.js',
+'Arena.js', 'MonsterCard.js',
+'TeamSheet.js', 'TeamViewer.js', 'Team.js', 'TeamSelect.js', 'UnitPlacement.js', 'BattleResult.js', 'Match.js', 'SoundPlayer.js',
 'Gauntlet.js', 'View.js', 'Lobby.js', 'Battle.js', 'Adventure.js', 'GameUI.js',
 'game-modes.js', 'lobby-channels-client.js' ], () => {
   const GameUI = require('GameUI.js');

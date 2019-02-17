@@ -111,6 +111,7 @@ loadFile('GameUI.js');
 loadFile('Gauntlet.js');
 loadFile('CardList.js');
 loadFile('Component.js');
+loadFile('TeamSheet.js');
 loadFile('Adventure.js');
 loadFile('AdventureEditor.js');
 loadFile('AdventureMenu.js');
