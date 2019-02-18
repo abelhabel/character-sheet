@@ -105,6 +105,7 @@ loadFile('TeamViewer.js');
 loadFile('Team.js');
 loadFile('UnitPlacement.js');
 loadFile('ToolTip.js');
+loadFile('Scroll.js');
 loadFile('FixedList.js');
 loadFile('View.js');
 loadFile('GameUI.js');

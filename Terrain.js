@@ -16,6 +16,7 @@ class Terrain {
       animation: t.stats.animation,
     };
     this.adventure = {
+      consumable: true,
       event: t.adventure && t.adventure.event,
       action: t.adventure && t.adventure.action,
       item: t.adventure && t.adventure.item,

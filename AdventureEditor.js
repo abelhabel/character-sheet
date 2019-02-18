@@ -8,8 +8,11 @@ const TeamViewer = require('TeamViewer.js');
 const SoundPlayer = require('SoundPlayer.js');
 const AdventureTime = require('AdventureTime.js');
 const AdventureMenu = require('AdventureMenu.js');
+const Ability = require('Ability.js');
+const Scroll = require('Scroll.js');
 const PL = require('PositionList2d.js');
 const icons = require('icons.js');
+const abilities = require('abilities.js');
 const terrains = require('terrains.js');
 const teams = require('teams.js');
 const selectedIcon = icons.find(i => i.bio.name == 'Hit Background');
@@ -326,6 +329,19 @@ class AdventureEditor extends Adventure {
     this.draw(transport);
   }
 
+  addScroll(e) {
+    let selected = this.selected;
+    if(!selected.length) return;
+    let {obstacles} = this.layers;
+    let id = this.shadow.querySelector('#scroll-abilities').value;
+    let a = abilities.find(a => a.id == id);
+    let scroll = new Scroll(new Ability(a));
+    selected.forEach(item => {
+      obstacles.items.set(item.x, item.y, scroll);
+    });
+    this.draw(obstacles);
+  }
+
   render() {
     this.clear();
     this.addStyle(Adventure.style(this));
@@ -354,7 +370,7 @@ class AdventureEditor extends Adventure {
     let foot = html`<div class='foot'>
       <div class='tools' id='ground'><div>Ground</div></div>
       <div class='tools' id='obstacles'><div>Obstacles</div></div>
-      <div class='tools' id='obstacles'>
+      <div class='tools' id='buttons'>
         <div>Controls</div>
         <button id='save-adventure'>Save</button>
         <input id='adventure-name' value='${this.name}'>
@@ -364,8 +380,15 @@ class AdventureEditor extends Adventure {
         <button id='add-start-position'>Set Start</button>
         <button id='add-transport'>Add Transport</button>
         <button id='remove-transport'>Remove Transport</button>
+        <button id='add-scroll'>Add Scroll</button>
+        <select id='scroll-abilities'></select>
       </div>
     </div>`;
+
+    abilities.forEach(a => {
+      let o = html`<option value='${a.id}'>${a.bio.name}</option>`;
+      foot.querySelector('#scroll-abilities').appendChild(o);
+    })
 
     foot.querySelector('#save-adventure').addEventListener('click', this.save.bind(this));
     foot.querySelector('#adventure-name').addEventListener('keyup', this.setName.bind(this));
@@ -375,6 +398,7 @@ class AdventureEditor extends Adventure {
     foot.querySelector('#add-start-position').addEventListener('click', this.addStartPosition.bind(this));
     foot.querySelector('#add-transport').addEventListener('click', this.addTransport.bind(this));
     foot.querySelector('#remove-transport').addEventListener('click', this.removeTransport.bind(this));
+    foot.querySelector('#add-scroll').addEventListener('click', this.addScroll.bind(this));
     let ground = foot.querySelector('#ground');
     let obstacles = foot.querySelector('#obstacles');
     terrains.forEach(tpl => {

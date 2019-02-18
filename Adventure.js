@@ -8,8 +8,11 @@ const TeamViewer = require('TeamViewer.js');
 const SoundPlayer = require('SoundPlayer.js');
 const AdventureTime = require('AdventureTime.js');
 const AdventureMenu = require('AdventureMenu.js');
+const Scroll = require('Scroll.js');
+const Ability = require('Ability.js');
 const PL = require('PositionList2d.js');
 const icons = require('icons.js');
+const abilities = require('abilities.js');
 const terrains = require('terrains.js');
 const teams = require('teams.js');
 const selectedIcon = icons.find(i => i.bio.name == 'Hit Background');
@@ -350,8 +353,16 @@ class Adventure extends Component {
       a.layers.ground.items.set(xy.x, xy.y, item);
     });
     ter = t.layers.obstacles.lookup.map(id => {
-      let tpl = terrains.find(t => t.id == id);
-      let item = new Terrain(tpl);
+      let tpl, item;
+      if(tpl = terrains.find(t => t.id == id)) {
+        item = new Terrain(tpl);
+      } else
+      if(tpl = abilities.find(t => t.id == id)) {
+        console.log('scroll')
+        item = new Scroll(new Ability(tpl));
+      } else {
+        console.log('no constructor', id)
+      }
       return item;
     })
     t.layers.obstacles.items.forEach((n, i) => {
@@ -481,6 +492,9 @@ class Adventure extends Component {
       if(item.item instanceof Team) {
         layer.canvas.drawSprite(item.item.highestTier.sprite, item.x * this.tw, item.y * this.th, this.tw, this.th);
       }
+      // if(item.item instanceof Scroll) {
+      //   layer.canvas.drawSprite(item.item, item.x * this.tw, item.y * this.th, this.tw, this.th);
+      // }
       if(layer.name == 'fog') {
         layer.canvas.drawRect(item.x * this.tw, item.y * this.th, this.tw, this.th);
       }
@@ -570,7 +584,7 @@ class Adventure extends Component {
     }
     if(item.adventure.action == 'give item') {
       let items = item.takeAdventureItems();
-      console.log(items)
+      console.log('items', items)
       items.forEach(i => this.player.inventory.add(i));
       if(item.adventure.consumable && item.isConsumed) {
         obstacles.items.remove(mp.x, mp.y);

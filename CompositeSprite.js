@@ -2,7 +2,10 @@ const Canvas = require('Canvas.js');
 const Sprite = require('Sprite.js');
 class CompositeSprite {
   constructor(sprites) {
-    this.sprites = sprites.map(s => new Sprite(s));
+    this.sprites = sprites.map(s => {
+      if(s instanceof Sprite) return s;
+      return new Sprite(s)
+    });
     this.w = sprites[0].w;
     this.h = sprites[0].h;
     this._canvas = new Canvas(this.w, this.h);
