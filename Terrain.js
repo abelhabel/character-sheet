@@ -49,6 +49,12 @@ class Terrain {
   }
 
   get adventureItem() {
+    if(this.adventure.action == 'give movement') {
+      return {bio: {name: 'Movement'}};
+    }
+    if(this.adventure.action == 'give gold') {
+      return {bio: {name: 'Gold'}};
+    }
     let id = this.adventure.item || this.template.id;
     let tpl = terrains.find(t => t.id == id);
     return new Terrain(tpl);

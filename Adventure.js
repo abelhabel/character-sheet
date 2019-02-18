@@ -527,8 +527,13 @@ class Adventure extends Component {
   }
 
   mouseUp(e) {
+    e.preventDefault();
     this.mouse.up = e;
     let mp = this.tpos(e);
+    if(e.which == 3) {
+      console.log('right click');
+      return this.showInfo(mp);
+    }
     let {obstacles, transport, monsters, dialog} = this.layers;
     let item = obstacles.items.get(mp.x, mp.y);
 
@@ -604,6 +609,31 @@ class Adventure extends Component {
       this.trigger('tavern');
     }
 
+  }
+
+  showInfo(mp) {
+    let {obstacles, transport, monsters, dialog} = this.layers;
+    let item = obstacles.items.get(mp.x, mp.y);
+    if(!item) return;
+    if(item.adventure.description) {
+      this.showDescription(item);
+    }
+  }
+
+  showDescription(item) {
+    let dtag = html`<div class='message-box'>
+      <p>${item.adventure.description}</p>
+      <button>Close</button>
+    </div>`;
+    dtag.querySelector('button').addEventListener('click', () => {
+      dtag.parentNode.removeChild(dtag);
+    });
+    dtag.addEventListener('contextmenu', (e) => {
+      e.preventDefault();
+      return false;
+    })
+    this.append(dtag);
+    this.sp.play('open_book');
   }
 
   showMessage(item) {
@@ -770,6 +800,10 @@ class Adventure extends Component {
       this.layers[key].items && this.draw(this.layers[key]);
       a.appendChild(this.layers[key].canvas.canvas);
     })
+    a.addEventListener('contextmenu', (e) => {
+      e.preventDefault();
+      return false;
+    });
     a.addEventListener('mousemove', this.mouseMove.bind(this));
     a.addEventListener('mouseup', this.mouseUp.bind(this));
     a.addEventListener('mouseenter', this.mouseEnter.bind(this));

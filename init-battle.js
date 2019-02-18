@@ -61,6 +61,8 @@ function addToolTip(tag, tip) {
     toolTip && toolTip.parentNode && document.body.removeChild(toolTip);
   })
 }
+
+
 class Module {
   constructor(name) {
     this.name = name;
