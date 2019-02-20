@@ -10,22 +10,23 @@ class Quest extends Component {
   constructor(t) {
     super(false, 'quest');
     this.bio = {
-      name: t ? t.bio.name : 'Unnamed',
-      sprite: t ? t.bio.sprite : null
+      name: t && t.bio && t.bio.name ? t.bio.name : 'Unnamed',
+      sprite: t && t.bio && t.bio.sprite ? t.bio.sprite : null
     };
     this.condition = {
-      type: t ? t.condition.type : 'deliver',
-      amount: t ? t.condition.amount : 1,
-      item: t ? t.condition.item : 'gold',
-      scroll: t ? t.condition.scroll : '',
-      terrain: t ? t.condition.terrain : ''
+      type: t && t.condition && t.condition.type ? t.condition.type : 'deliver',
+      amount: t && t.condition && t.condition.amount ? t.condition.amount : 1,
+      item: t && t.condition && t.condition.item ? t.condition.item : 'gold',
+      scroll: t && t.condition && t.condition.scroll ? t.condition.scroll : '',
+      terrain: t && t.condition && t.condition.terrain ? t.condition.terrain : ''
     };
     this.reward = {
-      type: t ? t.reward.type : 'give',
-      amount: t ? t.reward.amount : 1,
-      item: t ? t.reward.item : 'gold',
-      scroll: t ? t.reward.scroll : '',
-      terrain: t ? t.reward.terrain : ''
+      type: t && t.reward && t.reward.type ? t.reward.type : 'give',
+      amount: t && t.reward && t.reward.amount ? t.reward.amount : 1,
+      selection: t && t.reward && t.reward.selection ? t.reward.selection : [],
+      item: t && t.reward && t.reward.item ? t.reward.item : 'gold',
+      scroll: t && t.reward && t.reward.scroll ? t.reward.scroll : '',
+      terrain: t && t.reward && t.reward.terrain ? t.reward.terrain : ''
     };
     this.available = t ? t.available : true;
     this.finished = t ? t.finished : false;
@@ -55,6 +56,9 @@ class Quest extends Component {
         console.log(n, this)
         return `${amount} Scroll of ${n.bio.name}`;
       }
+    }
+    if(type == 'remove obstacle') {
+      return 'Clears a path';
     }
 
   }
@@ -101,6 +105,7 @@ class Quest extends Component {
       let t = abilities.find(a => a.id == scroll);
       return new Scroll(new Ability(t));
     }
+
   }
 
   takeCondition(adventure) {
@@ -118,7 +123,7 @@ class Quest extends Component {
 
   giveReward(adventure) {
     let p = adventure.player;
-    let {type, amount, item, terrain, scroll} = this.reward;
+    let {type, amount, item, terrain, scroll, selection} = this.reward;
     if(type == 'give') {
       if(item == 'gold') {
         return adventure.addGold(amount);
@@ -127,6 +132,18 @@ class Quest extends Component {
         return p.inventory.add(this.rewardItem);
       }
     }
+    if(type == 'remove obstacle') {
+      let positions = [];
+      selection.split(',').forEach(p => {
+        let xy = p.split(':');
+        let x = parseInt(xy[0]);
+        let y = parseInt(xy[1]);
+        positions.push({x,y});
+        adventure.layers.obstacles.items.remove(x, y);
+
+      });
+      adventure.draw(adventure.layers.obstacles);
+    }
 
   }
 
@@ -134,7 +151,7 @@ class Quest extends Component {
     this.clear();
     let t = html`<div>
       <div class='quest-image'></div>
-      <div class='quest-name'>${this.name}</div>
+      <div class='quest-name'>${this.bio.name}</div>
       <span class='quest-condition'>
         <span>${this.condition.type}:</span>
         <span>${this.conditionText}</span>

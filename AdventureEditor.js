@@ -197,6 +197,7 @@ class AdventureEditor extends Adventure {
     let layer = this.layers.select;
     let remove = this.mouse.down.shiftKey || this.mouse.up.shiftKey;
     this.layers.preselect.items.transfer(layer.items, true, remove);
+    this.shadow.querySelector('.selections').textContent = this.selected.map(i => `${i.x}:${i.y}`).join(',');
     this.draw(layer);
     this.draw(this.layers.preselect);
     this.mouse.down = null;
@@ -406,6 +407,7 @@ class AdventureEditor extends Adventure {
     let foot = html`<div class='foot'>
       <div class='tools' id='ground'><div>Ground</div></div>
       <div class='tools' id='obstacles'><div>Obstacles</div></div>
+      <div class='tools selections'></div>
       <div class='tools' id='buttons'>
         <div>Controls</div>
         <button id='save-adventure'>Save</button>

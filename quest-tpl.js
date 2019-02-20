@@ -116,7 +116,7 @@ var tpl = {
           exportAs: 'type',
           type: 'select',
           initial: 'give',
-          values: ['', 'give', 'take', 'dispel']
+          values: ['', 'give', 'take', 'dispel', 'remove obstacle']
         },
         {
           name: 'Amount',
@@ -124,6 +124,12 @@ var tpl = {
           type: 'increment',
           initial: 1,
           range: [1, 1000000]
+        },
+        {
+          name: 'Selection',
+          exportAs: 'selection',
+          type: 'input',
+          initial: '',
         },
         {
           name: 'Item',

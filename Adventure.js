@@ -141,6 +141,10 @@ class Adventure extends Component {
         transform: translate(-50%,-50%);
       }
 
+      .tools.selections {
+        user-select: all;
+      }
+
       #adventure-menu {
         position: fixed;
         top: 0px;
@@ -714,7 +718,7 @@ class Adventure extends Component {
       console.log('met', met)
       let dtag = html`<div class='message-box'>
         <p>
-          ${quest.name}<br>Quest: ${quest.conditionText}<br>Reward: ${quest.rewardText}
+          ${quest.bio.name}<br>Quest: ${quest.conditionText}<br>Reward: ${quest.rewardText}
         </p>
         <button class='accept-message'>${met ? 'Complete Quest' : 'Stop Quest'}</button>
         <button class='close-message'>Close</button>
@@ -740,7 +744,7 @@ class Adventure extends Component {
     } else {
       let dtag = html`<div class='message-box'>
       <p>
-      ${quest.name}<br>Quest: ${quest.conditionText}<br>Reward: ${quest.rewardText}
+      ${quest.bio.name}<br>Quest: ${quest.conditionText}<br>Reward: ${quest.rewardText}
       </p>
       <button class='accept-message'>Accept</button>
       <button class='close-message'>Close</button>
