@@ -371,10 +371,8 @@ class AdventureEditor extends Adventure {
     let selected = this.selected;
     if(!selected.length) return;
     let {quests} = this.layers;
-    let name = window.prompt('Quest Name:');
-    if(!name) return;
     selected.forEach(item => {
-      let q = new Quest.Editor(name);
+      let q = new Quest.Editor();
       quests.items.set(item.x, item.y, q);
     });
     this.draw(quests);

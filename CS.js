@@ -3,26 +3,6 @@ const Sprite = require('Sprite.js');
 const guid = require('guid.js');
 var noop = function() {};
 window.__tags = {};
-const bg = {
-  sprite: new Sprite({
-    "x": 1088,
-    "y": 15,
-    "spritesheet": 'Hell2.jpg',
-    "w":100,
-    "h":100
-  })
-};
-bg.png = bg.sprite.png;
-const fg = {
-  sprite: new Sprite({
-    "x": 444,
-    "y": 768,
-    "spritesheet": 'Hell2.jpg',
-    "w":50,
-    "h":50
-  })
-};
-fg.png = fg.sprite.png;
 class Increment {
   constructor(val) {
     this.val = val || 0;
@@ -44,9 +24,6 @@ class Increment {
       border-radius: 50%;
       overflow: hidden;
       background: none;
-    }
-    .increment:hover {
-      background: url(${bg.png});
     }
     .half {
       display: inline-block;
@@ -100,9 +77,11 @@ class Increment {
 }
 
 class CS {
-  constructor(tpl, parent, pools, onUpdateState) {
+  constructor(tpl, parent, pools, onUpdateState, hidePersistence) {
     this.name = tpl.name;
     this.categories = tpl.categories;
+
+    this.hidePersistence = hidePersistence;
 
     this.library = tpl.library;
     this.folder = tpl.folder;
@@ -140,9 +119,9 @@ class CS {
     return name;
   }
 
-  setState(c, i, v) {
+  setState(c, i, v, internal) {
     this.state[c.exportAs || c.name][i.exportAs || i.name] = v;
-    this.onUpdateState(c, i, v);
+    !internal && this.onUpdateState(c, i, v);
   }
 
   renderSlider(item, c) {
@@ -187,7 +166,7 @@ class CS {
     name.textContent = item.name;
     var currentVal = item.initial || 0;
     val.textContent = currentVal;
-    this.setState(c, item, currentVal);
+    this.setState(c, item, currentVal, true);
     val.addEventListener('click', (e) => {
       let cost = item.cost || 1;
       let inc = item.step || 1;
@@ -248,7 +227,7 @@ class CS {
     name.textContent = item.name;
     var currentVal = item.initial || '';
     val.value = currentVal;
-    this.setState(c, item, currentVal);
+    this.setState(c, item, currentVal, true);
     val.addEventListener('keyup', (e) => {
       if(item.maxCharacters && val.value.length > item.maxCharacters) {
         val.value = currentVal;
@@ -283,11 +262,9 @@ class CS {
     name.textContent = item.name;
     val.type = 'checkbox';
     var currentVal = item.initial || false;
-    this.setState(c, item, currentVal);
+    this.setState(c, item, currentVal, true);
     val.addEventListener('change', (e) => {
       currentVal = val.checked;
-
-      console.log('changed binary', currentVal)
       this.setState(c, item, currentVal);
     })
     val.checked = currentVal;
@@ -317,7 +294,7 @@ class CS {
     name.textContent = item.name;
     var currentVal = item.initial || '';
     val.value = currentVal;
-    this.setState(c, item, currentVal);
+    this.setState(c, item, currentVal, true);
     val.addEventListener('keyup', (e) => {
       if(item.maxCharacters && val.value.length > item.maxCharacters) {
         val.value = currentVal;
@@ -355,7 +332,7 @@ class CS {
     val.style.padding = '10px';
     name.textContent = item.name;
     var currentVal = [];
-    this.setState(c, item, currentVal);
+    this.setState(c, item, currentVal, true);
     var tags = [];
     item.values.forEach(o => {
       let v = item.get ? item.get(o) : o;
@@ -384,7 +361,6 @@ class CS {
         if(!~index) {
           d.style.backgroundColor = 'black';
           currentVal.push(v);
-          console.log(currentVal)
         } else {
           d.style.backgroundColor = 'gray';
           currentVal.splice(index, 1);
@@ -403,7 +379,6 @@ class CS {
       update: (v) => {
         v.filter(n => ~v.indexOf(n))
         currentVal = Array.from(new Set(v));
-        console.log('updating multiselect', currentVal)
         tags.forEach(t => {
           if(~currentVal.indexOf(t.textContent)) {
             t.style.backgroundColor = 'black';
@@ -441,7 +416,7 @@ class CS {
       val.appendChild(o);
     })
     val.value = currentVal;
-    this.setState(c, item, currentVal);
+    this.setState(c, item, currentVal, true);
     val.addEventListener('change', (e) => {
       currentVal = item.set ? item.set(val.value) : val.value;
       this.setState(c, item, currentVal);
@@ -454,7 +429,6 @@ class CS {
       name: item.name,
       cname: c.name,
       update: (v) => {
-        console.log('select update', v)
         currentVal = item.get ? item.get(v) : v;
         val.value = currentVal;
       }
@@ -518,7 +492,6 @@ class CS {
         ct.clearRect(0, 0, item.w, item.h);
         ct.drawImage(img, x, y, item.w, item.h, 0, 0, item.w, item.h);
         var sprite = {x: x, y: y, spritesheet: item.src, w: item.w, h: item.h};
-        console.log(sprite);
         this.setState(c, item, sprite)
       })
     })
@@ -528,10 +501,9 @@ class CS {
       name: item.name,
       cname: c.name,
       update: (v) => {
+        if(!v) return;
         let sprite = new Sprite(v);
-        console.log(sprite, c)
         let img = sprite.canvas;
-        console.log('update', item.name, v)
         var ct = canvas.getContext('2d');
         ct.clearRect(0, 0, item.w, item.h);
         ct.drawImage(img, 0, 0, item.w, item.h);
@@ -589,6 +561,7 @@ class CS {
       name: item.name,
       cname: c.name,
       update: (v) => {
+        if(!v) return;
         this.openSpriteSheet(item, false, (img) => {
           let selected = v.map(s => [s.x, s.y, img]);
           drawSprites(selected);
@@ -661,7 +634,6 @@ class CS {
     d.textContent = 'Export';
 
     d.addEventListener('click', (e) => {
-      console.log(this.state);
       var id = this.importingId ? `?id=${this.importingId}` : '';
       var qc = this.queryCommand || 'saveMonster';
       var body = JSON.stringify(this.state);
@@ -755,7 +727,7 @@ class CS {
         let listName = item.type + 'Tags';
         let tag = this[item.type + 'Tags'].find(t => t.name == item.name && category.name == t.cname);
         if(tag && typeof tag.update == 'function') tag.update(value);
-        this.setState(category, item, value);
+        this.setState(category, item, value, true);
       })
     });
     this.importingId = monster.id;
@@ -765,8 +737,10 @@ class CS {
 
     this.parent.appendChild(this.renderName());
     this.parent.appendChild(this.renderCategories());
-    this.parent.appendChild(this.renderExportButton());
-    this.parent.appendChild(this.renderImportButton());
+    if(!this.hidePersistence) {
+      this.parent.appendChild(this.renderExportButton());
+      this.parent.appendChild(this.renderImportButton());
+    }
   }
 }
 

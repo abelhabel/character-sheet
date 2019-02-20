@@ -133,6 +133,7 @@ loadFile('heroes-like.js');
 loadFile('icon-tpl.js');
 loadFile('team-tpl.js');
 loadFile('leader-tpl.js');
+loadFile('quest-tpl.js');
 loadFile('pathfinding.js');
 loadFile('index.html');
 loadFile('rules.html', addRuleLinks);

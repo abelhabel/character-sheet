@@ -37,7 +37,6 @@ class AdventureMenu extends Component {
     let e = s + Math.PI;
     let range = Math.PI;
     let a = range / (this.items.length);
-    console.log(a)
     for(let i = 0, c = 0; i < range; i += a, c += 1) {
       let top = 100 + Math.sin(s+i) * r;
       let left = 100 + Math.cos(s+i) * r;

@@ -590,13 +590,13 @@ class Adventure extends Component {
 
     // Quests
     let quest = quests.items.get(mp.x, mp.y);
-    if(quest) {
+    if(quest && quests.items.distance(this.pp.x, this.pp.y, mp.x, mp.y) <= 1) {
       this.showQuest(quest);
     }
 
     // Transportation
     let trans = transport.items.get(mp.x, mp.y);
-    if(trans) {
+    if(trans && transport.items.distance(this.pp.x, this.pp.y, mp.x, mp.y) <= 1) {
       let empty = obstacles.items.closestEmpty(trans.x, trans.y);
       this.movePlayer(empty.x, empty.y);
       this.draw(monsters);
@@ -705,6 +705,7 @@ class Adventure extends Component {
   }
 
   showQuest(quest) {
+    console.log('quest', quest)
     if(quest.finished) {
       this.showDescription({adventure: {description: "This quest is finished."}});
     } else

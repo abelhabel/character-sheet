@@ -17,7 +17,7 @@ class QuestLog extends Component {
   }
 
   hasQuest(q) {
-    return this.quests.find(qu => qu.name == q.name);
+    return this.quests.find(qu => qu.bio.name == q.bio.name);
   }
 
   get finished() {
