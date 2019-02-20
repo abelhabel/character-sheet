@@ -93,13 +93,12 @@ Module.loadOrder = [];
 
 Module.onLoad(['DungeonCrawl_ProjectUtumnoTileset.png',
   'icons.js', 'terrains.js', 'adventures.js', 'teams.js', 'monsters.js', 'abilities.js', 'sounds.js',
-  'PositionList2d.js', 'FixedList.js', 'guid.js',
-  'Component.js', 'Canvas.js', 'Sprite.js', 'CompositeSprite.js', 'Terrain.js', 'SoundPlayer.js',
-  'AbilityEffect.js', 'Ability.js', 'Monster.js', 'TeamSheet.js', 'Team.js', 'TeamViewer.js', 'Scroll.js',
+  'PositionList2d.js', 'FixedList.js', 'guid.js', 'SoundPlayer.js',
+  'Component.js', 'Canvas.js', 'Sprite.js', 'CompositeSprite.js',  'Terrain.js',  'Scroll.js', 'Quest.js', 'QuestLog.js',
+  'AbilityEffect.js', 'Ability.js',  'Monster.js', 'TeamSheet.js', 'Team.js', 'TeamViewer.js',
   'AdventureTime.js', 'AdventureMenu.js', 'Adventure.js', 'AdventureEditor.js',], () => {
   const AdventureEditor = require('AdventureEditor.js');
   const adventures = require('adventures.js');
-  let tpl
   let a = AdventureEditor.create(adventures.find(a => a.id == '1a1f19de-3da3-e850-3815-0a3bcb0c218f'));
   // let a = new Adventure(50, 50);
   // a.drawGuides();

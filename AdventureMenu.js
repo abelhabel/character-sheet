@@ -39,7 +39,6 @@ class AdventureMenu extends Component {
     let a = range / (this.items.length);
     console.log(a)
     for(let i = 0, c = 0; i < range; i += a, c += 1) {
-      console.log(c, i)
       let top = 100 + Math.sin(s+i) * r;
       let left = 100 + Math.cos(s+i) * r;
       let item = html`<div class='menu-item' style='top: ${top}px; left: ${left}px;'></div>`;

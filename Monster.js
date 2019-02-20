@@ -9,6 +9,7 @@ const icons = require('icons.js');
 const specialEffects = require('special-effects.js');
 const AbilityEffect = require('AbilityEffect.js');
 const Sprite = require('Sprite.js');
+const Scroll = require('Scroll.js');
 const AI = require('AI.js');
 const FixedList = require('FixedList.js');
 class StatBonus {

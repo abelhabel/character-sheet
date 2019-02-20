@@ -102,6 +102,8 @@ loadFile('Menu.js');
 loadFile('Match.js');
 loadFile('DynamicSound.js');
 loadFile('TeamViewer.js');
+loadFile('Quest.js');
+loadFile('QuestLog.js');
 loadFile('Team.js');
 loadFile('UnitPlacement.js');
 loadFile('ToolTip.js');

@@ -32,7 +32,7 @@ function tpl(ability) {
     inventory: {
       consumable: true,
       event: 'use',
-      action: 'give ability',
+      action: 'give scroll',
       target: 'unit',
       ability: a.template.id,
     },

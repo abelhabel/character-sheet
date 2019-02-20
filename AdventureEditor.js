@@ -1,4 +1,5 @@
 const Adventure = require('Adventure.js');
+const Dialog = Adventure.Dialog;
 const Component = require('Component.js');
 const Canvas = require('Canvas.js');
 const Sprite = require('Sprite.js');
@@ -10,6 +11,7 @@ const AdventureTime = require('AdventureTime.js');
 const AdventureMenu = require('AdventureMenu.js');
 const Ability = require('Ability.js');
 const Scroll = require('Scroll.js');
+const Quest = require('Quest.js');
 const PL = require('PositionList2d.js');
 const icons = require('icons.js');
 const abilities = require('abilities.js');
@@ -66,11 +68,14 @@ class ControlPanel extends Component {
     if(item.t) {
       t.appendChild(html`<div>Transports to: ${item.t.x}, ${item.t.y}</div>`);
     }
+    if(item.q) {
+      t.appendChild(Quest.Editor.prototype.render.call(item.q));
+    }
     return t;
   }
 
   render(layers) {
-    let {select, dialog, ground, obstacles, monsters, transport} = layers;
+    let {select, dialog, ground, obstacles, monsters, transport, quests} = layers;
     this.clear();
     this.addStyle(ControlPanel.style);
     let c = html`<div id='control-panel'></div>`;
@@ -82,7 +87,8 @@ class ControlPanel extends Component {
       let o = obstacles.items.get(item.x, item.y);
       let m = monsters.items.get(item.x, item.y);
       let t = transport.items.get(item.x, item.y);
-      items.push({d,g,o,m,t});
+      let q = quests.items.get(item.x, item.y);
+      items.push({d,g,o,m,t,q});
     })
     items.forEach(item => {
       let t = this.renderItem(item);
@@ -104,8 +110,8 @@ class AdventureEditor extends Adventure {
   }
 
   draw(layer) {
+    this.renderControlPanel();
     if(layer == this.layers.select) {
-      this.renderControlPanel();
     }
     Adventure.prototype.draw.call(this, layer);
   }
@@ -136,7 +142,8 @@ class AdventureEditor extends Adventure {
         obstacles: this.compressLayer(this.layers.obstacles),
         monsters: this.compressLayer(this.layers.monsters),
         dialog: this.layers.dialog.items._filled(),
-        transport: this.layers.transport.items._filled()
+        transport: this.layers.transport.items._filled(),
+        quests: this.layers.quests.items._filled()
       }
     };
     let id = this.id;
@@ -306,6 +313,15 @@ class AdventureEditor extends Adventure {
     this.draw(monsters);
   }
 
+  removeDialog(e) {
+    let {dialog} = this.layers;
+    this.selected.forEach(item => {
+      console.log('removeDialog', item)
+      dialog.items.remove(item.x, item.y);
+    })
+    this.draw(dialog);
+  }
+
   addStartPosition() {
     let selected = this.selected;
     if(selected.length != 1) return;
@@ -342,6 +358,28 @@ class AdventureEditor extends Adventure {
     this.draw(obstacles);
   }
 
+  removeQuest() {
+    let {quests} = this.layers;
+    this.selected.forEach(item => {
+      quests.items.remove(item.x, item.y);
+    })
+    this.renderControlPanel();
+    this.draw(quests);
+  }
+
+  addQuest(e) {
+    let selected = this.selected;
+    if(!selected.length) return;
+    let {quests} = this.layers;
+    let name = window.prompt('Quest Name:');
+    if(!name) return;
+    selected.forEach(item => {
+      let q = new Quest.Editor(name);
+      quests.items.set(item.x, item.y, q);
+    });
+    this.draw(quests);
+  }
+
   render() {
     this.clear();
     this.addStyle(Adventure.style(this));
@@ -374,7 +412,8 @@ class AdventureEditor extends Adventure {
         <div>Controls</div>
         <button id='save-adventure'>Save</button>
         <input id='adventure-name' value='${this.name}'>
-        <button id='add-dialog'>Dialog</button>
+        <button id='add-dialog'>Add Dialog</button>
+        <button id='remove-dialog'>Remove Dialog</button>
         <button id='add-monsters'>Add Monsters</button>
         <button id='remove-monsters'>Remove Monsters</button>
         <button id='add-start-position'>Set Start</button>
@@ -382,6 +421,8 @@ class AdventureEditor extends Adventure {
         <button id='remove-transport'>Remove Transport</button>
         <button id='add-scroll'>Add Scroll</button>
         <select id='scroll-abilities'></select>
+        <button id='add-quest'>Add Quest</button>
+        <button id='remove-quest'>Remove Quest</button>
       </div>
     </div>`;
 
@@ -393,12 +434,15 @@ class AdventureEditor extends Adventure {
     foot.querySelector('#save-adventure').addEventListener('click', this.save.bind(this));
     foot.querySelector('#adventure-name').addEventListener('keyup', this.setName.bind(this));
     foot.querySelector('#add-dialog').addEventListener('click', this.addDialog.bind(this));
+    foot.querySelector('#remove-dialog').addEventListener('click', this.removeDialog.bind(this));
     foot.querySelector('#add-monsters').addEventListener('click', this.addMonsters.bind(this));
     foot.querySelector('#remove-monsters').addEventListener('click', this.removeMonsters.bind(this));
     foot.querySelector('#add-start-position').addEventListener('click', this.addStartPosition.bind(this));
     foot.querySelector('#add-transport').addEventListener('click', this.addTransport.bind(this));
     foot.querySelector('#remove-transport').addEventListener('click', this.removeTransport.bind(this));
     foot.querySelector('#add-scroll').addEventListener('click', this.addScroll.bind(this));
+    foot.querySelector('#add-quest').addEventListener('click', this.addQuest.bind(this));
+    foot.querySelector('#remove-quest').addEventListener('click', this.removeQuest.bind(this));
     let ground = foot.querySelector('#ground');
     let obstacles = foot.querySelector('#obstacles');
     terrains.forEach(tpl => {

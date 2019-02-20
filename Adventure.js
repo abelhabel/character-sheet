@@ -10,6 +10,7 @@ const AdventureTime = require('AdventureTime.js');
 const AdventureMenu = require('AdventureMenu.js');
 const Scroll = require('Scroll.js');
 const Ability = require('Ability.js');
+const Quest = require('Quest.js');
 const PL = require('PositionList2d.js');
 const icons = require('icons.js');
 const abilities = require('abilities.js');
@@ -86,7 +87,8 @@ class Adventure extends Component {
       dialog: new Layer('dialog', false, this.w, this.h, this.tw, this.th),
       monsters: new Layer('monsters', true, this.w, this.h, this.tw, this.th),
       transport: new Layer('transport', false, this.w, this.h, this.tw, this.th),
-      fog: new Layer('fog', true, this.w, this.h, this.tw, this.th)
+      fog: new Layer('fog', true, this.w, this.h, this.tw, this.th),
+      quests: new Layer('quests', false, this.w, this.h, this.tw, this.th),
     };
     this.layers.fog.items.each(i => this.layers.fog.items.set(i.x, i.y, true));
     this.resources = [
@@ -98,6 +100,7 @@ class Adventure extends Component {
     this.menu.on('end turn', () => this.endTurn());
     this.menu.on('open inventory', () => this.openInventory());
     this.menu.on('open team', () => this.openTeamSheet());
+    this.menu.on('open quests', () => this.openQuests());
     this.panSpeed = 10;
     this.pans = {x: 0, y: 0};
     this.mouse = {
@@ -117,12 +120,25 @@ class Adventure extends Component {
         width: ${a.tw * a.w}px;
         height: ${a.th * a.h}px;
         border: 1px solid black;
-        margin-bottom: 64px;
+        margin-bottom: 128px;
       }
       .adventure canvas {
         position: absolute;
         top: 0px;
         left: 0px;
+      }
+
+      .quest-log {
+        width: 600px;
+        height: 600px;
+        padding: 10px;
+        background-image: url(sheet_of_old_paper.png);
+        border-radius: 10px;
+        position: fixed;
+        z-index: 2;
+        top: 50%;
+        left: 50%;
+        transform: translate(-50%,-50%);
       }
 
       #adventure-menu {
@@ -226,7 +242,22 @@ class Adventure extends Component {
       #inventory .actions .action:hover {
         background-color: rgba(0,0,0,0.1);
       }
-      #inventory .close {
+
+      .quest {
+        border: 1px solid black;
+        border-radius: 4px;
+        padding: 2px;
+      }
+
+      .quest-name {
+        font-weight: bold;
+      }
+
+      .quest-condition, .quest-reward {
+        margin-right: 4px;
+      }
+
+      .close {
         position: absolute;
         top: 2px;
         right: 2px;
@@ -358,7 +389,6 @@ class Adventure extends Component {
         item = new Terrain(tpl);
       } else
       if(tpl = abilities.find(t => t.id == id)) {
-        console.log('scroll')
         item = new Scroll(new Ability(tpl));
       } else {
         console.log('no constructor', id)
@@ -396,6 +426,11 @@ class Adventure extends Component {
         a.layers.transport.items.set(item.x, item.y, item.item);
       });
     }
+    if(t.layers.quests) {
+      t.layers.quests.forEach(item => {
+        a.layers.quests.items.set(item.x, item.y, Quest.create(item.item));
+      });
+    }
 
     return a;
   }
@@ -417,6 +452,10 @@ class Adventure extends Component {
 
   openTeamSheet() {
     this.append(this.player.team.cs.render());
+  }
+
+  openQuests() {
+    this.append(this.player.quests.render());
   }
 
   addObstacle(x, y, item) {
@@ -534,7 +573,7 @@ class Adventure extends Component {
       console.log('right click');
       return this.showInfo(mp);
     }
-    let {obstacles, transport, monsters, dialog} = this.layers;
+    let {obstacles, transport, monsters, dialog, quests} = this.layers;
     let item = obstacles.items.get(mp.x, mp.y);
 
     // Movement
@@ -547,6 +586,12 @@ class Adventure extends Component {
       .catch(e => {
         console.log('walk error', e);
       });
+    }
+
+    // Quests
+    let quest = quests.items.get(mp.x, mp.y);
+    if(quest) {
+      this.showQuest(quest);
     }
 
     // Transportation
@@ -656,6 +701,63 @@ class Adventure extends Component {
       })
       this.append(dtag);
       this.sp.play('open_book');
+    }
+  }
+
+  showQuest(quest) {
+    if(quest.finished) {
+      this.showDescription({adventure: {description: "This quest is finished."}});
+    } else
+    if(this.player.quests.hasQuest(quest)) {
+      let met = quest.conditionMet(this);
+      console.log('met', met)
+      let dtag = html`<div class='message-box'>
+        <p>
+          ${quest.name}<br>Quest: ${quest.conditionText}<br>Reward: ${quest.rewardText}
+        </p>
+        <button class='accept-message'>${met ? 'Complete Quest' : 'Stop Quest'}</button>
+        <button class='close-message'>Close</button>
+      </div>`;
+      dtag.querySelector('.close-message').addEventListener('click', () => {
+        dtag.parentNode.removeChild(dtag);
+      });
+      dtag.querySelector('.accept-message').addEventListener('click', () => {
+        if(met) {
+          quest.complete(this);
+          this.updateResources();
+        } else {
+          this.player.quests.remove(quest);
+        }
+        dtag.parentNode.removeChild(dtag);
+      });
+      dtag.addEventListener('contextmenu', (e) => {
+        e.preventDefault();
+        return false;
+      })
+      this.append(dtag);
+      this.sp.play('open_book');
+    } else {
+      let dtag = html`<div class='message-box'>
+      <p>
+      ${quest.name}<br>Quest: ${quest.conditionText}<br>Reward: ${quest.rewardText}
+      </p>
+      <button class='accept-message'>Accept</button>
+      <button class='close-message'>Close</button>
+      </div>`;
+      dtag.querySelector('.close-message').addEventListener('click', () => {
+        dtag.parentNode.removeChild(dtag);
+      });
+      dtag.querySelector('.accept-message').addEventListener('click', () => {
+        dtag.parentNode.removeChild(dtag);
+        this.player.quests.add(quest);
+      });
+      dtag.addEventListener('contextmenu', (e) => {
+        e.preventDefault();
+        return false;
+      })
+      this.append(dtag);
+      this.sp.play('open_book');
+
     }
   }
 
@@ -838,5 +940,6 @@ class Resource extends Component {
     return this.tags.outer;
   }
 }
-
+Adventure.Dialog = Dialog;
+Adventure.Resource = Resource;
 module.exports = Adventure;

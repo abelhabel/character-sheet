@@ -16,6 +16,9 @@ class TeamUnit {
   get monster() {
     let tpl = monsters.find(m => m.id == this.templateId);
     let m = new Monster(tpl, this.stacks);
+    if(this.abilities && this.abilities.length) {
+      this.abilities.forEach(a => m.addAbility(a));
+    }
     m.suuid = this.suuid;
     m.x = this.x;
     m.y = this.y;
@@ -24,6 +27,10 @@ class TeamUnit {
 
   addAbility(abilityId) {
     this.abilities.push(abilityId);
+  }
+
+  addScroll(abilityId) {
+    this.scrolls.push(abilityId);
   }
 }
 
@@ -86,12 +93,10 @@ class Team {
   pickRandomMonster() {
     let list = this.unpicked;
     if(!list.length) {
-      console.log(this)
       return null;
     }
     let n = window._roll(0, list.length -1);
     let unit = list[n];
-    console.log(unit)
     this.picked.push(unit.suuid);
     return unit.monster;
   }

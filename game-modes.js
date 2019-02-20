@@ -12,6 +12,7 @@ const Gauntlet = require('Gauntlet.js');
 const CardList = require('CardList.js');
 const Adventure = require('Adventure.js');
 const Inventory = require('Inventory.js');
+const QuestLog = require('QuestLog.js');
 const adventures = require('adventures.js');
 const arenas = require('arenas.js');
 const monsters = require('monsters.js');
@@ -89,10 +90,27 @@ gameModes.adventure = function(lobby, ui) {
         movement: 20,
         movesLeft: 20,
         inventory: new Inventory(),
+        quests: new QuestLog(),
         team,
       };
       player.inventory.on('use inventory item', item => {
         if(item.item.inventory.action == 'give ability') {
+          let t = html`<div style='position:fixed;z-index: 4000; top:50%;left:50%;transform:translate(-50%,-50%);background-image: url(sheet_of_old_paper.png);padding:20px;'></div>`;
+          player.team.units.forEach(u => {
+            let m = u.monster.canvas.clone()
+            m.addEventListener('click', () => {
+              u.addAbility(item.item.inventory.ability);
+              player.inventory.remove(item);
+              document.body.removeChild(t);
+            })
+            t.appendChild(m);
+
+          });
+          player.inventory.unmount();
+          document.body.appendChild(t);
+          // player.team.addAbility(item.item.inventory.ability);
+        }
+        if(item.item.inventory.action == 'give scroll') {
           let t = html`<div style='position:fixed;z-index: 4000; top:50%;left:50%;transform:translate(-50%,-50%);background-image: url(sheet_of_old_paper.png);padding:20px;'></div>`;
           player.team.units.forEach(u => {
             let m = u.monster.canvas.clone()
