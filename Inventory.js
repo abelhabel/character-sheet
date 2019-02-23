@@ -1,9 +1,12 @@
 const Component = require('Component.js');
 const PL = require('PositionList2d.js');
 class Inventory extends Component {
-  constructor() {
+  constructor(w, h) {
     super();
-    this.list = new PL(8, 2);
+    this.w = w || 8;
+    this.h = h || 2;
+    this.list = new PL(this.w, this.h);
+    this.selections = new PL(this.w, this.h);
     this.tw = 32;
     this.th = 32;
   }
@@ -20,21 +23,35 @@ class Inventory extends Component {
   }
 
   use() {
-    if(!this.selected) return;
-    this.trigger('use inventory item', this.selected);
-    this.selected = null;
+    this.selectedItems.forEach(item => {
+      this.trigger('use inventory item', item);
+    })
   }
 
   drop() {
-    if(!this.selected) return;
-    this.trigger('drop inventory item', this.selected);
-    this.selected = null;
+    this.selectedItems.forEach(item => {
+      this.trigger('drop inventory item', item);
+    })
+  }
+
+  get selectedItems() {
+    let out = [];
+    this.selections.each(item => {
+      if(!item.item) return;
+      let i = this.list.get(item.x, item.y);
+      if(!i) return;
+      out.push({item: i, x: item.x, y: item.y});
+    })
+    return out;
   }
 
   move(x, y) {
-    this.list.remove(this.selected.x, this.selected.y);
-    this.list.set(x, y, this.selected.item);
-    this.selected = null;
+    let items = this.selections._filled();
+    if(items.length != 1) return;
+    let item = this.list.get(items[0].x, items[0].y);
+    this.list.remove(items[0].x, items[0].y);
+    this.list.set(x, y, item);
+    this.selections.purge();
     this.render();
   }
 
@@ -43,7 +60,7 @@ class Inventory extends Component {
       return item.item.template.id == id;
     })
   }
-  
+
   itemByName(name) {
     return this.list._filled().find(item => {
       return item.item.bio.name == name;
@@ -58,7 +75,7 @@ class Inventory extends Component {
       height: this.list.h * this.th + 'px'
     });
     this.list.each(item => {
-      let selected = this.selected && item.x == this.selected.x && item.y == this.selected.y ? ' selected' : '';
+      let selected = this.selections.get(item.x, item.y) ? ' selected' : '';
       let t = html`<div class='item${selected}' style='width:${this.tw}px;height:${this.th}px;'></div>`;
       if(item.item) {
         t.appendChild(item.item.canvas.clone(this.tw, this.th));
@@ -71,11 +88,25 @@ class Inventory extends Component {
       }
       t.addEventListener('click', e => {
         let empty = !this.list.get(item.x, item.y);
-        if(empty && this.selected) {
-          this.move(item.x, item.y);
+        if(empty) {
+          if(this.selections.get(item.x, item.y)) {
+            this.selections.remove(item.x, item.y);
+          } else {
+            this.move(item.x, item.y);
+            this.selections.purge();
+          }
           return;
+        } else {
+
+          if(this.selections.get(item.x, item.y)) {
+            this.selections.remove(item.x, item.y);
+          } else {
+            if(!e.shiftKey) {
+              this.selections.purge();
+            }
+            this.selections.set(item.x, item.y, true);
+          }
         }
-        this.selected = this.selected && item.x == this.selected.x && item.y == this.selected.y ? null : item;
         this.render();
       });
       this.append(t);

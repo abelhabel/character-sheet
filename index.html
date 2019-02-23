@@ -73,9 +73,9 @@ function require(name) {
 Module.modules = {};
 Module.loaders = [];
   Module.onLoad(['DungeonCrawl_ProjectUtumnoTileset.png', 'Hell2.jpg', 'guid.js',
-  'abilities.js', 'monsters.js', 'terrains.js', 'icons.js','animations.js', 'seven.js', 'teams.js', 'leaders.js', 'sounds.js',
+  'abilities.js', 'monsters.js', 'terrains.js', 'icons.js','animations.js', 'seven.js', 'teams.js', 'leaders.js', 'sounds.js', 'recipes.js',
   'Canvas.js', 'Sprite.js', 'Slider.js', 'Animation.js', 'CS.js', 'DynamicSound.js', 'init-sound.js',
-  'heroes-like.js', 'animation-tpl.js', 'ability-tpl.js', 'terrain-tpl.js', 'icon-tpl.js', 'team-tpl.js', 'leader-tpl.js'], () => {
+  'heroes-like.js', 'animation-tpl.js', 'ability-tpl.js', 'terrain-tpl.js', 'icon-tpl.js', 'team-tpl.js', 'leader-tpl.js', 'recipe-tpl.js'], () => {
     console.log('all loaded')
     const CS = require('CS.js');
     const Canvas = require('Canvas.js');
@@ -127,6 +127,12 @@ Module.loaders = [];
     function loadTeams() {
       let teams = require("team-tpl.js");
       var cs  = new CS(teams, document.body);
+      cs.render();
+    }
+
+    function loadRecipes() {
+      let recipes = require("recipe-tpl.js");
+      var cs  = new CS(recipes, document.body);
       cs.render();
     }
 
@@ -216,6 +222,9 @@ Module.loaders = [];
         break;
       case 'teams':
         loadTeams();
+        break;
+      case 'recipes':
+        loadRecipes();
         break;
       case 'sound':
         loadSound();

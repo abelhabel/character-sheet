@@ -54,6 +54,10 @@ class GameUI extends Component {
         height: 504px;
       }
 
+      .component.adventure {
+        background-color: black;
+      }
+
       .component.battle #battle-canvas canvas {
         position: absolute;
         top: 0px;

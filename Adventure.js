@@ -67,6 +67,45 @@ class Layer {
   }
 }
 
+class Record {
+  constructor() {
+    this.adventureItemCount = 0;
+  }
+
+  shouldDraw(item) {
+    if(item instanceof Terrain) {
+      if(!item.adventure.consumable) return true;
+      return !this.isConsumed(item);
+    }
+    return true;
+  }
+
+  isConsumed(terrain) {
+    return this.adventureItemCount >= terrain.adventure.charges * terrain.adventure.actionAmount;
+  }
+
+  consume(terrain) {
+    this.adventureItemCount += terrain.adventure.actionAmount;
+  }
+
+  resetConsumption(terrain) {
+    if(terrain.adventure.chargeActivation == 'per turn') {
+      this.adventureItemCount = 0;
+    }
+  }
+
+  takeAdventureItems(terrain) {
+    if(this.adventureItemCount >= terrain.adventure.charges * terrain.adventure.actionAmount) return [];
+    let out = [];
+    let max = terrain.adventure.actionAmount;
+    for(let i = 0; i < max; i++) {
+      out.push(terrain.adventureItem);
+    }
+    // this.consume(terrain);
+    return out;
+  }
+}
+
 class Adventure extends Component {
   constructor(w, h, tw, th) {
     super(true);
@@ -89,8 +128,10 @@ class Adventure extends Component {
       transport: new Layer('transport', false, this.w, this.h, this.tw, this.th),
       fog: new Layer('fog', true, this.w, this.h, this.tw, this.th),
       quests: new Layer('quests', false, this.w, this.h, this.tw, this.th),
+      history: new Layer('history', false, this.w, this.h, this.tw, this.th),
     };
     this.layers.fog.items.each(i => this.layers.fog.items.set(i.x, i.y, true));
+    this.layers.history.items.each(i => this.layers.history.items.set(i.x, i.y, new Record()))
     this.resources = [
 
     ];
@@ -101,6 +142,7 @@ class Adventure extends Component {
     this.menu.on('open inventory', () => this.openInventory());
     this.menu.on('open team', () => this.openTeamSheet());
     this.menu.on('open quests', () => this.openQuests());
+    this.menu.on('open crafting', () => this.openCrafting());
     this.panSpeed = 10;
     this.pans = {x: 0, y: 0};
     this.mouse = {
@@ -120,7 +162,7 @@ class Adventure extends Component {
         width: ${a.tw * a.w}px;
         height: ${a.th * a.h}px;
         border: 1px solid black;
-        margin-bottom: 128px;
+        margin-bottom: 160px;
       }
       .adventure canvas {
         position: absolute;
@@ -222,6 +264,7 @@ class Adventure extends Component {
 
       #inventory .item.selected {
         background-color: rgba(0,255,0,0.3);
+        outline: 1px solid white;
       }
 
       #inventory .name {
@@ -278,6 +321,7 @@ class Adventure extends Component {
         position: fixed;
         bottom: 0px;
         background-color: lightgray;
+        z-index: 3;
       }
 
       .tools {
@@ -292,6 +336,8 @@ class Adventure extends Component {
         z-index: 1;
         background-color: beige;
         padding: 5px;
+        overflow-y: auto;
+        height: 85%;
       }
       .control-item {
         border: 1px solid black;
@@ -441,12 +487,11 @@ class Adventure extends Component {
 
   endTurn() {
     this.tags.time.nextDay();
-    let {obstacles} = this.layers;
+    let {obstacles, history} = this.layers;
     obstacles.items.each(item => {
       if(!item.item) return;
-      if(item.item.adventure.chargeActivation == 'per turn') {
-        item.item.resetConsumption();
-      }
+      let record = history.items.get(item.x, item.y);
+      record.resetConsumption(item.item);
     })
   }
 
@@ -460,6 +505,10 @@ class Adventure extends Component {
 
   openQuests() {
     this.append(this.player.quests.render());
+  }
+
+  openCrafting() {
+    this.append(this.player.crafting.render());
   }
 
   addObstacle(x, y, item) {
@@ -577,9 +626,9 @@ class Adventure extends Component {
       console.log('right click');
       return this.showInfo(mp);
     }
-    let {obstacles, transport, monsters, dialog, quests} = this.layers;
+    let {obstacles, transport, monsters, dialog, quests, history} = this.layers;
     let item = obstacles.items.get(mp.x, mp.y);
-
+    let record = history.items.get(mp.x, mp.y);
     // Movement
     if(obstacles.items.canWalkTo(this.pp.x, this.pp.y, mp.x, mp.y)) {
       let path = obstacles.items.path(this.pp.x, this.pp.y, mp.x, mp.y);
@@ -595,7 +644,7 @@ class Adventure extends Component {
     // Quests
     let quest = quests.items.get(mp.x, mp.y);
     if(quest && quests.items.distance(this.pp.x, this.pp.y, mp.x, mp.y) <= 1) {
-      this.showQuest(quest);
+      return this.showQuest(quest);
     }
 
     // Transportation
@@ -607,57 +656,47 @@ class Adventure extends Component {
       this.centerOnPlayer();
     }
 
-    // Dialog
-    // let d = dialog.items.get(mp.x, mp.y);
-    // if(d) {
-    //   let dtag = html`<div class='message-box'>
-    //     <p>${d.text}</p>
-    //     <button>Close</button>
-    //   </div>`;
-    //   dtag.querySelector('button').addEventListener('click', () => {
-    //     dtag.parentNode.removeChild(dtag);
-    //   })
-    //   this.append(dtag);
-    //   this.sp.play('open_book');
-    // }
-
     // Interactables
     if(!item) return;
     if(item.adventure.event != 'click') return;
     if(obstacles.items.distance(this.pp.x, this.pp.y, mp.x, mp.y) > 1) return;
-    console.log(item)
 
-    this.showMessage(item);
+    this.showMessage(item, record);
+
     if(item.adventure.action == 'give gold') {
       this.addGold(item.adventure.actionAmount);
       this.sp.play('gold');
       obstacles.items.remove(mp.x, mp.y);
-      item.consume();
-      this.draw(obstacles);
-      this.updateResources();
     }
     if(item.adventure.action == 'give item') {
-      let items = item.takeAdventureItems();
-      console.log('items', items)
-      items.forEach(i => this.player.inventory.add(i));
-      if(item.adventure.consumable && item.isConsumed) {
-        obstacles.items.remove(mp.x, mp.y);
+      let items = record.takeAdventureItems(item);
+      items.forEach(i => {
+        if(item.stats.ingredient) {
+          this.player.crafting.add(i)
+        } else {
+          this.player.inventory.add(i)
+        }
+      });
+
+      if(item.adventure.consumable && record.isConsumed(item)) {
+        console.log('remove item', item)
+        // obstacles.items.remove(mp.x, mp.y);
       }
-      item.consume();
-      this.draw(obstacles);
-      this.updateResources();
     }
-    if(item.adventure.action == 'give movement' && !item.isConsumed) {
+    if(item.adventure.action == 'give movement' && !record.isConsumed(item)) {
       this.player.movesLeft += item.adventure.actionAmount;
-      item.consume();
-      this.draw(obstacles);
-      this.updateResources();
     }
     if(item.adventure.action == 'open tavern') {
       this.sp.play('open_book');
       this.trigger('tavern');
     }
 
+    record.consume(item);
+    if(!record.shouldDraw(item)) {
+      obstacles.items.remove(mp.x, mp.y);
+    }
+    this.updateResources();
+    this.draw(obstacles);
   }
 
   showInfo(mp) {
@@ -685,10 +724,10 @@ class Adventure extends Component {
     this.sp.play('open_book');
   }
 
-  showMessage(item) {
+  showMessage(item, record) {
     if(item.adventure.description) {
       let t, n;
-      if(item.isConsumed) {
+      if(record.isConsumed(item)) {
         t = `${item.bio.name} can't offer anything else at this point.`;
         n = '';
       } else {
@@ -856,13 +895,17 @@ class Adventure extends Component {
   }
 
   centerOnPlayer() {
+    console.log(this.pp.x, this.pp.y)
     let left = this.pp.x * this.tw - window.innerWidth/2;
     left = Math.max(0, left);
     left = Math.min(this.w * this.tw - window.innerWidth, left);
-    let top = this.pp.y * this.th - window.innerWidth/2;
+    let top = this.pp.y * this.th - window.innerHeight/2;
     top = Math.max(0, top);
     top = Math.min(this.h * this.th - window.innerHeight, top);
-    this.pan(-left / this.panSpeed, -top / this.panSpeed);
+    console.log(-left / this.panSpeed, -top / this.panSpeed)
+    this.pans.x = 0;
+    this.pans.y = 0;
+    this.pan(-left / this.panSpeed,-top / this.panSpeed);
   }
 
   edgeScrolling() {

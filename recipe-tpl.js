@@ -8,11 +8,29 @@ function sortOnName(a, b) {
 }
 const abilities = require('abilities.js');
 const terrains = require('terrains.js');
+const p = {
+  get(item) {
+    if(!item) return '';
+    if(typeof item == 'string') {
+      let t = this.values.find(v => v && v.id == item);
+      if(t) return t.bio.name;
+      return item;
+    }
+    return item.bio.name;
+  },
+  set(name) {
+    if(!name) return '';
+    t = this.values.find(v => v && v.bio && v.bio.name == name);
+    if(t) return t.id;
+    return '';
+  }
+};
+const ingredients = terrains.filter(t => t.stats.ingredient);
 var tpl = {
-  name: "Quest",
-  folder: "quests",
-  library: 'quests.js',
-  queryCommand: 'saveQuest',
+  name: "Recipe",
+  folder: "recipes",
+  library: 'recipes.js',
+  queryCommand: 'saveRecipe',
   categories: [
     {
       name: 'Bio',
@@ -36,86 +54,23 @@ var tpl = {
       ]
     },
     {
-      name: 'Condition',
-      exportAs: 'condition',
+      name: 'Ingredients',
+      exportAs: 'ingredients',
       items: [
         {
-          name: 'Type',
-          exportAs: 'type',
-          type: 'select',
-          initial: '',
-          values: ['', 'deliver', 'clear obstacle']
-        },
-        {
-          name: 'Amount',
-          exportAs: 'amount',
-          type: 'increment',
-          initial: 1,
-          range: [1, 1000000]
-        },
-        {
-          name: 'Selection',
-          exportAs: 'selection',
-          type: 'input',
-          initial: '',
-        },
-        {
-          name: 'Item',
-          exportAs: 'item',
-          type: 'select',
-          initial: '',
-          values: ['', 'gold', 'scroll', 'terrain']
-        },
-        {
-          name: 'Terrain',
-          exportAs: 'terrain',
-          type: 'select',
-          initial: '',
-          values: ['', ...terrains.sort(sortOnName)],
-          get(item) {
-            if(!item) return '';
-            if(typeof item == 'string') {
-              let t = this.values.find(v => v && v.id == item);
-              if(t) return t.bio.name;
-              return item;
-            }
-            return item.bio.name;
-          },
-          set(name) {
-            if(!name) return '';
-            t = this.values.find(v => v && v.bio && v.bio.name == name);
-            if(t) return t.id;
-            return '';
-          }
-        },
-        {
-          name: 'Scroll',
-          exportAs: 'scroll',
-          type: 'select',
-          initial: '',
-          values: ['', ...abilities.sort(sortOnName)],
-          get(item) {
-            if(!item) return '';
-            if(typeof item == 'string') {
-              let t = this.values.find(v => v && v.id == item);
-              if(t) return t.bio.name;
-              return item;
-            }
-            return item.bio.name;
-          },
-          set(name) {
-            if(!name) return '';
-            t = this.values.find(v => v && v.bio && v.bio.name == name);
-            if(t) return t.id;
-            return '';
-          }
-        },
+          name: 'Parts',
+          exportAs: 'parts',
+          type: 'multiselect',
+          values: ingredients,
+          get: p.get,
+          set: p.set
+        }
 
       ]
     },
     {
-      name: 'Reward',
-      exportAs: 'reward',
+      name: 'Result',
+      exportAs: 'result',
       items: [
         {
           name: 'Type',

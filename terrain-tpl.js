@@ -57,6 +57,18 @@ var tpl = {
           type: 'binary',
           initial: false
         },
+        {
+          name: 'Composite',
+          exportAs: 'composite',
+          type: 'binary',
+          initial: false
+        },
+        {
+          name: 'Ingredient',
+          exportAs: 'ingredient',
+          type: 'binary',
+          initial: false
+        },
 
       ]
     },

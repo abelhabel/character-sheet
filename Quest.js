@@ -16,6 +16,7 @@ class Quest extends Component {
     this.condition = {
       type: t && t.condition && t.condition.type ? t.condition.type : 'deliver',
       amount: t && t.condition && t.condition.amount ? t.condition.amount : 1,
+      selection: t && t.condition && t.condition.selection ? t.condition.selection : [],
       item: t && t.condition && t.condition.item ? t.condition.item : 'gold',
       scroll: t && t.condition && t.condition.scroll ? t.condition.scroll : '',
       terrain: t && t.condition && t.condition.terrain ? t.condition.terrain : ''
@@ -64,22 +65,28 @@ class Quest extends Component {
   }
 
   get conditionText() {
-    let {type, amount, item, terrain, scroll} = this.condition;
+    let {type, amount, selection, item, terrain, scroll} = this.condition;
     if(type == 'deliver') {
       if(item == 'gold') {
         return `${amount} gold`;
       }
       if(item == 'scroll') {
         let n = abilities.find(a => a.id == scroll);
-        console.log(n, this)
         return `${amount} Scroll of ${n.bio.name}`;
       }
+      if(item == 'terrain') {
+        let n = terrains.find(a => a.id == terrain);
+        return `${amount} ${n.bio.name}`;
+      }
+    }
+    if(type == 'clear obstacles') {
+      return 'Clear a path';
     }
   }
 
   conditionMet(adventure) {
     let p = adventure.player;
-    let {type, amount, item, terrain, scroll} = this.condition;
+    let {type, amount, selection, item, terrain, scroll} = this.condition;
     if(type == 'deliver') {
       if(item == 'gold') {
         return p.gold >= amount;
@@ -87,6 +94,18 @@ class Quest extends Component {
       if(item == 'scroll') {
         return p.inventory.itemByTemplateId(scroll);
       }
+      if(item == 'terrain') {
+        return p.inventory.itemByTemplateId(terrain);
+      }
+    }
+    if(type == 'clear obstacle') {
+      let inComplete = selection.split(',').find(p => {
+        let xy = p.split(':');
+        let x = parseInt(xy[0]);
+        let y = parseInt(xy[1]);
+        return adventure.layers.obstacles.items.get(x, y);
+      });
+      return !inComplete;
     }
 
   }
@@ -105,6 +124,10 @@ class Quest extends Component {
       let t = abilities.find(a => a.id == scroll);
       return new Scroll(new Ability(t));
     }
+    if(item == 'terrain') {
+      let t = terrains.find(a => a.id == terrain);
+      return new Terrain(terrain);
+    }
 
   }
 
@@ -117,6 +140,9 @@ class Quest extends Component {
       }
       if(item == 'scroll') {
         return p.inventory.remove(p.inventory.itemByTemplateId(scroll));
+      }
+      if(item == 'terrain') {
+        return p.inventory.remove(p.inventory.itemByTemplateId(terrain));
       }
     }
   }

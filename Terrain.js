@@ -1,4 +1,5 @@
 const Sprite = require('Sprite.js');
+const CompositeSprite = require('CompositeSprite.js');
 const abilities = require('abilities.js');
 const terrains = require('terrains.js');
 const Ability = require('Ability.js');
@@ -14,9 +15,11 @@ class Terrain {
       walkable: t.stats.walkable,
       cover: t.stats.cover,
       animation: t.stats.animation,
+      composite: t.stats.composite,
+      ingredient: t.stats.ingredient,
     };
     this.adventure = {
-      consumable: true,
+      consumable: t.adventure && t.adventure.consumable,
       event: t.adventure && t.adventure.event,
       action: t.adventure && t.adventure.action,
       item: t.adventure && t.adventure.item,
@@ -33,6 +36,7 @@ class Terrain {
       ability: t.inventory && t.inventory.ability,
     };
     this.sprites = this.bio.sprite.map(s => new Sprite(s));
+    this._sprite = new CompositeSprite(this.bio.sprite);
     this.adventureItemCount = 0;
   }
 
@@ -85,6 +89,9 @@ class Terrain {
   }
 
   get sprite() {
+    if(this.stats.composite) {
+      return this._sprite;
+    }
     let i = Math.floor(Math.random() * this.bio.sprite.length);
     this.index = i;
     return this.sprites[i];

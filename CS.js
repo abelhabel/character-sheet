@@ -356,11 +356,12 @@ class CS {
         d.style.backgroundColor = 'black';
       };
       d.addEventListener('click', () => {
-        v = item.set ? item.set(o) : v;
-        let index = currentVal.indexOf(v);
+        let vi = item.set ? item.set(v) : v;
+        console.log('clicked', v, o)
+        let index = currentVal.indexOf(vi);
         if(!~index) {
           d.style.backgroundColor = 'black';
-          currentVal.push(v);
+          currentVal.push(vi);
         } else {
           d.style.backgroundColor = 'gray';
           currentVal.splice(index, 1);
@@ -377,6 +378,8 @@ class CS {
       name: item.name,
       cname: c.name,
       update: (v) => {
+        console.log(v)
+        v = item.get ? v.map(a => item.get(a)) : v;
         v.filter(n => ~v.indexOf(n))
         currentVal = Array.from(new Set(v));
         tags.forEach(t => {

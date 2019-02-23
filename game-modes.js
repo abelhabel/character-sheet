@@ -12,6 +12,7 @@ const Gauntlet = require('Gauntlet.js');
 const CardList = require('CardList.js');
 const Adventure = require('Adventure.js');
 const Inventory = require('Inventory.js');
+const Crafting = require('Crafting.js');
 const QuestLog = require('QuestLog.js');
 const adventures = require('adventures.js');
 const arenas = require('arenas.js');
@@ -91,9 +92,17 @@ gameModes.adventure = function(lobby, ui) {
         movesLeft: 20,
         inventory: new Inventory(),
         quests: new QuestLog(),
+        crafting: new Crafting(),
         team,
       };
+      player.crafting.on('crafting success', recipe => {
+        console.log('recipe', recipe)
+        recipe.takeResult(a);
+        player.crafting.render();
+        a.updateResources();
+      });
       player.inventory.on('use inventory item', item => {
+        console.log('use inventory item', item)
         if(item.item.inventory.action == 'give ability') {
           let t = html`<div style='position:fixed;z-index: 4000; top:50%;left:50%;transform:translate(-50%,-50%);background-image: url(sheet_of_old_paper.png);padding:20px;'></div>`;
           player.team.units.forEach(u => {

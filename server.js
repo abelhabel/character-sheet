@@ -22,6 +22,7 @@ const files = {
   'matches.js': () => wrap.pre() + require('./matches.js')() + wrap.post('matches.js'),
   'gauntlets.js': () => wrap.pre() + require('./gauntlets.js')() + wrap.post('gauntlets.js'),
   'adventures.js': () => wrap.pre() + require('./adventures.js')() + wrap.post('adventures.js'),
+  'recipes.js': () => wrap.pre() + require('./recipes.js')() + wrap.post('recipes.js'),
   'animations.js': () => wrap.pre() + require('./animations.js')() + wrap.post('animations.js'),
   'leaders.js': () => wrap.pre() + require('./leaders.js')() + wrap.post('leaders.js'),
   'socket-worker.js': fs.readFileSync(__dirname + '/socket-worker.js'),
@@ -120,6 +121,7 @@ loadFile('AdventureEditor.js');
 loadFile('AdventureMenu.js');
 loadFile('AdventureTime.js');
 loadFile('Inventory.js');
+loadFile('Crafting.js');
 loadFile('init-sound.js');
 loadFile('game-modes.js');
 loadFile('guid.js');
@@ -134,6 +136,7 @@ loadFile('icon-tpl.js');
 loadFile('team-tpl.js');
 loadFile('leader-tpl.js');
 loadFile('quest-tpl.js');
+loadFile('recipe-tpl.js');
 loadFile('pathfinding.js');
 loadFile('index.html');
 loadFile('rules.html', addRuleLinks);
@@ -251,6 +254,9 @@ const server = http.createServer(function(req, res) {
   }
   if(name == 'saveAnimation') {
     return saveData(req, res, 'animations', url);
+  }
+  if(name == 'saveRecipe') {
+    return saveData(req, res, 'recipes', url);
   }
   if(name.match('.wav')) {
     console.log('loading sound', name)
