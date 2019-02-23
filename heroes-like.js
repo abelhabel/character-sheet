@@ -46,6 +46,12 @@ var tpl = {
           exportAs: 'summonOnly',
         },
         {
+          name: 'Leader',
+          type: 'binary',
+          initial: false,
+          exportAs: 'leader',
+        },
+        {
           name: 'Cost',
           type: 'input',
           initial: 10,

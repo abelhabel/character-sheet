@@ -16,6 +16,7 @@ const icons = require('icons.js');
 const abilities = require('abilities.js');
 const terrains = require('terrains.js');
 const teams = require('teams.js');
+const interactIcon = icons.find(i => i.bio.name == 'Interact');
 const selectedIcon = icons.find(i => i.bio.name == 'Hit Background');
 const deselectIcon = icons.find(i => i.bio.name == 'Stop');
 const removeIcon = icons.find(i => i.bio.name == 'Delete');
@@ -25,7 +26,7 @@ const tileTargetIcon = icons.find(i => i.bio.name == 'Tile Target');
 const selectSprite = new Sprite(selectedIcon.bio.sprite);
 const tileTargetSprite = new Sprite(tileTargetIcon.bio.sprite);
 const goldSprite = new Sprite(goldIcon.bio.sprite);
-
+const interactSprite = new Sprite(interactIcon.bio.sprite);
 class Dialog extends Component {
   constructor(text) {
     super(true);
@@ -70,6 +71,13 @@ class Layer {
 class Record {
   constructor() {
     this.adventureItemCount = 0;
+    this.questFinished = false;
+  }
+
+  completeQuest(quest, adventure) {
+    quest.takeCondition(adventure);
+    quest.giveReward(adventure);
+    this.questFinished = true;
   }
 
   shouldDraw(item) {
@@ -163,6 +171,9 @@ class Adventure extends Component {
         height: ${a.th * a.h}px;
         border: 1px solid black;
         margin-bottom: 160px;
+      }
+      .adventure.interactive {
+        cursor: url(${interactSprite.canvas.toDataURL('image/png')}), auto;
       }
       .adventure canvas {
         position: absolute;
@@ -612,9 +623,23 @@ class Adventure extends Component {
     let p = this.tpos(e);
   }
 
+  isInteractable(x, y) {
+    let {obstacles, monsters, history, quests} = this.layers;
+    let obstacle = obstacles.items.get(x, y);
+    let record = history.items.get(x, y);
+    let monster = monsters.items.get(x, y);
+    let quest = quests.items.get(x, y);
+    return (obstacle && obstacle.adventure.event) || monster || quest;
+  }
+
   mouseMove(e) {
     this.mouse.move = e;
-
+    let p = this.tpos(e);
+    if(this.isInteractable(p.x, p.y)) {
+      this.shadow.querySelector('.adventure').classList.add('interactive');
+    } else {
+      this.shadow.querySelector('.adventure').classList.remove('interactive');
+    }
     !this.moving && this.highlightMovementTile();
   }
 
@@ -623,7 +648,6 @@ class Adventure extends Component {
     this.mouse.up = e;
     let mp = this.tpos(e);
     if(e.which == 3) {
-      console.log('right click');
       return this.showInfo(mp);
     }
     let {obstacles, transport, monsters, dialog, quests, history} = this.layers;
@@ -644,7 +668,7 @@ class Adventure extends Component {
     // Quests
     let quest = quests.items.get(mp.x, mp.y);
     if(quest && quests.items.distance(this.pp.x, this.pp.y, mp.x, mp.y) <= 1) {
-      return this.showQuest(quest);
+      return this.showQuest(quest, record);
     }
 
     // Transportation
@@ -679,7 +703,6 @@ class Adventure extends Component {
       });
 
       if(item.adventure.consumable && record.isConsumed(item)) {
-        console.log('remove item', item)
         // obstacles.items.remove(mp.x, mp.y);
       }
     }
@@ -747,14 +770,12 @@ class Adventure extends Component {
     }
   }
 
-  showQuest(quest) {
-    console.log('quest', quest)
-    if(quest.finished) {
+  showQuest(quest, record) {
+    if(record.questFinished) {
       this.showDescription({adventure: {description: "This quest is finished."}});
     } else
     if(this.player.quests.hasQuest(quest)) {
       let met = quest.conditionMet(this);
-      console.log('met', met)
       let dtag = html`<div class='message-box'>
         <p>
           ${quest.bio.name}<br>Quest: ${quest.conditionText}<br>Reward: ${quest.rewardText}
@@ -767,7 +788,7 @@ class Adventure extends Component {
       });
       dtag.querySelector('.accept-message').addEventListener('click', () => {
         if(met) {
-          quest.complete(this);
+          record.completeQuest(quest, this);
           this.updateResources();
         } else {
           this.player.quests.remove(quest);
@@ -895,14 +916,12 @@ class Adventure extends Component {
   }
 
   centerOnPlayer() {
-    console.log(this.pp.x, this.pp.y)
     let left = this.pp.x * this.tw - window.innerWidth/2;
     left = Math.max(0, left);
     left = Math.min(this.w * this.tw - window.innerWidth, left);
     let top = this.pp.y * this.th - window.innerHeight/2;
     top = Math.max(0, top);
     top = Math.min(this.h * this.th - window.innerHeight, top);
-    console.log(-left / this.panSpeed, -top / this.panSpeed)
     this.pans.x = 0;
     this.pans.y = 0;
     this.pan(-left / this.panSpeed,-top / this.panSpeed);

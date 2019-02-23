@@ -29,8 +29,6 @@ class Quest extends Component {
       scroll: t && t.reward && t.reward.scroll ? t.reward.scroll : '',
       terrain: t && t.reward && t.reward.terrain ? t.reward.terrain : ''
     };
-    this.available = t ? t.available : true;
-    this.finished = t ? t.finished : false;
     this.sprite = this.bio.sprite ? new Sprite(this.bio.sprite) : null
   }
 
@@ -95,7 +93,16 @@ class Quest extends Component {
         return p.inventory.itemByTemplateId(scroll);
       }
       if(item == 'terrain') {
-        return p.inventory.itemByTemplateId(terrain);
+        let t = terrains.find(t => t.id == terrain);
+        if(t.stats.ingredient) {
+          let count = p.crafting.itemsByTemplateId(terrain).length;
+          if(count < amount) return false;
+          return p.crafting.itemByTemplateId(terrain);
+        } else {
+          let count = p.inventory.itemsByTemplateId(terrain).length;
+          if(count < amount) return false;
+          return p.inventory.itemByTemplateId(terrain);
+        }
       }
     }
     if(type == 'clear obstacle') {
@@ -108,13 +115,6 @@ class Quest extends Component {
       return !inComplete;
     }
 
-  }
-
-  complete(adventure) {
-    this.takeCondition(adventure);
-    this.giveReward(adventure);
-    this.available = false;
-    this.finished = true;
   }
 
   get rewardItem() {
@@ -142,7 +142,14 @@ class Quest extends Component {
         return p.inventory.remove(p.inventory.itemByTemplateId(scroll));
       }
       if(item == 'terrain') {
-        return p.inventory.remove(p.inventory.itemByTemplateId(terrain));
+        let t = terrains.find(t => t.id == terrain);
+        for(let i = 0; i < amount; i++) {
+          if(t.stats.ingredient) {
+            p.crafting.remove(p.crafting.itemByTemplateId(terrain));
+          } else {
+            p.inventory.remove(p.inventory.itemByTemplateId(terrain));
+          }
+        }
       }
     }
   }

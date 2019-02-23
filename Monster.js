@@ -101,6 +101,7 @@ class Monster {
       name: t.bio.name,
       family: t.bio.family,
       summonOnly: t.bio.summonOnly || false,
+      leader: t.bio.leader || false,
       cost: t.bio.cost,
       maxStacks: t.bio.maxStacks || 1
     };

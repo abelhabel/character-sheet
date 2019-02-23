@@ -61,6 +61,12 @@ class Inventory extends Component {
     })
   }
 
+  itemsByTemplateId(id) {
+    return this.list._filled().filter(item => {
+      return item.item.template.id == id;
+    })
+  }
+
   itemByName(name) {
     return this.list._filled().find(item => {
       return item.item.bio.name == name;

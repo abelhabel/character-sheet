@@ -16,7 +16,9 @@ const Crafting = require('Crafting.js');
 const QuestLog = require('QuestLog.js');
 const adventures = require('adventures.js');
 const arenas = require('arenas.js');
-const monsters = require('monsters.js');
+const monsters = require('monsters.js').filter(m => !m.bio.leader);
+const leaders = require('monsters.js').filter(m => m.bio.leader);
+const OOI = monsters.filter(m => m.bio.family == 'Order of Idun');
 const matches = require('matches.js');
 const gauntlets = require('gauntlets.js');
 const tw = 42;
@@ -175,7 +177,13 @@ gameModes.adventure = function(lobby, ui) {
       ui.show('lobby');
     }
     ui.show('team select');
-    let ts = new TeamSelect(monsters, ui.container, 42, 42, 600, 8, ['Andreas'], onDone, onExit);
+    let ts = new TeamSelect(OOI, ui.container, 42, 42, 600, 8, ['Andreas'], (team) => {
+      ui.clear('team select');
+      new TeamSelect(leaders, ui.container, 42, 42, 600, 1, ['Andreas'], (leaderTeam) => {
+        team.merge(leaderTeam);
+        onDone(team);
+      }, onExit);
+    }, onExit);
   });
 }
 
