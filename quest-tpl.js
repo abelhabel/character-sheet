@@ -33,6 +33,18 @@ var tpl = {
           w: 32,
           h: 32
         },
+        {
+          name: 'Global',
+          exportAs: 'global',
+          type: 'binary',
+          initial: false
+        },
+        {
+          name: 'Description',
+          exportAs: 'description',
+          type: 'text',
+          initial: ''
+        }
       ]
     },
     {
@@ -44,7 +56,7 @@ var tpl = {
           exportAs: 'type',
           type: 'select',
           initial: '',
-          values: ['', 'deliver', 'clear obstacle']
+          values: ['', 'deliver', 'clear obstacle', 'kill monster']
         },
         {
           name: 'Amount',
@@ -122,7 +134,7 @@ var tpl = {
           exportAs: 'type',
           type: 'select',
           initial: 'give',
-          values: ['', 'give', 'take', 'dispel', 'remove obstacle']
+          values: ['', 'give', 'take', 'dispel', 'remove obstacle', 'win game']
         },
         {
           name: 'Amount',

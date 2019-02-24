@@ -11,7 +11,9 @@ class Quest extends Component {
     super(false, 'quest');
     this.bio = {
       name: t && t.bio && t.bio.name ? t.bio.name : 'Unnamed',
-      sprite: t && t.bio && t.bio.sprite ? t.bio.sprite : null
+      sprite: t && t.bio && t.bio.sprite ? t.bio.sprite : null,
+      global: t && t.bio && t.bio.global ? t.bio.global : false,
+      description: t && t.bio && t.bio.description ? t.bio.description : ''
     };
     this.condition = {
       type: t && t.condition && t.condition.type ? t.condition.type : 'deliver',
@@ -186,12 +188,7 @@ class Quest extends Component {
       <div class='quest-image'></div>
       <div class='quest-name'>${this.bio.name}</div>
       <span class='quest-condition'>
-        <span>${this.condition.type}:</span>
-        <span>${this.conditionText}</span>
-      </span>
-      <span class='quest-reward'>
-        <span>${this.reward.type}:</span>
-        <span>${this.rewardText}</span>
+        ${this.bio.description}
       </span>
     </div>`;
     if(this.sprite) {

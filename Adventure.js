@@ -346,20 +346,6 @@ class Adventure extends Component {
         display: inline-block;
         vertical-align: top;
       }
-      #control-panel {
-        position: fixed;
-        top: 0px;
-        right: 0px;
-        z-index: 1;
-        background-color: beige;
-        padding: 5px;
-        overflow-y: auto;
-        height: 85%;
-      }
-      .control-item {
-        border: 1px solid black;
-        padding: 2px;
-      }
 
       .resources {
         position: fixed;
@@ -390,7 +376,7 @@ class Adventure extends Component {
         position: fixed;
         z-index: 100;
         width: 400px;
-        height: 300px;
+        height: 500px;
         left: 50%;
         top: 50%;
         transform: translate(-50%, -50%);
@@ -407,6 +393,8 @@ class Adventure extends Component {
       .message-box p {
         margin-top: 0px;
         text-align: justify;
+        height: 320px;
+        overflow-y: auto;
       }
 
       .message-box button {
@@ -495,7 +483,8 @@ class Adventure extends Component {
     }
     if(t.layers.quests) {
       t.layers.quests.forEach(item => {
-        a.layers.quests.items.set(item.x, item.y, Quest.create(item.item));
+        let q = Quest.create(item.item);
+        a.layers.quests.items.set(item.x, item.y, q);
       });
     }
 
@@ -543,6 +532,11 @@ class Adventure extends Component {
     this.layers.monsters.items.set(this.pp.x, this.pp.y, p.team);
     this.resources.push(new Resource('gold', this.player.gold, goldIcon));
     this.tags.time.player = this.player;
+    this.layers.quests.items.filled(item => {
+      let q = item.item;
+      if(!q.bio.global) return;
+      p.quests.add(q);
+    })
     this.draw(this.layers.monsters);
   }
 
@@ -784,7 +778,7 @@ class Adventure extends Component {
       let met = quest.conditionMet(this);
       let dtag = html`<div class='message-box'>
         <p>
-          ${quest.bio.name}<br>Quest: ${quest.conditionText}<br>Reward: ${quest.rewardText}
+          ${quest.bio.description}
         </p>
         <button class='accept-message'>${met ? 'Complete Quest' : 'Stop Quest'}</button>
         <button class='close-message'>Close</button>
@@ -809,7 +803,7 @@ class Adventure extends Component {
     } else {
       let dtag = html`<div class='message-box'>
       <p>
-      ${quest.bio.name}<br>Quest: ${quest.conditionText}<br>Reward: ${quest.rewardText}
+        ${quest.bio.description}
       </p>
       <button class='accept-message'>Accept</button>
       <button class='close-message'>Close</button>

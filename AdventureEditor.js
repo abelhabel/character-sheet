@@ -40,6 +40,8 @@ class ControlPanel extends Component {
         z-index: 1;
         background-color: beige;
         padding: 5px;
+        overflow-y: auto;
+        height: 85%;
       }
       .control-item {
         border: 1px solid black;
@@ -129,6 +131,26 @@ class AdventureEditor extends Adventure {
       pl.set(item.x, item.y, index);
     })
     return {lookup: l, items: pl.items};
+  }
+
+  copy(e) {
+    let selections = this.selected;
+    if(selections.length !== 1) return;
+    this.clipboard = selections[0];
+  }
+
+  paste(e) {
+    let selections = this.selected;
+    if(selections.length !== 1 || !this.clipboard) return;
+    let s = selections[0];
+    let c = this.clipboard;
+    Object.keys(this.layers).forEach(key => {
+      let layer = this.layers[key];
+      let source = layer.items.get(c.x, c.y);
+      layer.items.set(s.x, s.y, source);
+      this.draw(layer);
+    })
+
   }
 
   save() {
@@ -423,6 +445,8 @@ class AdventureEditor extends Adventure {
         <select id='scroll-abilities'></select>
         <button id='add-quest'>Add Quest</button>
         <button id='remove-quest'>Remove Quest</button>
+        <button id='copy'>Copy</button>
+        <button id='paste'>Paste</button>
       </div>
     </div>`;
 
@@ -430,7 +454,8 @@ class AdventureEditor extends Adventure {
       let o = html`<option value='${a.id}'>${a.bio.name}</option>`;
       foot.querySelector('#scroll-abilities').appendChild(o);
     })
-
+    foot.querySelector('#copy').addEventListener('click', this.copy.bind(this));
+    foot.querySelector('#paste').addEventListener('click', this.paste.bind(this));
     foot.querySelector('#save-adventure').addEventListener('click', this.save.bind(this));
     foot.querySelector('#adventure-name').addEventListener('keyup', this.setName.bind(this));
     foot.querySelector('#add-dialog').addEventListener('click', this.addDialog.bind(this));
