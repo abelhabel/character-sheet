@@ -117,7 +117,7 @@ class Record {
 class Adventure extends Component {
   constructor(w, h, tw, th) {
     super(true);
-    this.id = '';
+    this.id = Math.random();
     this.name = "Adventure";
     this.tw = tw || 42;
     this.th = th || 42;
@@ -165,6 +165,18 @@ class Adventure extends Component {
 
   static style(a) {
     return html`<style>
+      .finish-adventure {
+        width: 600px;
+        height: 600px;
+        padding: 10px;
+        background-image: url(sheet_of_old_paper.png);
+        border-radius: 10px;
+        position: fixed;
+        z-index: 2;
+        top: 50%;
+        left: 50%;
+        transform: translate(-50%,-50%);
+      }
       .adventure {
         position: relative;
         width: ${a.tw * a.w}px;
@@ -204,6 +216,21 @@ class Adventure extends Component {
         right: 0px;
         width: 250px;
         height: 250px;
+      }
+
+      #adventure-menu.hidden {
+        position: fixed;
+        top: 0px;
+        right: 0px;
+        width: 250px;
+        height: 20px;
+      }
+
+      #adventure-menu #show-hide {
+        padding: 10px;
+        background-image: url(sheet_of_old_paper.png);
+        position: relative;
+        left: -80px;
       }
 
       #adventure-menu .menu-item {
@@ -789,6 +816,7 @@ class Adventure extends Component {
       dtag.querySelector('.accept-message').addEventListener('click', () => {
         if(met) {
           record.completeQuest(quest, this);
+          this.trigger('complete quest', quest);
           this.updateResources();
         }
         this.player.quests.remove(quest);
@@ -861,9 +889,19 @@ class Adventure extends Component {
   }
 
   killTeam(tile) {
-    let {monsters} = this.layers;
+    let {monsters, quests, history} = this.layers;
     let item = monsters.items.remove(tile[0], tile[1]);
     this.draw(monsters);
+    let quest = quests.items.get(tile[0], tile[1]);
+    let record = history.items.get(tile[0], tile[1]);
+    if(!quest) return;
+    let met = quest.conditionMet(this);
+    console.log('quest condition met', met, quest)
+    if(met) {
+      record.completeQuest(quest, this);
+      this.updateResources();
+      this.trigger('complete quest', quest);
+    }
   }
 
   walk(a, path) {

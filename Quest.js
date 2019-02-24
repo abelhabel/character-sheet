@@ -116,6 +116,15 @@ class Quest extends Component {
       });
       return !inComplete;
     }
+    if(type == 'kill monster') {
+      let inComplete = selection.split(',').find(p => {
+        let xy = p.split(':');
+        let x = parseInt(xy[0]);
+        let y = parseInt(xy[1]);
+        return adventure.layers.monsters.items.get(x, y);
+      });
+      return !inComplete;
+    }
 
   }
 

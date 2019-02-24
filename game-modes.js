@@ -63,25 +63,25 @@ function placeUnits(arenaTpl, team, side, ui) {
 }
 
 gameModes.adventure = function(lobby, ui) {
-  let tpl = adventures.find(a => a.id == '1a1f19de-3da3-e850-3815-0a3bcb0c218f');
-  let a = Adventure.create(tpl);
-  a.on('tavern', () => {
-    ui.show('team select');
-    let undead = monsters.filter(m => m.bio.family == 'Order of Idun');
-    let onDone = (team) => {
-      a.player.team.merge(team);
-      a.addGold(-ts.spent);
-      a.updateResources();
-      ui.clear('team select');
-      ui.show('adventure');
-    };
-    let onExit = () => {
-      ui.clear('team select');
-      ui.show('adventure');
-    };
-    let ts = new TeamSelect(undead, ui.container, 42, 42, a.player.gold, 8, ['Andreas'], onDone, onExit);
-  });
   lobby.on('adventure', () => {
+    let tpl = adventures.find(a => a.id == '1a1f19de-3da3-e850-3815-0a3bcb0c218f');
+    let a = Adventure.create(tpl);
+    a.on('tavern', () => {
+      ui.show('team select');
+      let undead = monsters.filter(m => m.bio.family == 'Order of Idun');
+      let onDone = (team) => {
+        a.player.team.merge(team);
+        a.addGold(-ts.spent);
+        a.updateResources();
+        ui.clear('team select');
+        ui.show('adventure');
+      };
+      let onExit = () => {
+        ui.clear('team select');
+        ui.show('adventure');
+      };
+      let ts = new TeamSelect(undead, ui.container, 42, 42, a.player.gold, 8, ['Andreas'], onDone, onExit);
+    });
     var onDone = (team) => {
       console.log(team);
       ui.clear('team select');
@@ -148,6 +148,24 @@ gameModes.adventure = function(lobby, ui) {
         a.addObstacle(a.pp.x, a.pp.y, item.item);
         player.inventory.remove(item);
       })
+      a.on('complete quest', quest => {
+        if(quest.reward.type == 'win game') {
+          console.log('game won');
+          let t = html`<div class='finish-adventure'>
+            <p>
+              Congratulations! You have completed this adventure.
+            </p>
+            <p>
+              Click to continue.
+            </p>
+          </div>`;
+          t.addEventListener('click', e => {
+            ui.clear('adventure');
+            ui.show('lobby');
+          });
+          a.shadow.appendChild(t);
+        }
+      });
       a.addPlayer(player);
       ui.append(a.render());
       a.centerOnPlayer();
@@ -168,8 +186,8 @@ gameModes.adventure = function(lobby, ui) {
             let report = o.results.report(() => {
               battle.destroy();
               ui.clear('battle');
-              a.killTeam(tile);
               ui.show('adventure');
+              a.killTeam(tile);
             });
             ui.append(report);
           };

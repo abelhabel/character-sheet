@@ -30,6 +30,7 @@ class AdventureMenu extends Component {
       {tag: sprites.cs.canvas, e: 'open team'},
       {tag: sprites.craft.canvas, e: 'open crafting'}
     ];
+    this.view = 'menu';
   }
 
   render() {
@@ -40,6 +41,19 @@ class AdventureMenu extends Component {
     let e = s + Math.PI;
     let range = Math.PI;
     let a = range / (this.items.length);
+    let showHide = html`<div id='show-hide'>Show/Hide</div>`;
+    showHide.addEventListener('click', e => {
+      if(this.view != 'menu') {
+        this.view = 'menu';
+        this.tags.outer.classList.remove('hidden');
+      } else {
+        this.view = 'showhide';
+        this.tags.outer.classList.add('hidden');
+      }
+      this.render();
+    })
+    this.append(showHide);
+    if(this.view != 'menu') return this.tags.outer;
     for(let i = 0, c = 0; i < range; i += a, c += 1) {
       let top = 100 + Math.sin(s+i) * r;
       let left = 100 + Math.cos(s+i) * r;
