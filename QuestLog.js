@@ -12,6 +12,7 @@ class QuestLog extends Component {
 
   remove(q) {
     let index = this.quests.findIndex(qu => qu.name == q.name);
+    console.log('remove quest', q, index, this)
     if(!~index) return;
     this.quests.splice(index, 1);
   }

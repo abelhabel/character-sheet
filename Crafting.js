@@ -1,8 +1,10 @@
 const Inventory = require('Inventory.js');
 const Scroll = require('Scroll.js');
 const Ability = require('Ability.js');
+const Terrain = require('Terrain.js');
 const recipes = require('recipes.js');
 const abilities = require('abilities.js');
+const terrains = require('terrains.js');
 
 class Recipe {
   constructor(t, itemsUsed) {
@@ -29,7 +31,6 @@ class Recipe {
     let p = adventure.player;
     let success = false;
     let {type, amount, item, terrain, scroll} = this.result;
-    console.log(type, amount, item, terrain, scroll)
     if(type == 'give') {
       if(item == 'gold') {
         adventure.addGold(amount);
@@ -38,6 +39,11 @@ class Recipe {
       if(item == 'scroll') {
         let t = abilities.find(a => a.id == scroll);
         p.inventory.add(new Scroll(new Ability(t)));
+        success = true;
+      }
+      if(item == 'terrain') {
+        let t = terrains.find(a => a.id == terrain);
+        p.inventory.add(new Terrain(t));
         success = true;
       }
     }
@@ -68,6 +74,17 @@ class Crafting extends Inventory {
     let match = this.checkRecipe(selected);
     console.log('match', match);
     match && this.trigger('crafting success', new Recipe(match, selected));
+  }
+
+  render() {
+    Inventory.prototype.render.call(this);
+    let t = html`<div class='inventory-instructions'>
+      Select the ingredients you want to combine and click 'Use' to combine them.
+      By holding down Shift while clicking on an ingredient you can select multiple ingredients.
+    </div>`;
+
+    this.append(t);
+    return this.tags.outer;
   }
 };
 

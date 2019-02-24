@@ -50,7 +50,8 @@ class TeamSheet extends Component {
     this.append(units);
     if(this.selected) {
       let sheet = html`<div class='team-unit-cs'></div>`;
-      this.selected.drawMonsterCS(sheet, () => this.selectMonster(null));
+      let monster = this.selected;
+      monster.drawMonsterCS(sheet, () => this.selectMonster(null), (c, s) => this.team.upgradeStats(monster, c, s));
       this.append(sheet);
     }
     return this.tags.outer;

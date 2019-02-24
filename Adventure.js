@@ -264,6 +264,12 @@ class Adventure extends Component {
         box-sizing: content-box;
       }
 
+      #inventory .inventory-instructions {
+        margin-top: 30px;
+        padding: 20px;
+        background-image: url(sheet_of_old_paper.png);
+      }
+
       #inventory .item {
         display: inline-block;
         vertical-align: top;
@@ -790,9 +796,8 @@ class Adventure extends Component {
         if(met) {
           record.completeQuest(quest, this);
           this.updateResources();
-        } else {
-          this.player.quests.remove(quest);
         }
+        this.player.quests.remove(quest);
         dtag.parentNode.removeChild(dtag);
       });
       dtag.addEventListener('contextmenu', (e) => {

@@ -136,7 +136,108 @@ class Monster {
     this._team = '';
     this.permanentAilments = [];
     this.permanentVigors = [];
+    this.upgradePointsLeft = 0;
+    this.upgradePointsSpent = 0;
+    this.upgrades = {
+      stats: {
+        health: 0,
+        mana: 0,
+        attack: 0,
+        defence: 0,
+        spellPower: 0,
+        spellResistance: 0,
+        damage: 0,
+        movement: 0,
+        initiative: 0,
+        apr: 0,
+        tpr: 0
+      },
+      changes: {
+        health: 0,
+        mana: 0,
+        attack: 0,
+        defence: 0,
+        spellPower: 0,
+        spellResistance: 0,
+        damage: 0,
+        movement: 0,
+        initiative: 0,
+        apr: 0,
+        tpr: 0
+      },
+      rules: {
+        health: {
+          cost: 1,
+          return: 2,
+          min: 1,
+          max: 1000
+        },
+        mana: {
+          cost: 2,
+          return: 1,
+          min: 0,
+          max: 1000
+        },
+        attack: {
+          cost: 1,
+          return: 1,
+          min: 1,
+          max: 1000
+        },
+        defence: {
+          cost: 1,
+          return: 1,
+          min: 1,
+          max: 1000
+        },
+        spellPower: {
+          cost: 3,
+          return: 1,
+          min: 1,
+          max: 10
+        },
+        spellResistance: {
+          cost: 1,
+          return: 2,
+          min: 0,
+          max: 10
+        },
+        damage: {
+          cost: 4,
+          return: 1,
+          min: 1,
+          max: 10
+        },
+        movement: {
+          cost: 3,
+          return: 1,
+          min: 1,
+          max: 10
+        },
+        initiative: {
+          cost: 2,
+          return: 1,
+          min: 1,
+          max: 20
+        },
+        apr: {
+          cost: 10,
+          return: 1,
+          min: 1,
+          max: 10
+        },
+        tpr: {
+          cost: 5,
+          return: 1,
+          min: 1,
+          max: 10
+        }
+      }
+    };
+  }
 
+  get upgradePoints() {
+    return this.upgradePointsLeft - this.upgradePointsSpent;
   }
 
   addAI(level = 1) {
@@ -512,7 +613,7 @@ class Monster {
   }
 
   baseStat(name) {
-    let base = this.stats[name];
+    let base = this.stats[name] + this.upgrades.stats[name];
     if(name == 'defence' && this.hasAilment('brittle')) {
       base = Math.round(0.5 * base);
     }
@@ -715,10 +816,113 @@ class Monster {
         font-size: 14px;
         cursor: pointer;
       }
+      .monster-stat-upgrades {
+        padding: 20px;
+        background-image: url(sheet_of_old_paper.png);
+        position: absolute;
+        top: 0px;
+        left: -240px;
+        width: 230px;
+        user-select: none;
+        cursor: inherit;
+      }
+      .increase-stat, .decrease-stat {
+        box-shadow: 0px 2px 5px -1px rgba(0,0,0,0.75);
+        border-radius: 3px;
+        padding: 5px;
+        display: inline-block;
+        width: 20px;
+        height: 20px;
+        text-align: center;
+        line-height: 9px;
+      }
+      .increase-stat:hover, .decrease-stat:hover {
+        background-color: #38a;
+      }
+      .controls {
+        float: right;
+      }
+      .upgrade-stat {
+        height: 22px;
+      }
+      .upgrade-stat-value {
+
+      }
+      .upgrade-points {
+        margin-bottom: 6px;
+        font-size: 1.2em;
+      }
+      .monster-upgrades-commit {
+        padding: 10px;
+        border-radius: 4px;
+        position: relative;
+        margin-top: 10px;
+        user-select: none;
+        cursor: inherit;
+        box-shadow: 0px 2px 5px -1px rgba(0,0,0,0.75);
+        letter-spacing: 2px;
+        font-weight: bold;
+        text-align: center;
+      }
+      .monster-upgrades-commit:hover {
+        background-color: rgba(0,0,0,0.1);
+      }
     </style>`;
   }
 
-  drawMonsterCS(popup, onClose) {
+  drawLevelUp(names, onCommit) {
+    let t = html`<div class='monster-stat-upgrades'>
+      <div class='bold upgrade-points'>Points: ${this.upgradePoints}</div>
+    </div>`;
+    Object.keys(this.upgrades.stats).forEach(stat => {
+      let cost = this.upgrades.rules[stat].cost;
+      let ret = this.upgrades.rules[stat].return;
+      let d = html`<div class='upgrade-stat'>
+        <span class='bold'>${names[stat]}</span>
+        <span class='controls'>
+          <span class='upgrade-stat-value'>${this.baseStat(stat) + this.upgrades.changes[stat]}</span>
+          <span class='decrease-stat'>-</span>
+          <span class='increase-stat'>+</span>
+        </span>
+      </div>`;
+      d.addEventListener('click', e => {
+        if(e.target.classList.contains('increase-stat')) {
+          if(this.upgradePoints < 1) return;
+          if(this.upgradePoints < cost) return;
+          console.log('increase stat', stat);
+          this.upgrades.changes[stat] += ret;
+          this.upgradePointsSpent += cost;
+          let p = t.parentNode;
+          p.removeChild(t);
+          p.appendChild(this.drawLevelUp(names, onCommit));
+        }
+        if(e.target.classList.contains('decrease-stat')) {
+          if(this.upgrades.changes[stat] < 1) return;
+          if(this.upgradePoints >= this.upgradePointsLeft) return;
+          console.log('decrease stat', stat);
+          this.upgrades.changes[stat] -= ret;
+          this.upgradePointsSpent -= cost;
+          let p = t.parentNode;
+          p.removeChild(t);
+          p.appendChild(this.drawLevelUp(names, onCommit));
+        }
+      })
+      t.appendChild(d);
+    });
+    let commit = html`<div class='monster-upgrades-commit'>Confirm</div>`;
+    commit.addEventListener('click', e => {
+      let changes = Object.assign({}, this.upgrades.changes);
+      Object.keys(this.upgrades.changes).forEach(stat => {
+        this.upgrades.stats[stat] += this.upgrades.changes[stat];
+        this.upgrades.changes[stat] = 0;
+      });
+      onCommit && onCommit(changes, this.upgradePointsSpent);
+    })
+    t.appendChild(commit);
+    return t;
+  }
+
+  drawMonsterCS(popup, onClose, levelUp) {
     let m = this;
     popup.innerHTML = '';
     let {name, family, cost, maxStacks} = m.bio;
@@ -730,6 +934,13 @@ class Monster {
       tpr: 'Triggers Per Turn', apr: 'Actions Per Turn',
       damage: 'Bonus Damage'
     };
+    if(levelUp) {
+      popup.appendChild(this.drawLevelUp(names, (commits, spent) => {
+        console.log('commit changes');
+        typeof levelUp == 'function' && levelUp(commits, spent);
+        this.drawMonsterCS(popup, onClose, levelUp);
+      }));
+    }
     let health = new Sprite(icons.find(i => i.bio.name == 'Health Stat').bio.sprite);
     let mana = new Sprite(icons.find(i => i.bio.name == 'Mana Stat').bio.sprite);
     let attack = new Sprite(icons.find(i => i.bio.name == 'Attack Stat').bio.sprite);
@@ -823,6 +1034,7 @@ class Monster {
     } else {
       // tag.appendChild(style);
     }
+
     tag.querySelector('#monster-image').appendChild(m.canvas.clone());
     tag.querySelector('.stat-img.health').appendChild(health.canvas);
     tag.querySelector('.stat-img.mana').appendChild(mana.canvas);

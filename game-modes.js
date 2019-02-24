@@ -88,6 +88,7 @@ gameModes.adventure = function(lobby, ui) {
       ui.show('adventure');
       window.adventure = a;
       let player = {
+        xp: 0,
         gold: 0,
         vision: 8,
         movement: 20,
@@ -96,6 +97,13 @@ gameModes.adventure = function(lobby, ui) {
         quests: new QuestLog(),
         crafting: new Crafting(),
         team,
+        addXP(xp) {
+          player.xp += xp;
+          team.leaders.forEach(l => {
+            l.upgradePointsLeft = Math.floor(player.xp / 10);
+            logger.log(`Player gained ${xp} XP.`);
+          })
+        }
       };
       player.crafting.on('crafting success', recipe => {
         console.log('recipe', recipe)
@@ -119,7 +127,6 @@ gameModes.adventure = function(lobby, ui) {
           });
           player.inventory.unmount();
           document.body.appendChild(t);
-          // player.team.addAbility(item.item.inventory.ability);
         }
         if(item.item.inventory.action == 'give scroll') {
           let t = html`<div style='position:fixed;z-index: 4000; top:50%;left:50%;transform:translate(-50%,-50%);background-image: url(sheet_of_old_paper.png);padding:20px;'></div>`;
@@ -135,7 +142,6 @@ gameModes.adventure = function(lobby, ui) {
           });
           player.inventory.unmount();
           document.body.appendChild(t);
-          // player.team.addAbility(item.item.inventory.ability);
         }
       });
       player.inventory.on('drop inventory item', item => {
@@ -157,6 +163,7 @@ gameModes.adventure = function(lobby, ui) {
           var battle = new Battle(team, aiteam, tw, th, ui.container);
           battle.team2.forEach(m => m.addAI(aiLevel));
           battle.onGameEnd = (o) => {
+            player.addXP(aiteam.xp);
             o.results.winningTeam(o.winningTeam == 'team1' ? 'You' : 'AI');
             let report = o.results.report(() => {
               battle.destroy();

@@ -552,10 +552,7 @@ class Battle {
   assembleTeams() {
     this.originalTeam1.units.forEach(u => {
       let tpl = monsters.find(tpl => tpl.id == u.templateId);
-      let m = new Monster(tpl, u.stacks, false, u.suuid);
-      if(u.abilities && u.abilities.length) {
-        u.abilities.forEach(a => m.addAbility(a));
-      }
+      let m = u.monster;
       m.team = 'team1';
       m.battle = this;
       this.team1.push(m);
@@ -563,10 +560,7 @@ class Battle {
 
     this.originalTeam2.units.forEach(u => {
       let tpl = monsters.find(tpl => tpl.id == u.templateId);
-      let m = new Monster(tpl, u.stacks, false, u.suuid);
-      if(u.abilities && u.abilities.length) {
-        u.abilities.forEach(a => m.addAbility(a));
-      }
+      let m = u.monster;
       m.team = 'team2';
       m.battle = this;
       this.team2.push(m);

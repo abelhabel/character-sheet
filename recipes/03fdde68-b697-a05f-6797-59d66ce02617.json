@@ -1,0 +1,1 @@
+{"bio":{"name":"Acid Stench","sprite":{"x":1216,"y":320,"spritesheet":"DungeonCrawl_ProjectUtumnoTileset.png","w":32,"h":32}},"ingredients":{"parts":["b2cba9f9-d7aa-bb04-5098-d36dcf898318","fbb2b9c2-1007-b0ee-acef-59c93271b032"]},"result":{"type":"give","amount":1,"selection":"","item":"scroll","terrain":"","scroll":"44754f7a-58d5-ab44-7a53-5a8e07c00be5"}}

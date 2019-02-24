@@ -1,5 +1,6 @@
 const guid = require('guid.js');
 const monsters = require('monsters.js');
+const abilities = require('abilities.js');
 const Monster = require('Monster.js');
 const TeamSheet = require('TeamSheet.js');
 const portalTemplate = monsters.find(m => m.bio.name == 'Portal');
@@ -11,10 +12,31 @@ class TeamUnit {
     this.x = x;
     this.y = y;
     this.abilities = [];
+    this.upgradePointsLeft = 0;
+    this.upgradePointsSpent = 0;
+    this.upgrades = {
+      stats: {
+        health: 0,
+        mana: 0,
+        attack: 0,
+        defence: 0,
+        spellPower: 0,
+        spellResistance: 0,
+        damage: 0,
+        movement: 0,
+        initiative: 0,
+        apr: 0,
+        tpr: 0
+      },
+    }
+  }
+
+  get tpl() {
+    return monsters.find(m => m.id == this.templateId);
   }
 
   get monster() {
-    let tpl = monsters.find(m => m.id == this.templateId);
+    let tpl = this.tpl;
     let m = new Monster(tpl, this.stacks);
     if(this.abilities && this.abilities.length) {
       this.abilities.forEach(a => m.addAbility(a));
@@ -22,14 +44,31 @@ class TeamUnit {
     m.suuid = this.suuid;
     m.x = this.x;
     m.y = this.y;
+    m.upgradePointsLeft = this.upgradePoints;
+    Object.assign(m.upgrades.stats, this.upgrades.stats);
     return m;
   }
 
+  get upgradePoints() {
+    return this.upgradePointsLeft - this.upgradePointsSpent;
+  }
+
+  upgradeStats(stats, spent) {
+    Object.keys(stats).forEach(stat => {
+      this.upgrades.stats[stat] += stats[stat];
+    });
+    this.upgradePointsSpent += spent;
+  }
+
   addAbility(abilityId) {
+    let a = abilities.find(a => a.id == abilityId);
+    logger.log(`Player learned new Ability: ${a.bio.name}`);
     this.abilities.push(abilityId);
   }
 
   addScroll(abilityId) {
+    let a = abilities.find(a => a.id == abilityId);
+    logger.log(`Player learned new Ability: ${a.bio.name}`);
     this.scrolls.push(abilityId);
   }
 }
@@ -46,10 +85,28 @@ class Team {
     units && units.length && this.units.push.apply(this.units, units.map(t => new TeamUnit(t.suuid, t.templateId, t.stacks, t.x, t.y)));
   }
 
+  get leaders() {
+    return this.units.filter(u => u.tpl.bio.leader);
+  }
+
+  get xp() {
+    let xp = 0;
+    this.monsters.forEach(m => {
+      xp += m.stacks * m.tier;
+    })
+    return xp;
+  }
+
   addAbility(abilityId, unitId) {
     if(!unitId) {
       this.units[0].addAbility(abilityId);
     }
+  }
+
+  upgradeStats(monster, stats, spent) {
+    console.log('upgrade stats', monster, stats);
+    let unit = this.units.find(u => u.suuid == monster.suuid);
+    unit.upgradeStats(stats, spent);
   }
 
   static create(team) {
