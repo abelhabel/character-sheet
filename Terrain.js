@@ -40,6 +40,11 @@ class Terrain {
     this.adventureItemCount = 0;
   }
 
+  static create(templateId) {
+    let tpl = terrains.find(t => t.id == templateId);
+    return new Terrain(tpl);
+  }
+
   get isConsumed() {
     return this.adventureItemCount >= this.adventure.charges * this.adventure.actionAmount;
   }

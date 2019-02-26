@@ -76,6 +76,7 @@ soundNames.readFileNames().then(fileNames => {
 })
 .catch(err => console.log(err))
 
+loadFile('storage.js');
 loadFile('CS.js');
 loadFile('PositionList2d.js');
 loadFile('Battle.js');

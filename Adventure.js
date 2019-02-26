@@ -12,6 +12,7 @@ const Scroll = require('Scroll.js');
 const Ability = require('Ability.js');
 const Quest = require('Quest.js');
 const PL = require('PositionList2d.js');
+const storage = require('storage.js');
 const icons = require('icons.js');
 const abilities = require('abilities.js');
 const terrains = require('terrains.js');
@@ -72,6 +73,33 @@ class Record {
   constructor() {
     this.adventureItemCount = 0;
     this.questFinished = false;
+    this.monsterKilled = false;
+    this.obstacleRemoved = false;
+    this.fog = true;
+  }
+
+  compress() {
+    return [this.adventureItemCount, this.questFinished, this.monsterKilled, this.obstacleRemoved, this.fog];
+  }
+
+  import(a) {
+    this.adventureItemCount = a[0];
+    this.questFinished = a[1];
+    this.monsterKilled = a[2];
+    this.obstacleRemoved = a[3];
+    this.fog = a[4];
+  }
+
+  removeFog() {
+    this.fog = false;
+  }
+
+  removeObstacle() {
+    this.obstacleRemoved = true;
+  }
+
+  killMonster() {
+    this.monsterKilled = true;
   }
 
   completeQuest(quest, adventure) {
@@ -526,6 +554,37 @@ class Adventure extends Component {
       let record = history.items.get(item.x, item.y);
       record.resetConsumption(item.item);
     })
+    let saveFile = history.items.items.map(r => r.compress());
+    storage.save('adventure', this.id, saveFile);
+    this.savePlayer();
+  }
+
+  load() {
+    let file = storage.load('adventure', this.id);
+    if(!file) return;
+    let history = file.data;
+    history.forEach((r, i) => {
+      let {x, y} = this.layers.history.items.xy(i);
+      let record = this.layers.history.items.get(x, y);
+      record.import(r);
+    })
+    this.applyHistory();
+  }
+
+  applyHistory() {
+    let {obstacles, monsters, fog} = this.layers;
+    this.layers.history.items.each(item => {
+      if(item.item.obstacleRemoved) {
+        obstacles.items.remove(item.x, item.y);
+      }
+      if(item.item.monsterKilled) {
+        monsters.items.remove(item.x, item.y);
+      }
+      if(!item.item.fog) {
+        fog.items.set(item.x, item.y, false);
+        fog.canvas.clearRect(item.x * this.tw, item.y * this.th, this.tw, this.th);
+      }
+    })
   }
 
   openInventory() {
@@ -556,7 +615,6 @@ class Adventure extends Component {
     this.player = p;
     this.movePlayer(this.startPosition.x, this.startPosition.y);
     this.player.movesLeft = this.player.movement;
-    this.layers.monsters.items.set(this.pp.x, this.pp.y, p.team);
     this.resources.push(new Resource('gold', this.player.gold, goldIcon));
     this.tags.time.player = this.player;
     this.layers.quests.items.filled(item => {
@@ -564,7 +622,46 @@ class Adventure extends Component {
       if(!q.bio.global) return;
       p.quests.add(q);
     })
+
     this.draw(this.layers.monsters);
+  }
+
+  savePlayer() {
+    storage.save('player', this.id, {
+      xp: this.player.xp,
+      gold: this.player.gold,
+      position: this.pp,
+      vision: this.player.vision,
+      movement: this.player.movement,
+      movesLeft: this.player.movesLeft,
+      quests: this.player.quests.quests.map(q => q.bio.name),
+      inventory: this.player.inventory.export(),
+      crafting: this.player.crafting.export()
+    });
+  }
+
+  loadPlayer() {
+    let save = storage.load('player', this.id);
+    if(!save) return;
+    let player = save.data;
+    this.player.xp = player.xp;
+    this.addGold(player.gold);
+    this.player.position = this.pp;
+    this.player.vision = player.vision || 10;
+    this.player.movement = player.movement || 20;
+    this.player.movesLeft = player.movesLeft || 20;
+    if(player.position) {
+      this.movePlayer(player.position.x, player.position.y);
+    }
+    player.quests.forEach(questName => {
+      let q = this.layers.quests.items.find(item => {
+        return item.item.bio.name == questName;
+      });
+      if(!q) return;
+      this.player.quests.add(q.item);
+    });
+    this.player.inventory.import(player.inventory, {Terrain, Scroll});
+    this.player.crafting.import(player.crafting, {Terrain, Scroll});
   }
 
   drawGuides() {
@@ -661,6 +758,11 @@ class Adventure extends Component {
 
   mouseMove(e) {
     this.mouse.move = e;
+    if(this.mouse.down && this.mouse.down.button == 2) {
+      let a = this.shadow.querySelector('.adventure');
+      a.style.left = this.pans.x + e.clientX - this.mouse.down.clientX + 'px';
+      a.style.top = this.pans.y + e.clientY - this.mouse.down.clientY + 'px';
+    }
     let p = this.tpos(e);
     if(this.isInteractable(p.x, p.y)) {
       this.shadow.querySelector('.adventure').classList.add('interactive');
@@ -670,9 +772,20 @@ class Adventure extends Component {
     !this.moving && this.highlightMovementTile();
   }
 
+  mouseDown(e) {
+    this.mouse.down = e;
+  }
+
   mouseUp(e) {
     e.preventDefault();
     this.mouse.up = e;
+    if(this.mouse.up && this.mouse.up.button == 2) {
+      this.pans.x += e.clientX - this.mouse.down.clientX;
+      this.pans.y += e.clientY - this.mouse.down.clientY;
+      this.panTo(this.pans.x, this.pans.y);
+
+    }
+    this.mouse.down = null;
     let mp = this.tpos(e);
     if(e.which == 3) {
       return this.showInfo(mp);
@@ -718,6 +831,7 @@ class Adventure extends Component {
       this.addGold(item.adventure.actionAmount);
       this.sp.play('gold');
       obstacles.items.remove(mp.x, mp.y);
+      record.removeObstacle();
     }
     if(item.adventure.action == 'give item') {
       let items = record.takeAdventureItems(item);
@@ -744,7 +858,9 @@ class Adventure extends Component {
     record.consume(item);
     if(!record.shouldDraw(item)) {
       obstacles.items.remove(mp.x, mp.y);
+      record.removeObstacle();
     }
+    this.mouse.down = null;
     this.updateResources();
     this.draw(obstacles);
   }
@@ -894,6 +1010,7 @@ class Adventure extends Component {
     this.draw(monsters);
     let quest = quests.items.get(tile[0], tile[1]);
     let record = history.items.get(tile[0], tile[1]);
+    record.killMonster();
     if(!quest) return;
     let met = quest.conditionMet(this);
     console.log('quest condition met', met, quest)
@@ -947,6 +1064,8 @@ class Adventure extends Component {
     reveal.forEach(item => {
       fog.items.set(item.x, item.y, false);
       fog.canvas.clearRect(item.x * this.tw, item.y * this.th, this.tw, this.th);
+      let record = this.layers.history.items.get(item.x, item.y);
+      record.removeFog();
     });
     this.player.movesLeft -= 1;
     this.tags.time.player && this.tags.time.render();
@@ -961,32 +1080,13 @@ class Adventure extends Component {
     top = Math.min(this.h * this.th - window.innerHeight, top);
     this.pans.x = 0;
     this.pans.y = 0;
-    this.pan(-left / this.panSpeed,-top / this.panSpeed);
+    this.panTo(-left, -top);
   }
 
-  edgeScrolling() {
-    if(this.mouse.leave) return;
-    let e = this.mouse.move;
-    if(!e) return;
-    let x = window.innerWidth - e.clientX > 0 && e.clientX > window.innerWidth - 50 ? -1 : (e.clientX < 50 ? 1 : 0);
-    let y = window.innerHeight - e.clientY > 0 && e.clientY > window.innerHeight - 50 ? -1 : (e.clientY < 50 ? 1 : 0);
-    this.pan(x, y);
-  }
-
-  pan(x, y) {
+  panTo(x, y) {
     let a = this.shadow.querySelector('.adventure');
-    this.pans.x += this.panSpeed * x;
-    this.pans.y += this.panSpeed * y;
-    if(this.pans.x > 0) this.pans.x = 0;
-    if(this.pans.y > 0) this.pans.y = 0;
-    if(this.pans.x < window.innerWidth - this.w * this.tw) {
-      this.pans.x = window.innerWidth - this.w * this.tw
-    }
-    if(this.pans.y < window.innerHeight - this.h * this.th) {
-      this.pans.y = window.innerHeight - this.h * this.th;
-    };
-    a.style.left = this.pans.x + 'px';
-    a.style.top = this.pans.y + 'px';
+    a.style.left = x + 'px';
+    a.style.top = y + 'px';
   }
 
   render() {
@@ -1012,11 +1112,11 @@ class Adventure extends Component {
     });
     a.addEventListener('mousemove', this.mouseMove.bind(this));
     a.addEventListener('mouseup', this.mouseUp.bind(this));
+    a.addEventListener('mousedown', this.mouseDown.bind(this));
     a.addEventListener('mouseenter', this.mouseEnter.bind(this));
     a.addEventListener('mouseleave', this.mouseLeave.bind(this));
     this.append(a);
     this.append(this.menu.render());
-    setInterval(this.edgeScrolling.bind(this), 25);
     this.draw(this.layers.fog);
     return this.tags.outer;
   }

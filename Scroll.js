@@ -3,6 +3,7 @@ const Terrain = require('Terrain.js');
 const icons = require('icons.js');
 const abilities = require('abilities.js');
 const Sprite = require('Sprite.js');
+const Ability = require('Ability.js');
 const Canvas = require('Canvas.js');
 const _cs = icons.find(i => i.id == '8df982e7-e932-c755-a934-4484228786ed');
 const bg = new Sprite(_cs.bio.sprite);
@@ -44,6 +45,11 @@ class Scroll extends Terrain {
     this._ability = ability;
     this._sprite = new CompositeSprite([bg, ability.baseSprite]);
     this.draw();
+  }
+
+  static create(abilityId) {
+    let tpl = abilities.find(a => a.id == abilityId);
+    return new Scroll(new Ability(tpl));
   }
 
   get canvas() {

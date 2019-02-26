@@ -11,6 +11,27 @@ class Inventory extends Component {
     this.th = 32;
   }
 
+  export() {
+    return this.list._filled().map(item => {
+      return {
+        x: item.x,
+        y: item.y,
+        templateId: item.item.template.id,
+        model: item.item.constructor.name
+      }
+    })
+  }
+
+  import(list, models) {
+    if(!Array.isArray(list)) return;
+    list.forEach(item => {
+      let Model = models[item.model];
+      if(!Model) return;
+      let i = Model.create(item.templateId);
+      this.list.set(item.x, item.y, i);
+    })
+  }
+
   add(item) {
     let e = this.list.firstEmpty();
     if(!e) return;

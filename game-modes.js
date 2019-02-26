@@ -66,6 +66,8 @@ gameModes.adventure = function(lobby, ui) {
   lobby.on('adventure', () => {
     let tpl = adventures.find(a => a.id == '1a1f19de-3da3-e850-3815-0a3bcb0c218f');
     let a = Adventure.create(tpl);
+    a.load();
+
     a.on('tavern', () => {
       ui.show('team select');
       let undead = monsters.filter(m => m.bio.family == 'Order of Idun');
@@ -167,6 +169,7 @@ gameModes.adventure = function(lobby, ui) {
         }
       });
       a.addPlayer(player);
+      a.loadPlayer();
       ui.append(a.render());
       a.centerOnPlayer();
       a.on('battle', (enemyTeam, tile) => {
