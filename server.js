@@ -76,6 +76,7 @@ soundNames.readFileNames().then(fileNames => {
 })
 .catch(err => console.log(err))
 
+loadFile('AdventureMessage.js');
 loadFile('storage.js');
 loadFile('CS.js');
 loadFile('PositionList2d.js');
@@ -162,6 +163,7 @@ loadFile('outlaws_card.jpg');
 loadFile('undead_card.jpg');
 loadFile('order_of_idun_card.jpg');
 loadFile('aloysias_chosen_card.jpg');
+loadFile('defeat.jpg');
 
 
 

@@ -44,6 +44,7 @@ class TeamSheet extends Component {
       this.unmount();
     })
     this.team.monsters.forEach((m, i) => {
+      m.sprite.drawStack(m.stacks);
       m.canvas.addEventListener('click', () => this.selectMonster(m));
       units.appendChild(m.canvas);
     });

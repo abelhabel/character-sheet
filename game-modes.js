@@ -172,25 +172,48 @@ gameModes.adventure = function(lobby, ui) {
       a.loadPlayer();
       ui.append(a.render());
       a.centerOnPlayer();
-      a.on('battle', (enemyTeam, tile) => {
+      a.on('battle', (enemyTeam, tile, autoResolve) => {
         let aiteam = Team.create(enemyTeam.template);
         let aiLevel = 1;
-        ui.show('unit placement');
-        placeUnits(arenas[1], team, 'left', ui)
-        .then(team => {
+        let p;
+        if(autoResolve) {
+          p = Promise.resolve(team);
+        } else {
+          ui.show('unit placement');
+          p = placeUnits(arenas[1], team, 'left', ui)
+        }
+        p.then(team => {
           ui.clear('unit placement');
           ui.show('battle');
           createRNG();
           var battle = new Battle(team, aiteam, tw, th, ui.container);
+          if(autoResolve) {
+            battle.autoResolve();
+            battle.team1.forEach(m => m.addAI(aiLevel));
+          }
           battle.team2.forEach(m => m.addAI(aiLevel));
           battle.onGameEnd = (o) => {
             player.addXP(aiteam.xp);
+            battle.team1.forEach(m => {
+              let u = team.units.find(u => u.suuid == m.suuid);
+              if(!m.alive) {
+                team.removeUnit(u.suuid);
+              }
+              u.stacks = m.stacks;
+
+            })
             o.results.winningTeam(o.winningTeam == 'team1' ? 'You' : 'AI');
             let report = o.results.report(() => {
               battle.destroy();
               ui.clear('battle');
-              ui.show('adventure');
+              if(!team.units.length) {
+                ui.show('adventure defeat');
+                return ui.component.on('done', () => {
+                  ui.show('lobby');
+                })
+              }
               a.killTeam(tile);
+              ui.show('adventure');
             });
             ui.append(report);
           };

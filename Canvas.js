@@ -24,6 +24,14 @@ class Canvas {
     return this.canvas.getContext('2d');
   }
 
+  mirror() {
+    let c = this.context;
+    c.translate(this.w, 0)
+    c.scale(-1, 1);
+    c.drawImage(this.canvas, 0, 0, this.w, this.h);
+    c.setTransform(1, 0, 0, 1, 0, 0);
+  }
+
   setAlpha(a = 1) {
     this.context.globalAlpha = a;
   }

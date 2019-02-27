@@ -1,6 +1,7 @@
 class SoundPlayer {
   constructor() {
     this.volume = 0.3;
+    this.noSound = false;
     this.sounds = {
       spell: 'spell.wav',
       battle_begin: 'battle_begin.wav',
@@ -16,7 +17,16 @@ class SoundPlayer {
     this.audio = {};
   }
 
+  mute() {
+    this.volume = 0;
+  }
+
+  dontPlay() {
+    this.noSound = true;
+  }
+
   play(event, sounds = {}, preventDefault = false) {
+    if(this.noSound) return;
     let src = (sounds && sounds[event]) || (!preventDefault && this.sounds[event]);
     if(!src) return;
     let a = this.audio[src] || new Audio();

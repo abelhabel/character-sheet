@@ -27,6 +27,10 @@ class Sprite {
     context.drawImage(c, 0, 0, this.w, this.h);
   }
 
+  mirror() {
+    this._canvas.mirror();
+  }
+
   drawStack(stack) {
     let fs = 12;
     this._canvas.drawRect(this.w -fs,this.h-fs, fs, fs);

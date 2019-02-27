@@ -125,7 +125,8 @@ class Monster {
       apr: t.stats.apr || 1,
       tpr: t.stats.tpr || 1
     };
-    this.sprite = new Sprite(this.bio.sprite);
+    this.sprites = [];
+    this.cacheCanvases();
     this.initialStacks = stacks || 1;
     this.damageTaken = 0;
     this.manaUsed = 0;
@@ -372,8 +373,23 @@ class Monster {
     this.permanentAilments = [];
   }
 
+  get sprite() {
+    return this.sprites[this.orientation];
+  }
+
   get canvas() {
-    return this.template.canvases ? this.template.canvases[this.orientation] : (this.template.canvas || this.sprite.canvas);
+    return this.sprites[this.orientation].canvas;
+  }
+
+  cacheCanvases() {
+    let leftSprite = new Sprite(this.bio.sprite);
+    let rightSprite = new Sprite(this.bio.sprite);
+    rightSprite.mirror();
+    if(this.bio.orientation == 'right') {
+      this.sprites = [rightSprite, leftSprite];
+    } else {
+      this.sprites = [leftSprite, rightSprite];
+    }
   }
 
   resetMovement() {

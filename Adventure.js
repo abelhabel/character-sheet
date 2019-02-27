@@ -8,6 +8,7 @@ const TeamViewer = require('TeamViewer.js');
 const SoundPlayer = require('SoundPlayer.js');
 const AdventureTime = require('AdventureTime.js');
 const AdventureMenu = require('AdventureMenu.js');
+const AdventureMessage = require('AdventureMessage.js');
 const Scroll = require('Scroll.js');
 const Ability = require('Ability.js');
 const Quest = require('Quest.js');
@@ -644,7 +645,7 @@ class Adventure extends Component {
     let save = storage.load('player', this.id);
     if(!save) return;
     let player = save.data;
-    this.player.xp = player.xp;
+    this.player.addXP(player.xp);
     this.addGold(player.gold);
     this.player.position = this.pp;
     this.player.vision = player.vision || 10;
@@ -874,6 +875,35 @@ class Adventure extends Component {
     }
   }
 
+  showBattle(item, tile) {
+    let m = new AdventureMessage({
+      title: 'Battle',
+      text: 'An adversary stands in your way. What do you want to do?',
+      buttons: [
+        {
+          text: 'Fight',
+          fn: () => {
+            m.unmount();
+            this.trigger('battle', item, tile);
+          }
+        },
+        {
+          text: 'Quick fight',
+          fn: () => {
+            console.log('QUick fight');
+            m.unmount();
+            this.trigger('battle', item, tile, true);
+          }
+        },
+        {
+          text: 'Close',
+          fn: () => m.unmount()
+        }
+      ]
+    });
+    this.append(m.render());
+  }
+
   showDescription(item) {
     let dtag = html`<div class='message-box'>
       <p>${item.adventure.description}</p>
@@ -1038,7 +1068,7 @@ class Adventure extends Component {
         }
         let item = monsters.items.get(p[0], p[1]);
         if(item && item != a) {
-          this.trigger('battle', item, p);
+          this.showBattle(item, p);
           return done(resolve);
         }
         this.movePlayer(p[0], p[1]);

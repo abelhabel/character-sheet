@@ -509,6 +509,12 @@ class Battle {
     this.br = new BattleResult();
     this.csPopup = this.popup();
     this.setEvents();
+    this.noAnimation = false;
+  }
+
+  autoResolve() {
+    this.noAnimation = true;
+    this.sp.dontPlay();
   }
 
   static create(o) {
@@ -1354,6 +1360,7 @@ class Battle {
   }
 
   playAbilityAnimation(a, b, ability) {
+    if(this.noAnimation) return Promise.resolve();
     if(ability.animation.template) {
       let {sprite, template} = ability.animation;
       if(!sprite) sprite = new Sprite(ability.bio.sprite);
@@ -1904,7 +1911,7 @@ class Battle {
       this.render();
     })
     .catch(e => {
-      console.log('Action Error:', e)
+      // console.log('Action Error:', e)
     })
   }
 
@@ -2046,6 +2053,7 @@ class Battle {
   }
 
   walk(a, path) {
+    let t = this.noAnimation ? 0 : 100;
     return new Promise((resolve, reject) => {
       var int = setInterval(() => {
         let p = path.shift();
@@ -2067,7 +2075,7 @@ class Battle {
           clearInterval(int);
           resolve();
         }
-      }, 100);
+      }, t);
 
     })
   }
@@ -2083,7 +2091,8 @@ class Battle {
       winningTeam,
       monstersLeft: Array.from(this.tr),
       results: this.br,
-      team: this.currentTeam
+      team: this.currentTeam,
+      losingTeam: this.getEnemyTeam(this.currentActor)
     });
   }
 

@@ -16,6 +16,11 @@ const waitingRoom = new Component(false, 'waiting-room');
 const teamView = new Component(false, 'team-view');
 const gauntlet = new Component(false, 'gauntlet');
 const adventure = new Component(false, 'adventure');
+const defeat = new Component(false, 'adventure-defeat');
+defeat.tags.outer.addEventListener('click', e => defeat.trigger('done'));
+defeat.append(html`<div class='message'>
+  Your whole army has been wiped out by the enemy.
+</div>`);
 class GameUI extends Component {
   style() {
     return html`<style>
@@ -56,6 +61,24 @@ class GameUI extends Component {
 
       .component.adventure {
         background-color: black;
+      }
+
+      .component.adventure-defeat {
+        background-image: url(defeat.jpg);
+        width: 100%;
+        height: 100%;
+        background-size: contain;
+        background-repeat: no-repeat;
+        background-position: center;
+        background-color: black;
+      }
+
+      .component.adventure-defeat .message {
+        width: 100%;
+        font-size: 48px;
+        text-align: center;
+        color: white;
+        padding-top: 30%;
       }
 
       .component.battle #battle-canvas canvas {
@@ -116,9 +139,14 @@ class GameUI extends Component {
       new View('team view', teamView),
       new View('gauntlet', gauntlet),
       new View('adventure', adventure),
+      new View('adventure defeat', defeat),
     ];
     this.inView = null;
     this.cursor = new Sprite(icons.find(i => i.bio.name == 'Ability Cursor').bio.sprite);
+  }
+
+  get component() {
+    return this.inView.item;
   }
 
   showWaitingRoom() {

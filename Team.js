@@ -97,6 +97,13 @@ class Team {
     return xp;
   }
 
+  removeUnit(suuid) {
+    let index = this.units.findIndex(u => u.suuid == suuid);
+    console.log('removing unit', index)
+    if(!~index) return;
+    this.units.splice(index, 1);
+  }
+
   addAbility(abilityId, unitId) {
     if(!unitId) {
       this.units[0].addAbility(abilityId);
