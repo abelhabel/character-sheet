@@ -1,13 +1,14 @@
 const Component = require('Component.js');
 
 class CardList extends Component {
-  constructor(cards) {
+  constructor(cards, scrolling, pageSize) {
     super();
     this.addStyle(CardList.style);
     this.addInner();
     this.cards = cards || [];
     this.page = 0;
-    this.pageSize = Math.floor((Math.min(window.innerHeight -200, 600 ) / 200) * (window.innerWidth / 180));
+    this.pageSize = pageSize || Math.floor((Math.min(window.innerHeight -200, 600 ) / 200) * (window.innerWidth / 180));
+    this.scrolling = scrolling;
   }
 
   static get style() {
@@ -76,11 +77,17 @@ class CardList extends Component {
     };
 
     let c = html`<div class='card-list'>
-      <div id='prev'></div>
-      <div id='next'></div>
     </div>`;
-    c.querySelector('#prev').addEventListener('click', prev);
-    c.querySelector('#next').addEventListener('click', next);
+    if(!this.scrolling) {
+      c.appendChild(html`<div id='prev'></div>`);
+      c.appendChild(html`<div id='next'></div>`);
+      c.querySelector('#prev').addEventListener('click', prev);
+      c.querySelector('#next').addEventListener('click', next);
+    } else {
+      c.addEventListener('wheel', e => {
+        e.deltaY > 1 ? next() : prev();
+      })
+    }
     this.cards.slice(this.page * this.pageSize, (1 + this.page) * this.pageSize).forEach(card => c.appendChild(card));
     this.append(c);
     return this.shadow;

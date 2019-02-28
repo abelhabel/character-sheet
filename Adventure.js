@@ -177,6 +177,7 @@ class Adventure extends Component {
     this.menu = new AdventureMenu();
     this.menu.on('end turn', () => this.endTurn());
     this.menu.on('open inventory', () => this.openInventory());
+    this.menu.on('open equipment', () => this.openEquipment());
     this.menu.on('open team', () => this.openTeamSheet());
     this.menu.on('open quests', () => this.openQuests());
     this.menu.on('open crafting', () => this.openCrafting());
@@ -241,25 +242,21 @@ class Adventure extends Component {
 
       #adventure-menu {
         position: fixed;
-        top: 0px;
-        right: 0px;
+        bottom: 0px;
+        left: 0px;
         width: 250px;
         height: 250px;
       }
 
       #adventure-menu.hidden {
-        position: fixed;
-        top: 0px;
-        right: 0px;
-        width: 250px;
         height: 20px;
       }
 
       #adventure-menu #show-hide {
         padding: 10px;
         background-image: url(sheet_of_old_paper.png);
-        position: relative;
-        left: -80px;
+        position: absolute;
+        bottom: 0px;
       }
 
       #adventure-menu .menu-item {
@@ -592,6 +589,10 @@ class Adventure extends Component {
     this.append(this.player.inventory.render());
   }
 
+  openEquipment() {
+    this.append(this.player.equipment.render());
+  }
+
   openTeamSheet() {
     this.append(this.player.team.cs.render());
   }
@@ -637,7 +638,8 @@ class Adventure extends Component {
       movesLeft: this.player.movesLeft,
       quests: this.player.quests.quests.map(q => q.bio.name),
       inventory: this.player.inventory.export(),
-      crafting: this.player.crafting.export()
+      crafting: this.player.crafting.export(),
+      team: this.player.team
     });
   }
 
@@ -651,9 +653,7 @@ class Adventure extends Component {
     this.player.vision = player.vision || 10;
     this.player.movement = player.movement || 20;
     this.player.movesLeft = player.movesLeft || 20;
-    if(player.position) {
-      this.movePlayer(player.position.x, player.position.y);
-    }
+
     player.quests.forEach(questName => {
       let q = this.layers.quests.items.find(item => {
         return item.item.bio.name == questName;
@@ -663,6 +663,13 @@ class Adventure extends Component {
     });
     this.player.inventory.import(player.inventory, {Terrain, Scroll});
     this.player.crafting.import(player.crafting, {Terrain, Scroll});
+    if(player.team) {
+      this.player.team = Team.create(player.team);
+    }
+    if(player.position) {
+      this.movePlayer(player.position.x, player.position.y);
+      this.player.movesLeft = player.movesLeft || 20;
+    }
   }
 
   drawGuides() {
@@ -853,7 +860,11 @@ class Adventure extends Component {
     }
     if(item.adventure.action == 'open tavern') {
       this.sp.play('open_book');
-      this.trigger('tavern');
+      this.trigger('open tavern');
+    }
+    if(item.adventure.action == 'open armory') {
+      this.sp.play('open_book');
+      this.trigger('open armory');
     }
 
     record.consume(item);
@@ -1002,7 +1013,7 @@ class Adventure extends Component {
   addGold(n) {
     this.player.gold += n;
     let r = this.resources.find(r => r.name == 'gold');
-    r.amount = this.player.gold;
+    if(r) r.amount = this.player.gold;
   }
 
   updateResources() {
@@ -1108,8 +1119,6 @@ class Adventure extends Component {
     let top = this.pp.y * this.th - window.innerHeight/2;
     top = Math.max(0, top);
     top = Math.min(this.h * this.th - window.innerHeight, top);
-    this.pans.x = 0;
-    this.pans.y = 0;
     this.panTo(-left, -top);
   }
 
@@ -1117,6 +1126,8 @@ class Adventure extends Component {
     let a = this.shadow.querySelector('.adventure');
     a.style.left = x + 'px';
     a.style.top = y + 'px';
+    this.pans.x = x;
+    this.pans.y = y;
   }
 
   render() {

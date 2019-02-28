@@ -294,6 +294,10 @@ class Lobby extends Component {
     this.trigger('adventure');
   }
 
+  loadAdventure() {
+    this.trigger('load adventure');
+  }
+
   didJoinGame(data) {
     let game = this.games.find(g => g.id == data.game.id);
     let user = this.users.find(u => u.id == data.user.id);
@@ -498,7 +502,17 @@ class Lobby extends Component {
       },
       {
         text: 'Adventure',
-        fn: () => this.createAdventure()
+        open: false,
+        items: [
+          {
+            text: 'New',
+            fn: () => this.createAdventure()
+          },
+          {
+            text: 'Load',
+            fn: () => this.loadAdventure()
+          }
+        ]
       },
       {
         text: 'Custom Game',

@@ -81,8 +81,11 @@ class Team {
     this.max = max;
     this.picked = [];
     this.units = [];
-    this.cs = new TeamSheet(this);
     units && units.length && this.units.push.apply(this.units, units.map(t => new TeamUnit(t.suuid, t.templateId, t.stacks, t.x, t.y)));
+  }
+
+  get cs() {
+    return new TeamSheet(this);
   }
 
   get leaders() {

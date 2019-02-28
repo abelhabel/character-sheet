@@ -13,22 +13,25 @@ const _bg = icons.find(ic => ic.bio.name == 'Ability Background');
 const _log = icons.find(ic => ic.bio.name == 'Log');
 const _cs = icons.find(ic => ic.bio.name == 'Character Sheet');
 const _bowl = icons.find(ic => ic.bio.name == 'Bowl');
+const _equipment = icons.find(ic => ic.bio.name == 'Equipment');
 const sprites = {
   inventory: new Sprite(_inventory.bio.sprite),
   time: new Sprite(_wait.bio.sprite),
   bg: new Sprite(_bg.bio.sprite),
   quests: new Sprite(_log.bio.sprite),
   cs: new Sprite(_cs.bio.sprite),
-  craft: new Sprite(_bowl.bio.sprite)
+  craft: new Sprite(_bowl.bio.sprite),
+  equipment: new Sprite(_equipment.bio.sprite)
 };
 class AdventureMenu extends Component {
   constructor() {
     super();
     this.items = [
-      {tag: sprites.inventory.canvas, e: 'open inventory'},
       {tag: sprites.quests.canvas, e: 'open quests'},
       {tag: sprites.cs.canvas, e: 'open team'},
-      {tag: sprites.craft.canvas, e: 'open crafting'}
+      {tag: sprites.inventory.canvas, e: 'open inventory'},
+      {tag: sprites.craft.canvas, e: 'open crafting'},
+      {tag: sprites.equipment.canvas, e: 'open equipment'}
     ];
     this.view = 'menu';
   }
@@ -37,7 +40,7 @@ class AdventureMenu extends Component {
     this.clear();
     this.tags.outer.id = 'adventure-menu';
     let r = 100;
-    let s = Math.PI/2;
+    let s = -Math.PI/2;
     let e = s + Math.PI;
     let range = Math.PI;
     let a = range / (this.items.length);

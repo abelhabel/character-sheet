@@ -14,6 +14,11 @@ const Adventure = require('Adventure.js');
 const Inventory = require('Inventory.js');
 const Crafting = require('Crafting.js');
 const QuestLog = require('QuestLog.js');
+const Component = require('Component.js');
+const Equipment = require('Equipment.js');
+const Armory = require('Armory.js');
+const equipment = require('equipments.js');
+const storage = require('storage.js');
 const adventures = require('adventures.js');
 const arenas = require('arenas.js');
 const monsters = require('monsters.js').filter(m => !m.bio.leader);
@@ -62,13 +67,36 @@ function placeUnits(arenaTpl, team, side, ui) {
   })
 }
 
-gameModes.adventure = function(lobby, ui) {
-  lobby.on('adventure', () => {
-    let tpl = adventures.find(a => a.id == '1a1f19de-3da3-e850-3815-0a3bcb0c218f');
-    let a = Adventure.create(tpl);
-    a.load();
+gameModes.loadAdventure = function(lobby, ui) {
+  lobby.on('load adventure', () => {
+    ui.show('adventure');
+    let saves = storage.loadFolder('adventure');
+    saves.forEach(s => {
+      console.log(s)
+      let a = adventures.find(a => a.id == s.name);
+      let c = new Component(false, 'load-list');
+      let t = html`<div class='save-file'>
+        <div>${a.name}</div>
+        <div>${new Date(s.date).toUTCString()}</div>
+      </div>`;
+      t.addEventListener('click', e => {
+        ui.clear('adventure');
+        lobby.trigger('adventure', s);
+      })
+      c.append(t);
+      ui.append(c.tags.outer);
+    })
+  });
+}
 
-    a.on('tavern', () => {
+gameModes.adventure = function(lobby, ui) {
+  lobby.on('adventure', (saveFile) => {
+    let id = saveFile ? saveFile.name : '1a1f19de-3da3-e850-3815-0a3bcb0c218f';
+    let tpl = adventures.find(a => a.id == id);
+    let a = Adventure.create(tpl);
+    saveFile && a.load();
+
+    a.on('open tavern', () => {
       ui.show('team select');
       let undead = monsters.filter(m => m.bio.family == 'Order of Idun');
       let onDone = (team) => {
@@ -84,6 +112,21 @@ gameModes.adventure = function(lobby, ui) {
       };
       let ts = new TeamSelect(undead, ui.container, 42, 42, a.player.gold, 8, ['Andreas'], onDone, onExit);
     });
+    a.on('open armory', () => {
+      ui.show('team select');
+      let armory = new Armory(equipment.map(e => new Equipment(e)), a.player.gold);
+      armory.on('close', () => {
+        ui.clear('team select');
+        ui.show('adventure');
+      });
+      armory.on('done', () => {
+        a.addGold(-armory.spent);
+        armory.picked.forEach(item => a.player.equipment.add(item));
+        ui.clear('team select');
+        ui.show('adventure');
+      })
+      ui.append(armory.render());
+    });
     var onDone = (team) => {
       console.log(team);
       ui.clear('team select');
@@ -95,6 +138,7 @@ gameModes.adventure = function(lobby, ui) {
         vision: 8,
         movement: 20,
         movesLeft: 20,
+        equipment: new Inventory(6, 6),
         inventory: new Inventory(),
         quests: new QuestLog(),
         crafting: new Crafting(),
@@ -107,6 +151,7 @@ gameModes.adventure = function(lobby, ui) {
           })
         }
       };
+
       player.crafting.on('crafting success', recipe => {
         console.log('recipe', recipe)
         recipe.takeResult(a);
@@ -168,8 +213,9 @@ gameModes.adventure = function(lobby, ui) {
           a.shadow.appendChild(t);
         }
       });
+
       a.addPlayer(player);
-      a.loadPlayer();
+      saveFile && a.loadPlayer();
       ui.append(a.render());
       a.centerOnPlayer();
       a.on('battle', (enemyTeam, tile, autoResolve) => {
@@ -227,14 +273,20 @@ gameModes.adventure = function(lobby, ui) {
       ui.clear('team select');
       ui.show('lobby');
     }
-    ui.show('team select');
-    let ts = new TeamSelect(OOI, ui.container, 42, 42, 600, 8, ['Andreas'], (team) => {
-      ui.clear('team select');
-      new TeamSelect(leaders, ui.container, 42, 42, 600, 1, ['Andreas'], (leaderTeam) => {
-        team.merge(leaderTeam);
-        onDone(team);
+    if(saveFile) {
+      let player = storage.load('player', saveFile.name);
+      console.log('player',player)
+      onDone(Team.create(player.data.team))
+    } else {
+      ui.show('team select');
+      let ts = new TeamSelect(OOI, ui.container, 42, 42, 600, 8, ['Andreas'], (team) => {
+        ui.clear('team select');
+        new TeamSelect(leaders, ui.container, 42, 42, 600, 1, ['Andreas'], (leaderTeam) => {
+          team.merge(leaderTeam);
+          onDone(team);
+        }, onExit);
       }, onExit);
-    }, onExit);
+    }
   });
 }
 

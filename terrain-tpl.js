@@ -88,7 +88,7 @@ var tpl = {
           exportAs: 'action',
           initial: '',
           type: 'select',
-          values: ['', 'give gold', 'give item', 'open tavern', 'give movement']
+          values: ['', 'give gold', 'give item', 'open tavern', 'give movement' , 'open armory']
         },
         {
           name: 'Item',

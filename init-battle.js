@@ -151,14 +151,14 @@ const socket = new Emitter();
 
 Module.onLoad(['DungeonCrawl_ProjectUtumnoTileset.png', 'Hell2.jpg', 'defeat.jpg',
 'mythical_card.jpg', 'outlaws_card.jpg', 'undead_card.jpg', 'beasts_card.jpg', 'order_of_idun_card.jpg', 'aloysias_chosen_card.jpg', 'demons_card.jpg',
-'guid.js', 'sounds.js', 'adventures.js', 'recipes.js', 'storage.js',
+'guid.js', 'sounds.js', 'adventures.js', 'recipes.js', 'storage.js', 'equipments.js',
 'monsters.js', 'abilities.js', 'terrains.js', 'arenas.js', 'icons.js', 'animations.js', 'teams.js', 'elements.js', 'matches.js', 'gauntlets.js',
 'special-effects.js','FixedList.js', 'Component.js', 'ToolTip.js', 'CardList.js', 'Logger.js', 'Rand.js',
 'Canvas.js', 'Sprite.js', 'CompositeSprite.js',
 'AbilityEffect.js', 'Animation.js', 'AdventureTime.js',
 'PositionList2d.js', 'pathfinding.js',  'Ability.js', 'AI.js', 'Terrain.js', 'Scroll.js', 'Menu.js', 'Slider.js', 'Monster.js',
 'BattleMenu.js', 'AdventureMenu.js', 'Inventory.js', 'Crafting.js', 'Quest.js', 'QuestLog.js', 'AdventureMessage.js',
-'Arena.js', 'MonsterCard.js',
+'Arena.js', 'MonsterCard.js', 'Equipment.js', 'Armory.js',
 'TeamSheet.js', 'TeamViewer.js', 'Team.js', 'TeamSelect.js', 'UnitPlacement.js', 'BattleResult.js', 'Match.js', 'SoundPlayer.js',
 'Gauntlet.js', 'View.js', 'Lobby.js', 'Battle.js', 'Adventure.js', 'GameUI.js',
 'game-modes.js', 'lobby-channels-client.js' ], () => {
@@ -183,4 +183,5 @@ Module.onLoad(['DungeonCrawl_ProjectUtumnoTileset.png', 'Hell2.jpg', 'defeat.jpg
   gameModes.importMatch(gameui.lobby, gameui);
   gameModes.gauntlet(gameui.lobby, gameui);
   gameModes.adventure(gameui.lobby, gameui);
+  gameModes.loadAdventure(gameui.lobby, gameui);
 })

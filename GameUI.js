@@ -61,6 +61,28 @@ class GameUI extends Component {
 
       .component.adventure {
         background-color: black;
+        position: relative;
+        width: 100%;
+        height: 100%;
+      }
+
+      .component.adventure .load-list {
+        width: 800px;
+        height: 800px;
+        position: relative;
+        top: 50%;
+        left: 50%;
+        transform: translate(-50%,-50%);
+        background-image: url(sheet_of_old_paper.png);
+        padding: 20px;
+        border-radius: 20px;
+      }
+
+      .component.adventure .load-list .save-file {
+        padding: 10px;
+      }
+      .component.adventure .load-list .save-file:hover {
+        background-color: rgba(0,0,0,0.1);
       }
 
       .component.adventure-defeat {

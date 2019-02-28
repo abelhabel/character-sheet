@@ -19,6 +19,7 @@ const files = {
   'arenas.js': () => wrap.pre() + require('./arenas.js')() + wrap.post('arenas.js'),
   'icons.js': () => wrap.pre() + require('./icons.js')() + wrap.post('icons.js'),
   'teams.js': () => wrap.pre() + require('./teams.js')() + wrap.post('teams.js'),
+  'equipments.js': () => wrap.pre() + require('./equipments.js')() + wrap.post('equipments.js'),
   'matches.js': () => wrap.pre() + require('./matches.js')() + wrap.post('matches.js'),
   'gauntlets.js': () => wrap.pre() + require('./gauntlets.js')() + wrap.post('gauntlets.js'),
   'adventures.js': () => wrap.pre() + require('./adventures.js')() + wrap.post('adventures.js'),
@@ -76,6 +77,8 @@ soundNames.readFileNames().then(fileNames => {
 })
 .catch(err => console.log(err))
 
+loadFile('Equipment.js');
+loadFile('Armory.js');
 loadFile('AdventureMessage.js');
 loadFile('storage.js');
 loadFile('CS.js');
@@ -139,6 +142,7 @@ loadFile('team-tpl.js');
 loadFile('leader-tpl.js');
 loadFile('quest-tpl.js');
 loadFile('recipe-tpl.js');
+loadFile('equipment-tpl.js');
 loadFile('pathfinding.js');
 loadFile('index.html');
 loadFile('rules.html', addRuleLinks);
@@ -260,6 +264,9 @@ const server = http.createServer(function(req, res) {
   }
   if(name == 'saveRecipe') {
     return saveData(req, res, 'recipes', url);
+  }
+  if(name == 'saveEquipment') {
+    return saveData(req, res, 'equipment', url);
   }
   if(name.match('.wav')) {
     console.log('loading sound', name)

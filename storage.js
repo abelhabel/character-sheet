@@ -15,7 +15,7 @@ let s = {
     let test = new RegExp('^' + folder);
     return Object.keys(localStorage)
     .filter(key => test.test(key))
-    .map(key => localStorage[key]);
+    .map(key => JSON.parse(localStorage[key]));
   }
 };
 
