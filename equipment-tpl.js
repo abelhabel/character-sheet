@@ -24,7 +24,7 @@ const p = {
 var tpl = {
   name: "Equipment",
   folder: "equipment",
-  library: 'equipment.js',
+  library: 'equipments.js',
   queryCommand: 'saveEquipment',
   categories: [
     {
@@ -52,6 +52,13 @@ var tpl = {
           values: ['', 'body', 'head', 'feet', 'wrists', 'neck', 'finger', 'hand', 'waist'],
           initial: '',
           exportAs: 'slot',
+        },
+        {
+          name: 'Slots',
+          exportAs: 'slots',
+          initial: 1,
+          type: 'increment',
+          range: [1, 2]
         },
         {
           name: 'Cost',

@@ -125,6 +125,7 @@ loadFile('Adventure.js');
 loadFile('AdventureEditor.js');
 loadFile('AdventureMenu.js');
 loadFile('AdventureTime.js');
+loadFile('GridBox.js');
 loadFile('Inventory.js');
 loadFile('Crafting.js');
 loadFile('init-sound.js');

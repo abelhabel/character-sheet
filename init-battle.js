@@ -154,12 +154,12 @@ Module.onLoad(['DungeonCrawl_ProjectUtumnoTileset.png', 'Hell2.jpg', 'defeat.jpg
 'guid.js', 'sounds.js', 'adventures.js', 'recipes.js', 'storage.js', 'equipments.js',
 'monsters.js', 'abilities.js', 'terrains.js', 'arenas.js', 'icons.js', 'animations.js', 'teams.js', 'elements.js', 'matches.js', 'gauntlets.js',
 'special-effects.js','FixedList.js', 'Component.js', 'ToolTip.js', 'CardList.js', 'Logger.js', 'Rand.js',
-'Canvas.js', 'Sprite.js', 'CompositeSprite.js',
+'Canvas.js', 'Sprite.js', 'CompositeSprite.js', 'SoundPlayer.js',
 'AbilityEffect.js', 'Animation.js', 'AdventureTime.js',
-'PositionList2d.js', 'pathfinding.js',  'Ability.js', 'AI.js', 'Terrain.js', 'Scroll.js', 'Menu.js', 'Slider.js', 'Monster.js',
-'BattleMenu.js', 'AdventureMenu.js', 'Inventory.js', 'Crafting.js', 'Quest.js', 'QuestLog.js', 'AdventureMessage.js',
-'Arena.js', 'MonsterCard.js', 'Equipment.js', 'Armory.js',
-'TeamSheet.js', 'TeamViewer.js', 'Team.js', 'TeamSelect.js', 'UnitPlacement.js', 'BattleResult.js', 'Match.js', 'SoundPlayer.js',
+'PositionList2d.js', 'pathfinding.js',  'Ability.js', 'Equipment.js', 'AI.js', 'Terrain.js', 'Scroll.js', 'Menu.js', 'Slider.js', 'Monster.js',
+'BattleMenu.js', 'AdventureMenu.js', 'GridBox.js', 'Inventory.js', 'Crafting.js', 'Quest.js', 'QuestLog.js', 'AdventureMessage.js',
+'Arena.js', 'MonsterCard.js',  'Armory.js',
+'TeamSheet.js', 'TeamViewer.js', 'Team.js', 'TeamSelect.js', 'UnitPlacement.js', 'BattleResult.js', 'Match.js',
 'Gauntlet.js', 'View.js', 'Lobby.js', 'Battle.js', 'Adventure.js', 'GameUI.js',
 'game-modes.js', 'lobby-channels-client.js' ], () => {
   const GameUI = require('GameUI.js');

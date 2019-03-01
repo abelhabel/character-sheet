@@ -11,6 +11,8 @@ class Armory extends Component {
     this.spent = 0;
     this.cards = new CardList([], true, 10);
     this.pickedCards = new CardList([], true, 10);
+    this.slots = ['hand', 'head', 'body', 'waist', 'wrists', 'feet', 'neck', 'finger'];
+    this.filter = ['hand', 'head', 'body', 'waist', 'wrists', 'feet', 'neck', 'finger'];
   }
 
   pick(item) {
@@ -61,7 +63,35 @@ class Armory extends Component {
         justify-content: space-evenly;
         padding-top: 40px;
       }
+
+      .slots {
+        font-size: 14px;
+
+      }
+
+      .slots .slot {
+        background-color: #ccc;
+        padding: 2px 4px;
+        margin: 2px;
+        border-radius: 4px;
+      }
+      .slots .slot:hover {
+        outline: 1px solid black;
+      }
+      .slots .slot.show {
+        background-color: #999;
+      }
     </style>`;
+  }
+
+  toggleFilter(slot) {
+    let i = this.filter.indexOf(slot);
+    if(~i) {
+      this.filter.splice(i, 1);
+    } else {
+      this.filter.push(slot);
+    }
+    this.render();
   }
 
   render() {
@@ -81,13 +111,22 @@ class Armory extends Component {
     let t = html`<div>
       <div class='cash-flow'>
         Cash: ${this.cash} Spent: ${this.spent}
+        <span class='slots'></span>
       </div>
       <div class='windows'>
         <div class='for-sale'></div>
         <div class='bought'></div>
       </div>
     </div>`;
-    let cards = this.items.map(i => {
+    let slots = t.querySelector('.slots');
+    this.slots.forEach(s => {
+      let selected = ~this.filter.indexOf(s);
+      let d = html`<span class='slot ${selected ? 'show' : 'hide'}'>${s}</span>`;
+      d.addEventListener('click', this.toggleFilter.bind(this, s));
+      slots.appendChild(d);
+    })
+    let cards = this.items.filter(i => ~this.filter.indexOf(i.bio.slot))
+    .map(i => {
       let t = i.renderStoreItem();
       t.addEventListener('click', this.pick.bind(this, i));
       return t;

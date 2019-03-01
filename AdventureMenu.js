@@ -8,7 +8,7 @@ const _wait = icons.find(ic => ic.bio.name == 'Wait');
 const _surrender = icons.find(ic => ic.bio.name == 'Surrender');
 const _cursor = icons.find(ic => ic.bio.name == 'Ability Cursor');
 const _volume = icons.find(ic => ic.bio.name == 'Sound');
-const _inventory = icons.find(ic => ic.bio.name == 'Inventory');
+const _inventory = icons.find(ic => ic.bio.name == 'GridBox');
 const _bg = icons.find(ic => ic.bio.name == 'Ability Background');
 const _log = icons.find(ic => ic.bio.name == 'Log');
 const _cs = icons.find(ic => ic.bio.name == 'Character Sheet');
@@ -29,9 +29,8 @@ class AdventureMenu extends Component {
     this.items = [
       {tag: sprites.quests.canvas, e: 'open quests'},
       {tag: sprites.cs.canvas, e: 'open team'},
-      {tag: sprites.inventory.canvas, e: 'open inventory'},
       {tag: sprites.craft.canvas, e: 'open crafting'},
-      {tag: sprites.equipment.canvas, e: 'open equipment'}
+      {tag: sprites.equipment.canvas, e: 'open inventory'}
     ];
     this.view = 'menu';
   }

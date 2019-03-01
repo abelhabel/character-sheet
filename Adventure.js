@@ -12,6 +12,7 @@ const AdventureMessage = require('AdventureMessage.js');
 const Scroll = require('Scroll.js');
 const Ability = require('Ability.js');
 const Quest = require('Quest.js');
+const Equipment = require('Equipment.js');
 const PL = require('PositionList2d.js');
 const storage = require('storage.js');
 const icons = require('icons.js');
@@ -176,7 +177,7 @@ class Adventure extends Component {
     this.tags.time = new AdventureTime();
     this.menu = new AdventureMenu();
     this.menu.on('end turn', () => this.endTurn());
-    this.menu.on('open inventory', () => this.openInventory());
+    this.menu.on('open inventory', () => this.openGridBox());
     this.menu.on('open equipment', () => this.openEquipment());
     this.menu.on('open team', () => this.openTeamSheet());
     this.menu.on('open quests', () => this.openQuests());
@@ -306,7 +307,39 @@ class Adventure extends Component {
         height: 40px;
       }
 
-      #inventory {
+      .inventory .inventory-dolly {
+        position: absolute;
+        top: -180px;
+        left: 3px;
+        width: 268px;
+        height: 145px;
+        background-image: url(sheet_of_old_paper.png);
+        padding: 20px;
+      }
+
+      .inventory .inventory-dolly .dolly-slot {
+        width: 42px;
+        height: 46px;
+        display: inline-block;
+        vertical-align: top;
+        text-align: center;
+        margin-bottom: 10px;
+      }
+
+      .inventory .inventory-dolly .dolly-slot .slot-name {
+        height: 18px;
+      }
+
+      .inventory .inventory-dolly .dolly-slot .slot-item {
+        display: inline-block;
+        width: 32px;
+        height: 32px;
+        vertical-align: top;
+        box-shadow: inset 0px 0px 10px 1px rgba(121, 93, 39, 0.91);
+        outline: 1px solid brown;
+      }
+
+      .inventory {
         position: fixed;
         top: 50%;
         left: 50%;
@@ -317,46 +350,49 @@ class Adventure extends Component {
         box-sizing: content-box;
       }
 
-      #inventory .inventory-instructions {
+      .inventory .inventory-instructions {
         margin-top: 30px;
         padding: 20px;
         background-image: url(sheet_of_old_paper.png);
       }
 
-      #inventory .item {
+      .inventory .item {
         display: inline-block;
         vertical-align: top;
+        box-shadow: inset 0px 0px 10px 1px rgba(121, 93, 39, 0.91);
+        outline: 1px solid brown;
       }
 
-      #inventory .item:hover {
+      .inventory .item:hover {
         background-color: rgba(0,0,0,0.1);
       }
 
-      #inventory .item.selected {
+      .inventory .item.selected {
         background-color: rgba(0,255,0,0.3);
         outline: 1px solid white;
+        box-shadow: none;
       }
 
-      #inventory .name {
+      .inventory .name {
         position: absolute;
         top: -16px;
         left: 0px;
         background-image: url(sheet_of_old_paper.png);
         border-radius: 2px 2px 0px 0px;
       }
-      #inventory .actions {
+      .inventory .actions {
         position: absolute;
         bottom: -16px;
         right: 0px;
         background-image: url(sheet_of_old_paper.png);
         border-radius: 0px 0px 2px 2px;
       }
-      #inventory .actions .action {
+      .inventory .actions .action {
         display: inline-block;
         user-select: none;
         padding: 2px 4px;
       }
-      #inventory .actions .action:hover {
+      .inventory .actions .action:hover, .inventory .inventory-dolly .dolly-slot .slot-item:hover {
         background-color: rgba(0,0,0,0.1);
       }
 
@@ -585,7 +621,7 @@ class Adventure extends Component {
     })
   }
 
-  openInventory() {
+  openGridBox() {
     this.append(this.player.inventory.render());
   }
 
@@ -661,11 +697,8 @@ class Adventure extends Component {
       if(!q) return;
       this.player.quests.add(q.item);
     });
-    this.player.inventory.import(player.inventory, {Terrain, Scroll});
+    this.player.inventory.import(player.inventory, {Terrain, Scroll, Equipment});
     this.player.crafting.import(player.crafting, {Terrain, Scroll});
-    if(player.team) {
-      this.player.team = Team.create(player.team);
-    }
     if(player.position) {
       this.movePlayer(player.position.x, player.position.y);
       this.player.movesLeft = player.movesLeft || 20;

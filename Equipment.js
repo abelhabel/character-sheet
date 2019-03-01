@@ -1,5 +1,6 @@
 const Component = require('Component.js');
 const Sprite = require('Sprite.js');
+const equipments = require('equipments.js');
 class Equipment {
   constructor(t) {
     this.template = t;
@@ -8,7 +9,8 @@ class Equipment {
       name: t.bio.name,
       family: t.bio.family,
       cost: t.bio.cost,
-      slot: t.bio.slot
+      slot: t.bio.slot,
+      slots: t.bio.slots || 1
     };
     this.abilities = {
       abilities: t.abilities.abilities
@@ -31,6 +33,11 @@ class Equipment {
       tpr: t.stats.tpr || 0
     };
     this.sprite = new Sprite(this.bio.sprite);
+  }
+
+  static create(templateId) {
+    let tpl = equipments.find(t => t.id == templateId);
+    return new Equipment(tpl);
   }
 
   static get style() {

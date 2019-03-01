@@ -13,6 +13,8 @@ class SoundPlayer {
       curse: 'curse.wav',
       open_book: 'open_book.wav',
       gold: 'gold.wav',
+      inventory_place: 'inventory_place.wav',
+      inventory_pick: 'inventory_pick.wav',
     };
     this.audio = {};
   }

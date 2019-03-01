@@ -5,9 +5,12 @@ const nextId = (function() {
   }
 })();
 const abilities = require('abilities.js');
+const equipments = require('equipments.js');
 const icons = require('icons.js');
 const specialEffects = require('special-effects.js');
+const Ability = require('Ability.js');
 const AbilityEffect = require('AbilityEffect.js');
+const Equipment = require('Equipment.js');
 const Sprite = require('Sprite.js');
 const Scroll = require('Scroll.js');
 const AI = require('AI.js');
@@ -76,7 +79,7 @@ class StatBonus {
   }
 }
 
-const Ability = require('Ability.js');
+
 class Monster {
   constructor(t, stacks, summoned, suuid) {
     this.template = t;
@@ -124,6 +127,16 @@ class Monster {
       range: t.stats.range,
       apr: t.stats.apr || 1,
       tpr: t.stats.tpr || 1
+    };
+    this.equipment = {
+      hand: new FixedList(2),
+      wrists: new FixedList(1),
+      feet: new FixedList(1),
+      waist: new FixedList(1),
+      head: new FixedList(1),
+      body: new FixedList(1),
+      neck: new FixedList(1),
+      finger: new FixedList(2)
     };
     this.sprites = [];
     this.cacheCanvases();
@@ -276,9 +289,9 @@ class Monster {
 
   get might() {
     if(this.prefers == 'attack') {
-      return this.stacks * this.totalStat('apr') * this.totalStat('attack') * (1 + Math.min(this.totalStat('tpr'), this.triggers.length));
+      return this.maxHealth * this.totalStat('apr') * this.totalStat('attack') * (1 + Math.min(this.totalStat('tpr'), this.triggers.length));
     }
-    return this.stacks * this.totalStat('apr') * this.totalStat('spellPower');
+    return this.maxHealth * this.totalStat('apr') * this.totalStat('spellPower');
   }
 
   get potentialRange() {
@@ -321,6 +334,17 @@ class Monster {
       if(!a) return;
       return new Ability(a, this);
     });
+  }
+
+  equip(itemId) {
+    let a = equipments.find(c => c.id == itemId);
+    if(!a) return;
+    let slot = a.bio.slot;
+    let e = new Equipment(a);
+    this.equipment[slot].push(e);
+    if(e.abilities.abilities) {
+      this.addAbility(e.abilities.abilities);
+    }
   }
 
   addAbility(abilityId) {
@@ -598,6 +622,20 @@ class Monster {
     return out;
   }
 
+  equipmentBonus(name) {
+    let out = 0;
+    Object.keys(this.equipment).forEach(slot => {
+      if(!this.equipment[slot] || !this.equipment[slot].length) return;
+      this.equipment[slot].forEach(item => {
+        let bonuses = item.activeStats;
+        let bonus = bonuses.find(b => b.name == name);
+        if(!bonus) return;
+        out += bonus.val;
+      })
+    })
+    return out;
+  }
+
   statBonus(name, target) {
     var base = this.baseStat(name);
     var circumstance = this['bonus' + name] || 0;
@@ -605,7 +643,7 @@ class Monster {
     var activeEffects = this.activeEffectBonus(name);
     var auras = this.auraBonus(name);
     var combined = StatBonus.combine(this, passive, activeEffects, auras);
-
+    var equipment = this.equipmentBonus(name);
     if(name == 'movement' && this.hasAilment('wet')) {
       if(combined.blessing.value) {
         combined.blessing.value -= 1;
@@ -619,13 +657,13 @@ class Monster {
       circumstance += Math.floor(this.activeEffects.filter(e => e.ability.stats.source == 'blessing').length / 2);
     }
 
-    var total = base + circumstance + combined.blessing.value - combined.curse.value;
+    var total = base + circumstance + equipment + combined.blessing.value - combined.curse.value;
 
     if(name == 'apr' && this.hasAilment('shocked') && total > 1) {
       total = 1;
     }
 
-    return {base, circumstance, passive, activeEffects, auras, combined, total};
+    return {base, equipment, circumstance, passive, activeEffects, auras, combined, total};
   }
 
   baseStat(name) {
@@ -1134,7 +1172,7 @@ class Monster {
         let d = tag.querySelector('#stat-description');
         let stat = e.target.dataset.stat;
         let bd = m.statBonus(stat);
-        d.innerHTML = `<div>${names[stat]}: base ${bd.base} + effects ${bd.combined.total} + circumstantial ${bd.circumstance}</div>
+        d.innerHTML = `<div>${names[stat]}: base ${bd.base} + effects ${bd.combined.total} + circumstantial ${bd.circumstance} + equipment ${bd.equipment}</div>
         Blessing: ${bd.combined.blessingName} ${bd.combined.blessing.value}, Curse: ${bd.combined.curseName} ${bd.combined.curse.value}`;
       }
     })

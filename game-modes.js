@@ -11,12 +11,13 @@ const Menu = require('Menu.js');
 const Gauntlet = require('Gauntlet.js');
 const CardList = require('CardList.js');
 const Adventure = require('Adventure.js');
-const Inventory = require('Inventory.js');
+const GridBox = require('GridBox.js');
 const Crafting = require('Crafting.js');
 const QuestLog = require('QuestLog.js');
 const Component = require('Component.js');
 const Equipment = require('Equipment.js');
 const Armory = require('Armory.js');
+const Inventory = require('Inventory.js');
 const equipment = require('equipments.js');
 const storage = require('storage.js');
 const adventures = require('adventures.js');
@@ -121,7 +122,8 @@ gameModes.adventure = function(lobby, ui) {
       });
       armory.on('done', () => {
         a.addGold(-armory.spent);
-        armory.picked.forEach(item => a.player.equipment.add(item));
+        a.updateResources();
+        armory.picked.forEach(item => a.player.inventory.add(item));
         ui.clear('team select');
         ui.show('adventure');
       })
@@ -138,7 +140,6 @@ gameModes.adventure = function(lobby, ui) {
         vision: 8,
         movement: 20,
         movesLeft: 20,
-        equipment: new Inventory(6, 6),
         inventory: new Inventory(),
         quests: new QuestLog(),
         crafting: new Crafting(),
@@ -158,8 +159,17 @@ gameModes.adventure = function(lobby, ui) {
         player.crafting.render();
         a.updateResources();
       });
+
+      player.inventory.on('equipment changed', items => {
+        console.log('equipment changes', items);
+        let leader = team.leaders[0];
+        if(!leader) return;
+        leader.equipment = items.map(i => i.item.template.id);
+      })
+
       player.inventory.on('use inventory item', item => {
         console.log('use inventory item', item)
+        if(item.item instanceof Equipment) return;
         if(item.item.inventory.action == 'give ability') {
           let t = html`<div style='position:fixed;z-index: 4000; top:50%;left:50%;transform:translate(-50%,-50%);background-image: url(sheet_of_old_paper.png);padding:20px;'></div>`;
           player.team.units.forEach(u => {

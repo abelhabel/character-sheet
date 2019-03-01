@@ -1,4 +1,4 @@
-const Inventory = require('Inventory.js');
+const GridBox = require('GridBox.js');
 const Scroll = require('Scroll.js');
 const Ability = require('Ability.js');
 const Terrain = require('Terrain.js');
@@ -53,7 +53,7 @@ class Recipe {
   }
 }
 
-class Crafting extends Inventory {
+class Crafting extends GridBox {
   constructor() {
     super(8, 8);
   }
@@ -77,7 +77,7 @@ class Crafting extends Inventory {
   }
 
   render() {
-    Inventory.prototype.render.call(this);
+    GridBox.prototype.render.call(this);
     let t = html`<div class='inventory-instructions'>
       Select the ingredients you want to combine and click 'Use' to combine them.
       By holding down Shift while clicking on an ingredient you can select multiple ingredients.

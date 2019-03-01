@@ -93,6 +93,8 @@ class GameUI extends Component {
         background-repeat: no-repeat;
         background-position: center;
         background-color: black;
+        opacity: 1;
+        transition: opacity 5s ease 2s;
       }
 
       .component.adventure-defeat .message {
