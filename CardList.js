@@ -7,6 +7,7 @@ class CardList extends Component {
     this.addInner();
     this.cards = cards || [];
     this.page = 0;
+    this.offset = 0;
     this.pageSize = pageSize || Math.floor((Math.min(window.innerHeight -200, 600 ) / 200) * (window.innerWidth / 180));
     this.scrolling = scrolling;
   }
@@ -83,12 +84,20 @@ class CardList extends Component {
       c.appendChild(html`<div id='next'></div>`);
       c.querySelector('#prev').addEventListener('click', prev);
       c.querySelector('#next').addEventListener('click', next);
+      this.cards.slice(this.page * this.pageSize, (1 + this.page) * this.pageSize).forEach(card => c.appendChild(card));
     } else {
       c.addEventListener('wheel', e => {
-        e.deltaY > 1 ? next() : prev();
+        if(e.deltaY > 1) {
+          this.offset += 1;
+        } else {
+          this.offset -= 1;
+        }
+        this.offset = Math.max(0, this.offset);
+        this.offset = Math.min(this.cards.length - this.pageSize, this.offset);
+        this.render();
       })
+      this.cards.slice(this.offset, this.offset + this.pageSize).forEach(card => c.appendChild(card));
     }
-    this.cards.slice(this.page * this.pageSize, (1 + this.page) * this.pageSize).forEach(card => c.appendChild(card));
     this.append(c);
     return this.shadow;
   }

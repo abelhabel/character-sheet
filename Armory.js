@@ -9,8 +9,8 @@ class Armory extends Component {
     this.picked = [];
     this.cash = parseInt(cash);
     this.spent = 0;
-    this.cards = new CardList([], true, 10);
-    this.pickedCards = new CardList([], true, 10);
+    this.cards = new CardList([], true, 8);
+    this.pickedCards = new CardList([], true, 8);
     this.slots = ['hand', 'head', 'body', 'waist', 'wrists', 'feet', 'neck', 'finger'];
     this.filter = ['hand', 'head', 'body', 'waist', 'wrists', 'feet', 'neck', 'finger'];
   }
