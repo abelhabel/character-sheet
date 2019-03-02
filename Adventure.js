@@ -155,21 +155,13 @@ class Adventure extends Component {
     this.h = h;
     this.zoomed = true;
     this.startPosition = {x: 0, y: 0};
-    this.layers = {
-      ground: new Layer('ground', true, this.w, this.h, this.tw, this.th),
-      obstacles: new Layer('obstacles', true, this.w, this.h, this.tw, this.th),
-      select: new Layer('select', true, this.w, this.h, this.tw, this.th),
-      grid: new Layer('grid', true, this.w, this.h, this.tw, this.th),
-      preselect: new Layer('preselect', true, this.w, this.h, this.tw, this.th),
-      dialog: new Layer('dialog', false, this.w, this.h, this.tw, this.th),
-      monsters: new Layer('monsters', true, this.w, this.h, this.tw, this.th),
-      transport: new Layer('transport', false, this.w, this.h, this.tw, this.th),
-      fog: new Layer('fog', true, this.w, this.h, this.tw, this.th),
-      quests: new Layer('quests', false, this.w, this.h, this.tw, this.th),
-      history: new Layer('history', false, this.w, this.h, this.tw, this.th),
-    };
-    this.layers.fog.items.each(i => this.layers.fog.items.set(i.x, i.y, true));
-    this.layers.history.items.each(i => this.layers.history.items.set(i.x, i.y, new Record()))
+    this.planes = [
+      this.createPlane('surface'),
+      this.createPlane('underground')
+    ];
+    this.layers = {};
+    this.setPlane('surface');
+
     this.resources = [
 
     ];
@@ -192,6 +184,42 @@ class Adventure extends Component {
     this.player = null;
     this.pp = {x: 0, y: 0};
     this.sp = new SoundPlayer();
+  }
+
+  nextPlane() {
+    let i = this.planes.findIndex(p => p.name == this.currentPlane.name);
+    ++i;
+    if(i > this.planes.length -1) i = 0;
+    this.setPlane(this.planes[i].name);
+    this.render();
+  }
+
+  setPlane(name) {
+    this.currentPlane = this.planes.find(p => p.name == name);
+    this.layers = this.currentPlane.layers;
+  }
+
+  createPlane(name) {
+    let p = {
+      name: name,
+      layers: {
+        ground: new Layer('ground', true, this.w, this.h, this.tw, this.th),
+        obstacles: new Layer('obstacles', true, this.w, this.h, this.tw, this.th),
+        select: new Layer('select', true, this.w, this.h, this.tw, this.th),
+        grid: new Layer('grid', true, this.w, this.h, this.tw, this.th),
+        preselect: new Layer('preselect', true, this.w, this.h, this.tw, this.th),
+        dialog: new Layer('dialog', false, this.w, this.h, this.tw, this.th),
+        monsters: new Layer('monsters', true, this.w, this.h, this.tw, this.th),
+        transport: new Layer('transport', false, this.w, this.h, this.tw, this.th),
+        planeport: new Layer('planeport', false, this.w, this.h, this.tw, this.th),
+        fog: new Layer('fog', true, this.w, this.h, this.tw, this.th),
+        quests: new Layer('quests', false, this.w, this.h, this.tw, this.th),
+        history: new Layer('history', false, this.w, this.h, this.tw, this.th),
+      }
+    };
+    p.layers.fog.items.each(i => p.layers.fog.items.set(i.x, i.y, true));
+    p.layers.history.items.each(i => p.layers.history.items.set(i.x, i.y, new Record()));
+    return p;
   }
 
   static style(a) {
@@ -516,67 +544,80 @@ class Adventure extends Component {
     a.id = t.id;
     a.name = t.name;
     a.startPosition = t.startPosition;
-    let ter = t.layers.ground.lookup.map(id => {
-      let tpl = terrains.find(t => t.id == id);
-      let item = new Terrain(tpl);
-      return item;
-    })
-    t.layers.ground.items.forEach((n, i) => {
-      let xy = a.layers.ground.items.xy(i);
-      if(n === null) return;
-      let item = ter[n];
-      a.layers.ground.items.set(xy.x, xy.y, item);
-    });
-    ter = t.layers.obstacles.lookup.map(id => {
-      let tpl, item;
-      if(tpl = terrains.find(t => t.id == id)) {
-        item = new Terrain(tpl);
-      } else
-      if(tpl = abilities.find(t => t.id == id)) {
-        item = new Scroll(new Ability(tpl));
-      } else {
-        console.log('no constructor', id)
-      }
-      return item;
-    })
-    t.layers.obstacles.items.forEach((n, i) => {
-      let xy = a.layers.obstacles.items.xy(i);
-      if(n === null) return;
-      let item = ter[n];
-      a.layers.obstacles.items.set(xy.x, xy.y, item);
-    });
-    if(t.layers.monsters) {
-      ter = t.layers.monsters.lookup.map(id => {
-        let tpl = teams.find(t => t.id == id);
-        let item = Team.create(tpl);
-        item.aid = guid();
+    a.planes = [];
+    console.log(t)
+    t.planes.forEach(p => {
+      let plane = a.createPlane(p.name);
+      a.planes.push(plane);
+      let layers = p.layers;
+      let ter = layers.ground.lookup.map(id => {
+        let tpl = terrains.find(t => t.id == id);
+        let item = new Terrain(tpl);
         return item;
       })
-      t.layers.monsters.items.forEach((n, i) => {
-        let xy = a.layers.monsters.items.xy(i);
+      layers.ground.items.forEach((n, i) => {
+        let xy = plane.layers.ground.items.xy(i);
         if(n === null) return;
         let item = ter[n];
-        a.layers.monsters.items.set(xy.x, xy.y, item);
+        plane.layers.ground.items.set(xy.x, xy.y, item);
       });
-    }
-    if(t.layers.dialog) {
-      t.layers.dialog.forEach(item => {
-        a.layers.dialog.items.set(item.x, item.y, new Dialog(item.item.text));
+      ter = layers.obstacles.lookup.map(id => {
+        let tpl, item;
+        if(tpl = terrains.find(t => t.id == id)) {
+          item = new Terrain(tpl);
+        } else
+        if(tpl = abilities.find(t => t.id == id)) {
+          item = new Scroll(new Ability(tpl));
+        } else {
+          console.log('no constructor', id)
+        }
+        return item;
+      })
+      layers.obstacles.items.forEach((n, i) => {
+        let xy = plane.layers.obstacles.items.xy(i);
+        if(n === null) return;
+        let item = ter[n];
+        plane.layers.obstacles.items.set(xy.x, xy.y, item);
       });
-    }
+      if(layers.monsters) {
+        ter = layers.monsters.lookup.map(id => {
+          let tpl = teams.find(t => t.id == id);
+          let item = Team.create(tpl);
+          item.aid = guid();
+          return item;
+        })
+        layers.monsters.items.forEach((n, i) => {
+          let xy = plane.layers.monsters.items.xy(i);
+          if(n === null) return;
+          let item = ter[n];
+          plane.layers.monsters.items.set(xy.x, xy.y, item);
+        });
+      }
+      if(layers.dialog) {
+        layers.dialog.forEach(item => {
+          plane.layers.dialog.items.set(item.x, item.y, new Dialog(item.item.text));
+        });
+      }
 
-    if(t.layers.transport) {
-      t.layers.transport.forEach(item => {
-        a.layers.transport.items.set(item.x, item.y, item.item);
-      });
-    }
-    if(t.layers.quests) {
-      t.layers.quests.forEach(item => {
-        let q = Quest.create(item.item);
-        a.layers.quests.items.set(item.x, item.y, q);
-      });
-    }
-
+      if(layers.transport) {
+        layers.transport.forEach(item => {
+          plane.layers.transport.items.set(item.x, item.y, item.item);
+        });
+      }
+      if(layers.planeport) {
+        layers.planeport.forEach(item => {
+          plane.layers.planeport.items.set(item.x, item.y, item.item);
+        });
+      }
+      if(layers.quests) {
+        layers.quests.forEach(item => {
+          let q = Quest.create(item.item);
+          plane.layers.quests.items.set(item.x, item.y, q);
+        });
+      }
+    });
+    a.setPlane(a.planes[0].name);
+    console.log(a)
     return a;
   }
 
@@ -831,11 +872,11 @@ class Adventure extends Component {
     if(e.which == 3) {
       return this.showInfo(mp);
     }
-    let {obstacles, transport, monsters, dialog, quests, history} = this.layers;
+    let {ground, obstacles, transport, planeport, monsters, dialog, quests, history} = this.layers;
     let item = obstacles.items.get(mp.x, mp.y);
     let record = history.items.get(mp.x, mp.y);
     // Movement
-    if(obstacles.items.canWalkTo(this.pp.x, this.pp.y, mp.x, mp.y)) {
+    if(ground.items.get(mp.x, mp.y) && obstacles.items.canWalkTo(this.pp.x, this.pp.y, mp.x, mp.y)) {
       let path = obstacles.items.path(this.pp.x, this.pp.y, mp.x, mp.y);
       path.shift();
       return this.walk(this.player.team, path)
@@ -859,6 +900,20 @@ class Adventure extends Component {
       this.movePlayer(empty.x, empty.y);
       this.draw(monsters);
       this.centerOnPlayer();
+    }
+
+    // Planeportation
+    let planep = planeport.items.get(mp.x, mp.y);
+    if(planep && planeport.items.distance(this.pp.x, this.pp.y, mp.x, mp.y) <= 1) {
+      let toPlane = this.planes.find(p => p.name == planep.plane);
+      console.log('planeport to', toPlane, planep);
+      this.setPlane(toPlane.name);
+      this.render();
+      let empty = toPlane.layers.obstacles.items.closestEmpty(planep.x, planep.y);
+      this.movePlayer(empty.x, empty.y);
+      this.draw(monsters);
+      this.centerOnPlayer();
+      return;
     }
 
     // Interactables
@@ -1067,7 +1122,8 @@ class Adventure extends Component {
 
   highlightMovementTile(x, y, i) {
     let mp = this.tpos(this.mouse.move);
-    let {monsters, obstacles, select} = this.layers;
+    let {ground, monsters, obstacles, select} = this.layers;
+    if(!ground.items.get(mp.x, mp.y)) return;
     select.canvas.clear();
     let path = obstacles.items.path(this.pp.x, this.pp.y, mp.x, mp.y);
     path.shift();

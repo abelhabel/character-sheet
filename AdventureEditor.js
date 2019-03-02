@@ -70,6 +70,9 @@ class ControlPanel extends Component {
     if(item.t) {
       t.appendChild(html`<div>Transports to: ${item.t.x}, ${item.t.y}</div>`);
     }
+    if(item.p) {
+      t.appendChild(html`<div>Planeports to: ${item.p.plane} ${item.p.x}, ${item.p.y}</div>`);
+    }
     if(item.q) {
       t.appendChild(Quest.Editor.prototype.render.call(item.q));
     }
@@ -77,7 +80,7 @@ class ControlPanel extends Component {
   }
 
   render(layers) {
-    let {select, dialog, ground, obstacles, monsters, transport, quests} = layers;
+    let {select, dialog, ground, obstacles, monsters, transport, planeport, quests} = layers;
     this.clear();
     this.addStyle(ControlPanel.style);
     let c = html`<div id='control-panel'></div>`;
@@ -89,8 +92,9 @@ class ControlPanel extends Component {
       let o = obstacles.items.get(item.x, item.y);
       let m = monsters.items.get(item.x, item.y);
       let t = transport.items.get(item.x, item.y);
+      let p = planeport.items.get(item.x, item.y);
       let q = quests.items.get(item.x, item.y);
-      items.push({d,g,o,m,t,q});
+      items.push({d,g,o,m,t,p,q});
     })
     items.forEach(item => {
       let t = this.renderItem(item);
@@ -159,14 +163,20 @@ class AdventureEditor extends Adventure {
       w: this.w,
       h: this.h,
       startPosition: this.startPosition,
-      layers: {
-        ground: this.compressLayer(this.layers.ground),
-        obstacles: this.compressLayer(this.layers.obstacles),
-        monsters: this.compressLayer(this.layers.monsters),
-        dialog: this.layers.dialog.items._filled(),
-        transport: this.layers.transport.items._filled(),
-        quests: this.layers.quests.items._filled()
-      }
+      planes: this.planes.map(p => {
+        return {
+          name: p.name,
+          layers: {
+            ground: this.compressLayer(p.layers.ground),
+            obstacles: this.compressLayer(p.layers.obstacles),
+            monsters: this.compressLayer(p.layers.monsters),
+            dialog: p.layers.dialog.items._filled(),
+            transport: p.layers.transport.items._filled(),
+            planeport: p.layers.planeport.items._filled(),
+            quests: p.layers.quests.items._filled()
+          }
+        };
+      })
     };
     let id = this.id;
     let url = 'saveAdventure';
@@ -368,6 +378,35 @@ class AdventureEditor extends Adventure {
     this.draw(transport);
   }
 
+  addPlaneport(e) {
+    let p1; let p2;
+    this.planes.find(p => {
+      let selected = p.layers.select.items._filled();
+      if(selected.length != 1) return;
+      if(!p1) {
+       p1 = {plane: p, selected: selected[0]};
+     } else {
+       p2 = {plane: p, selected: selected[0]};
+     }
+      return p1 && p2;
+    })
+    if(!p1 || !p2) return;
+    p1.plane.layers.planeport.items.set(p1.selected.x, p1.selected.y, {plane: p2.plane.name, x: p2.selected.x, y: p2.selected.y});
+    p2.plane.layers.planeport.items.set(p2.selected.x, p2.selected.y, {plane: p1.plane.name, x: p1.selected.x, y: p1.selected.y});
+    this.renderControlPanel();
+  }
+
+  removePlaneport() {
+    this.planes.forEach(p => {
+      let {planeport} = p.layers;
+      let selected = p.layers.select.items._filled();
+      selected.forEach(item => {
+        planeport.items.remove(item.x, item.y);
+      })
+    })
+    this.renderControlPanel();
+  }
+
   addScroll(e) {
     let selected = this.selected;
     if(!selected.length) return;
@@ -434,6 +473,7 @@ class AdventureEditor extends Adventure {
         <div>Controls</div>
         <button id='save-adventure'>Save</button>
         <input id='adventure-name' value='${this.name}'>
+        <button id='switch-plane'>Switch Plane</button>
         <button id='add-dialog'>Add Dialog</button>
         <button id='remove-dialog'>Remove Dialog</button>
         <button id='add-monsters'>Add Monsters</button>
@@ -441,6 +481,8 @@ class AdventureEditor extends Adventure {
         <button id='add-start-position'>Set Start</button>
         <button id='add-transport'>Add Transport</button>
         <button id='remove-transport'>Remove Transport</button>
+        <button id='add-planeport'>Add Planeport</button>
+        <button id='remove-planeport'>Remove Planeport</button>
         <button id='add-scroll'>Add Scroll</button>
         <select id='scroll-abilities'></select>
         <button id='add-quest'>Add Quest</button>
@@ -453,7 +495,8 @@ class AdventureEditor extends Adventure {
     abilities.forEach(a => {
       let o = html`<option value='${a.id}'>${a.bio.name}</option>`;
       foot.querySelector('#scroll-abilities').appendChild(o);
-    })
+    });
+    foot.querySelector('#switch-plane').addEventListener('click', this.nextPlane.bind(this));
     foot.querySelector('#copy').addEventListener('click', this.copy.bind(this));
     foot.querySelector('#paste').addEventListener('click', this.paste.bind(this));
     foot.querySelector('#save-adventure').addEventListener('click', this.save.bind(this));
@@ -465,6 +508,8 @@ class AdventureEditor extends Adventure {
     foot.querySelector('#add-start-position').addEventListener('click', this.addStartPosition.bind(this));
     foot.querySelector('#add-transport').addEventListener('click', this.addTransport.bind(this));
     foot.querySelector('#remove-transport').addEventListener('click', this.removeTransport.bind(this));
+    foot.querySelector('#add-planeport').addEventListener('click', this.addPlaneport.bind(this));
+    foot.querySelector('#remove-planeport').addEventListener('click', this.removePlaneport.bind(this));
     foot.querySelector('#add-scroll').addEventListener('click', this.addScroll.bind(this));
     foot.querySelector('#add-quest').addEventListener('click', this.addQuest.bind(this));
     foot.querySelector('#remove-quest').addEventListener('click', this.removeQuest.bind(this));
