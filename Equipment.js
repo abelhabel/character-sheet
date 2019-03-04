@@ -32,7 +32,19 @@ class Equipment {
       apr: t.stats.apr || 0,
       tpr: t.stats.tpr || 0
     };
+    this.adventure = {
+      event: 'click',
+      action: 'give item',
+      charges: 1,
+      actionAmount: 1,
+      consumable: true
+
+    };
     this.sprite = new Sprite(this.bio.sprite);
+  }
+
+  get adventureItem() {
+    return this;
   }
 
   static create(templateId) {
@@ -260,13 +272,21 @@ class Equipment {
     return out;
   }
 
+  get activeStatsText() {
+    return this.activeStats.map(s => `${s.name}: ${s.val}`).join(', ');
+  }
+
+  get description() {
+    return this.activeStatsText;
+  }
+
   get canvas() {
     return this.sprite.canvas;
   }
 
   renderStoreItem() {
     let c = new Component(false, 'store-item');
-    let stats = this.activeStats.map(s => `${s.name}: ${s.val}`).join(', ');
+    let stats = this.activeStatsText;
     let t = html`<div class='item'>
       <div class='image'></div>
       <div>

@@ -148,7 +148,7 @@ var tpl = {
       ]
     },
     {
-      name: 'GridBox',
+      name: 'Inventory',
       exportAs: 'inventory',
       items: [
         {

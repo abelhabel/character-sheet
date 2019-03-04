@@ -18,6 +18,7 @@ const storage = require('storage.js');
 const icons = require('icons.js');
 const abilities = require('abilities.js');
 const terrains = require('terrains.js');
+const equipments = require('equipments.js');
 const teams = require('teams.js');
 const interactIcon = icons.find(i => i.bio.name == 'Interact');
 const selectedIcon = icons.find(i => i.bio.name == 'Hit Background');
@@ -111,7 +112,7 @@ class Record {
   }
 
   shouldDraw(item) {
-    if(item instanceof Terrain) {
+    if(item instanceof Terrain || item instanceof Equipment) {
       if(!item.adventure.consumable) return true;
       return !this.isConsumed(item);
     }
@@ -139,7 +140,6 @@ class Record {
     for(let i = 0; i < max; i++) {
       out.push(terrain.adventureItem);
     }
-    // this.consume(terrain);
     return out;
   }
 }
@@ -335,6 +335,16 @@ class Adventure extends Component {
       #adventure-menu .center.menu-item {
         width: 40px;
         height: 40px;
+      }
+
+      .inventory .inventory-item-info {
+        position: absolute;
+        top: 70px;
+        left: -287px;
+        width: 268px;
+        height: 145px;
+        background-image: url(sheet_of_old_paper.png);
+        padding: 20px;
       }
 
       .inventory .inventory-dolly {
@@ -547,7 +557,6 @@ class Adventure extends Component {
     a.name = t.name;
     a.startPosition = t.startPosition;
     a.planes = [];
-    console.log(t)
     t.planes.forEach(p => {
       let plane = a.createPlane(p.name);
       a.planes.push(plane);
@@ -570,6 +579,9 @@ class Adventure extends Component {
         } else
         if(tpl = abilities.find(t => t.id == id)) {
           item = new Scroll(new Ability(tpl));
+        } else
+        if(tpl = equipments.find(t => t.id == id)) {
+          item = new Equipment(tpl);
         } else {
           console.log('no constructor', id)
         }
@@ -619,7 +631,6 @@ class Adventure extends Component {
       }
     });
     a.setPlane(a.planes[0].name);
-    console.log(a)
     return a;
   }
 
@@ -643,7 +654,6 @@ class Adventure extends Component {
 
   load() {
     let file = storage.load('adventure', this.id);
-    console.log(file)
     if(!file) return;
     this.setPlane(file.data.currentPlane);
     let planes = file.data.planes;
@@ -813,12 +823,12 @@ class Adventure extends Component {
           this.animateTerrain(item, layer);
         }
       }
+      if(item.item instanceof Equipment) {
+        layer.canvas.drawSprite(item.item.sprite, item.x * this.tw, item.y * this.th, this.tw, this.th);
+      }
       if(item.item instanceof Team) {
         layer.canvas.drawSprite(item.item.highestTier.sprite, item.x * this.tw, item.y * this.th, this.tw, this.th);
       }
-      // if(item.item instanceof Scroll) {
-      //   layer.canvas.drawSprite(item.item, item.x * this.tw, item.y * this.th, this.tw, this.th);
-      // }
       if(layer.name == 'fog') {
         layer.canvas.drawRect(item.x * this.tw, item.y * this.th, this.tw, this.th);
       }
@@ -921,7 +931,6 @@ class Adventure extends Component {
     let planep = planeport.items.get(mp.x, mp.y);
     if(planep && planeport.items.distance(this.pp.x, this.pp.y, mp.x, mp.y) <= 1) {
       let toPlane = this.planes.find(p => p.name == planep.plane);
-      console.log('planeport to', toPlane, planep);
       this.setPlane(toPlane.name);
       this.render();
       let empty = toPlane.layers.obstacles.items.closestEmpty(planep.x, planep.y);
@@ -1004,7 +1013,6 @@ class Adventure extends Component {
         {
           text: 'Quick fight',
           fn: () => {
-            console.log('QUick fight');
             m.unmount();
             this.trigger('battle', item, tile, true);
           }
@@ -1158,7 +1166,6 @@ class Adventure extends Component {
     record.killMonster();
     if(!quest) return;
     let met = quest.conditionMet(this);
-    console.log('quest condition met', met, quest)
     if(met) {
       record.completeQuest(quest, this);
       this.updateResources();

@@ -45,6 +45,10 @@ class Terrain {
     return new Terrain(tpl);
   }
 
+  get description() {
+    return this.adventure.description;
+  }
+
   get isConsumed() {
     return this.adventureItemCount >= this.adventure.charges * this.adventure.actionAmount;
   }

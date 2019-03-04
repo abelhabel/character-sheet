@@ -11,11 +11,13 @@ const AdventureTime = require('AdventureTime.js');
 const AdventureMenu = require('AdventureMenu.js');
 const Ability = require('Ability.js');
 const Scroll = require('Scroll.js');
+const Equipment = require('Equipment.js');
 const Quest = require('Quest.js');
 const PL = require('PositionList2d.js');
 const icons = require('icons.js');
 const abilities = require('abilities.js');
 const terrains = require('terrains.js');
+const equipments = require('equipments.js');
 const teams = require('teams.js');
 const selectedIcon = icons.find(i => i.bio.name == 'Hit Background');
 const deselectIcon = icons.find(i => i.bio.name == 'Stop');
@@ -420,6 +422,19 @@ class AdventureEditor extends Adventure {
     this.draw(obstacles);
   }
 
+  addEquipment(e) {
+    let selected = this.selected;
+    if(!selected.length) return;
+    let {obstacles} = this.layers;
+    let id = this.shadow.querySelector('#equipments').value;
+    let a = equipments.find(a => a.id == id);
+    let equipment = new Equipment(a);
+    selected.forEach(item => {
+      obstacles.items.set(item.x, item.y, equipment);
+    });
+    this.draw(obstacles);
+  }
+
   removeQuest() {
     let {quests} = this.layers;
     this.selected.forEach(item => {
@@ -485,6 +500,8 @@ class AdventureEditor extends Adventure {
         <button id='remove-planeport'>Remove Planeport</button>
         <button id='add-scroll'>Add Scroll</button>
         <select id='scroll-abilities'></select>
+        <button id='add-equipment'>Add Equipment</button>
+        <select id='equipments'></select>
         <button id='add-quest'>Add Quest</button>
         <button id='remove-quest'>Remove Quest</button>
         <button id='copy'>Copy</button>
@@ -495,6 +512,10 @@ class AdventureEditor extends Adventure {
     abilities.forEach(a => {
       let o = html`<option value='${a.id}'>${a.bio.name}</option>`;
       foot.querySelector('#scroll-abilities').appendChild(o);
+    });
+    equipments.forEach(a => {
+      let o = html`<option value='${a.id}'>${a.bio.name}</option>`;
+      foot.querySelector('#equipments').appendChild(o);
     });
     foot.querySelector('#switch-plane').addEventListener('click', this.nextPlane.bind(this));
     foot.querySelector('#copy').addEventListener('click', this.copy.bind(this));
@@ -511,6 +532,7 @@ class AdventureEditor extends Adventure {
     foot.querySelector('#add-planeport').addEventListener('click', this.addPlaneport.bind(this));
     foot.querySelector('#remove-planeport').addEventListener('click', this.removePlaneport.bind(this));
     foot.querySelector('#add-scroll').addEventListener('click', this.addScroll.bind(this));
+    foot.querySelector('#add-equipment').addEventListener('click', this.addEquipment.bind(this));
     foot.querySelector('#add-quest').addEventListener('click', this.addQuest.bind(this));
     foot.querySelector('#remove-quest').addEventListener('click', this.removeQuest.bind(this));
     let ground = foot.querySelector('#ground');

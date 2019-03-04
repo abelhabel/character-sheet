@@ -102,8 +102,14 @@ class Inventory extends GridBox {
   render() {
     GridBox.prototype.render.call(this);
     let t = html`<div class='inventory-dolly'></div>`;
+    let d = html`<div class='inventory-item-info'></div>`;
+    this.selectedItems.forEach(item => {
+      let a = html`<div>${item.item.description}</div>`;
+      d.appendChild(a);
+    })
     this.slots.forEach(s => t.appendChild(this.renderSlot(s)));
     this.append(t);
+    this.append(d);
     return this.tags.outer;
   }
 
