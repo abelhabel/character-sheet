@@ -11,7 +11,7 @@ class Armory extends Component {
     this.spent = 0;
     this.cards = new CardList([], true, 8);
     this.pickedCards = new CardList([], true, 8);
-    this.slots = ['hand', 'head', 'body', 'waist', 'wrists', 'feet', 'neck', 'finger'];
+    this.slots = ['all', 'hand', 'head', 'body', 'waist', 'wrists', 'feet', 'neck', 'finger'];
     this.filter = ['hand', 'head', 'body', 'waist', 'wrists', 'feet', 'neck', 'finger'];
   }
 
@@ -70,7 +70,7 @@ class Armory extends Component {
       }
 
       .slots .slot {
-        background-color: #ccc;
+        background-color: #999;
         padding: 2px 4px;
         margin: 2px;
         border-radius: 4px;
@@ -79,17 +79,18 @@ class Armory extends Component {
         outline: 1px solid black;
       }
       .slots .slot.show {
-        background-color: #999;
+        background-color: #ccc;
       }
+
     </style>`;
   }
 
   toggleFilter(slot) {
-    let i = this.filter.indexOf(slot);
-    if(~i) {
-      this.filter.splice(i, 1);
+    this.cards.offset = 0;
+    if(slot == 'all') {
+      this.filter = ['hand', 'head', 'body', 'waist', 'wrists', 'feet', 'neck', 'finger'];
     } else {
-      this.filter.push(slot);
+      this.filter = [slot];
     }
     this.render();
   }
@@ -114,7 +115,9 @@ class Armory extends Component {
         <span class='slots'></span>
       </div>
       <div class='windows'>
-        <div class='for-sale'></div>
+        <div class='for-sale'>
+
+        </div>
         <div class='bought'></div>
       </div>
     </div>`;

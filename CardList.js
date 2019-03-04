@@ -45,6 +45,8 @@ class CardList extends Component {
         border-left: 10px solid white;
         left: 10px;
       }
+      .meta {
+      }
     </style>`;
   }
 
@@ -86,7 +88,10 @@ class CardList extends Component {
       c.querySelector('#next').addEventListener('click', next);
       this.cards.slice(this.page * this.pageSize, (1 + this.page) * this.pageSize).forEach(card => c.appendChild(card));
     } else {
+      let o = Math.max(this.offset, 0);
+      let e = Math.min(this.offset + this.pageSize, this.cards.length);
       c.addEventListener('wheel', e => {
+        console.log(this)
         if(e.deltaY > 1) {
           this.offset += 1;
         } else {
@@ -95,8 +100,9 @@ class CardList extends Component {
         this.offset = Math.max(0, this.offset);
         this.offset = Math.min(this.cards.length - this.pageSize, this.offset);
         this.render();
-      })
-      this.cards.slice(this.offset, this.offset + this.pageSize).forEach(card => c.appendChild(card));
+      });
+      c.appendChild(html`<div class='meta'>Showing items ${o} to ${e} / ${this.cards.length}</div>`);
+      this.cards.slice(o, e).forEach(card => c.appendChild(card));
     }
     this.append(c);
     return this.shadow;

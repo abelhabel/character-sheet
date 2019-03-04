@@ -159,7 +159,6 @@ class Adventure extends Component {
       this.createPlane('surface'),
       this.createPlane('underground')
     ];
-    this.layers = {};
     this.setPlane('surface');
 
     this.resources = [
@@ -196,7 +195,10 @@ class Adventure extends Component {
 
   setPlane(name) {
     this.currentPlane = this.planes.find(p => p.name == name);
-    this.layers = this.currentPlane.layers;
+  }
+
+  get layers() {
+    return this.currentPlane.layers;
   }
 
   createPlane(name) {
@@ -623,42 +625,55 @@ class Adventure extends Component {
 
   endTurn() {
     this.tags.time.nextDay();
-    let {obstacles, history} = this.layers;
-    obstacles.items.each(item => {
-      if(!item.item) return;
-      let record = history.items.get(item.x, item.y);
-      record.resetConsumption(item.item);
+    this.planes.forEach(p => {
+      p.layers.obstacles.items.each(item => {
+        if(!item.item) return;
+        let record = p.layers.history.items.get(item.x, item.y);
+        record.resetConsumption(item.item);
+      })
+
     })
-    let saveFile = history.items.items.map(r => r.compress());
+    let saveFile = {
+      currentPlane: this.currentPlane.name,
+      planes: this.planes.map(p => p.layers.history.items.items.map(r => r.compress()))
+    };
     storage.save('adventure', this.id, saveFile);
     this.savePlayer();
   }
 
   load() {
     let file = storage.load('adventure', this.id);
+    console.log(file)
     if(!file) return;
-    let history = file.data;
-    history.forEach((r, i) => {
-      let {x, y} = this.layers.history.items.xy(i);
-      let record = this.layers.history.items.get(x, y);
-      record.import(r);
+    this.setPlane(file.data.currentPlane);
+    let planes = file.data.planes;
+    planes.forEach((p, i) => {
+      let plane = this.planes[i];
+      p.forEach((r, i) => {
+        let {x, y} = plane.layers.history.items.xy(i);
+        let record = plane.layers.history.items.get(x, y);
+        record.import(r);
+      })
     })
     this.applyHistory();
   }
 
   applyHistory() {
-    let {obstacles, monsters, fog} = this.layers;
-    this.layers.history.items.each(item => {
-      if(item.item.obstacleRemoved) {
-        obstacles.items.remove(item.x, item.y);
-      }
-      if(item.item.monsterKilled) {
-        monsters.items.remove(item.x, item.y);
-      }
-      if(!item.item.fog) {
-        fog.items.set(item.x, item.y, false);
-        fog.canvas.clearRect(item.x * this.tw, item.y * this.th, this.tw, this.th);
-      }
+    this.planes.forEach(p => {
+      let {obstacles, monsters, fog} = p.layers;
+      p.layers.history.items.each(item => {
+        if(item.item.obstacleRemoved) {
+          obstacles.items.remove(item.x, item.y);
+        }
+        if(item.item.monsterKilled) {
+          monsters.items.remove(item.x, item.y);
+        }
+        if(!item.item.fog) {
+          fog.items.set(item.x, item.y, false);
+          fog.canvas.clearRect(item.x * this.tw, item.y * this.th, this.tw, this.th);
+        }
+      })
+
     })
   }
 
