@@ -91,7 +91,6 @@ class CardList extends Component {
       let o = Math.max(this.offset, 0);
       let e = Math.min(this.offset + this.pageSize, this.cards.length);
       c.addEventListener('wheel', e => {
-        console.log(this)
         if(e.deltaY > 1) {
           this.offset += 1;
         } else {

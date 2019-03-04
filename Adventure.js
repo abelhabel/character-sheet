@@ -891,7 +891,7 @@ class Adventure extends Component {
     let item = obstacles.items.get(mp.x, mp.y);
     let record = history.items.get(mp.x, mp.y);
     // Movement
-    if(ground.items.get(mp.x, mp.y) && obstacles.items.canWalkTo(this.pp.x, this.pp.y, mp.x, mp.y)) {
+    if(!this.moving && ground.items.get(mp.x, mp.y) && obstacles.items.canWalkTo(this.pp.x, this.pp.y, mp.x, mp.y)) {
       let path = obstacles.items.path(this.pp.x, this.pp.y, mp.x, mp.y);
       path.shift();
       return this.walk(this.player.team, path)
