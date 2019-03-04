@@ -92,7 +92,13 @@ class Team {
     this.max = max;
     this.picked = [];
     this.units = [];
-    units && units.length && this.units.push.apply(this.units, units.map(t => new TeamUnit(t.suuid, t.templateId, t.stacks, t.x, t.y, t.equipment, t.abilities)));
+    units && units.length && this.units.push.apply(this.units, units.map(t => {
+      let u = new TeamUnit(t.suuid, t.templateId, t.stacks, t.x, t.y, t.equipment, t.abilities);
+      u.upgradePointsLeft = t.upgradePointsLeft;
+      u.upgradePointsSpent = t.upgradePointsSpent;
+      Object.assign(u.upgrades, t.upgrades);
+      return u;
+    }));
   }
 
   get cs() {
