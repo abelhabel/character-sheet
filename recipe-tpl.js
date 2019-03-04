@@ -8,6 +8,7 @@ function sortOnName(a, b) {
 }
 const abilities = require('abilities.js');
 const terrains = require('terrains.js');
+const equipments = require('equipments.js');
 const p = {
   get(item) {
     if(!item) return '';
@@ -97,7 +98,7 @@ var tpl = {
           exportAs: 'item',
           type: 'select',
           initial: '',
-          values: ['', 'gold', 'scroll', 'terrain']
+          values: ['', 'gold', 'scroll', 'terrain', 'equipment']
         },
         {
           name: 'Terrain',
@@ -105,21 +106,8 @@ var tpl = {
           type: 'select',
           initial: '',
           values: ['', ...terrains.sort(sortOnName)],
-          get(item) {
-            if(!item) return '';
-            if(typeof item == 'string') {
-              let t = this.values.find(v => v && v.id == item);
-              if(t) return t.bio.name;
-              return item;
-            }
-            return item.bio.name;
-          },
-          set(name) {
-            if(!name) return '';
-            t = this.values.find(v => v && v.bio && v.bio.name == name);
-            if(t) return t.id;
-            return '';
-          }
+          get: p.get,
+          set: p.set,
         },
         {
           name: 'Scroll',
@@ -127,21 +115,17 @@ var tpl = {
           type: 'select',
           initial: '',
           values: ['', ...abilities.sort(sortOnName)],
-          get(item) {
-            if(!item) return '';
-            if(typeof item == 'string') {
-              let t = this.values.find(v => v && v.id == item);
-              if(t) return t.bio.name;
-              return item;
-            }
-            return item.bio.name;
-          },
-          set(name) {
-            if(!name) return '';
-            t = this.values.find(v => v && v.bio && v.bio.name == name);
-            if(t) return t.id;
-            return '';
-          }
+          get: p.get,
+          set: p.set,
+        },
+        {
+          name: 'Equipment',
+          exportAs: 'equipment',
+          type: 'select',
+          initial: '',
+          values: ['', ...equipments.sort(sortOnName)],
+          get: p.get,
+          set: p.set,
         },
       ]
     },
