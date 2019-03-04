@@ -43,7 +43,7 @@ class ControlPanel extends Component {
         background-color: beige;
         padding: 5px;
         overflow-y: auto;
-        height: 85%;
+        height: 75%;
       }
       .control-item {
         border: 1px solid black;

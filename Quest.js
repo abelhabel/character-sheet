@@ -1,11 +1,13 @@
 const Component = require('Component.js');
 const abilities = require('abilities.js');
 const terrains = require('terrains.js');
+const equipments = require('equipments.js');
 const tpl = require('quest-tpl.js');
 const Scroll = require('Scroll.js');
 const Sprite = require('Sprite.js');
 const Ability = require('Ability.js');
-const Terrain = require('Terrains.js');
+const Terrain = require('Terrain.js');
+const Equipment = require('Equipment.js');
 class Quest extends Component {
   constructor(t) {
     super(false, 'quest');
@@ -22,7 +24,8 @@ class Quest extends Component {
       selection: t && t.condition && t.condition.selection ? t.condition.selection : [],
       item: t && t.condition && t.condition.item ? t.condition.item : 'gold',
       scroll: t && t.condition && t.condition.scroll ? t.condition.scroll : '',
-      terrain: t && t.condition && t.condition.terrain ? t.condition.terrain : ''
+      terrain: t && t.condition && t.condition.terrain ? t.condition.terrain : '',
+      equipment: t && t.condition && t.condition.equipment ? t.condition.equipment : '',
     };
     this.reward = {
       type: t && t.reward && t.reward.type ? t.reward.type : 'give',
@@ -30,7 +33,8 @@ class Quest extends Component {
       selection: t && t.reward && t.reward.selection ? t.reward.selection : [],
       item: t && t.reward && t.reward.item ? t.reward.item : 'gold',
       scroll: t && t.reward && t.reward.scroll ? t.reward.scroll : '',
-      terrain: t && t.reward && t.reward.terrain ? t.reward.terrain : ''
+      terrain: t && t.reward && t.reward.terrain ? t.reward.terrain : '',
+      equipment: t && t.reward && t.reward.equipment ? t.reward.equipment : '',
     };
     this.sprite = this.bio.sprite ? new Sprite(this.bio.sprite) : null
   }
@@ -87,13 +91,16 @@ class Quest extends Component {
 
   conditionMet(adventure) {
     let p = adventure.player;
-    let {type, amount, selection, item, terrain, scroll} = this.condition;
+    let {type, amount, selection, item, terrain, scroll, equipment} = this.condition;
     if(type == 'deliver') {
       if(item == 'gold') {
         return p.gold >= amount;
       }
       if(item == 'scroll') {
         return p.inventory.itemByTemplateId(scroll);
+      }
+      if(item == 'equipment') {
+        return p.inventory.itemByTemplateId(equipment);
       }
       if(item == 'terrain') {
         let t = terrains.find(t => t.id == terrain);
@@ -130,7 +137,7 @@ class Quest extends Component {
   }
 
   get rewardItem() {
-    let {type, amount, item, terrain, scroll} = this.reward;
+    let {type, amount, item, terrain, scroll, equipment} = this.reward;
     if(item == 'gold') return;
     if(item == 'scroll') {
       let t = abilities.find(a => a.id == scroll);
@@ -138,20 +145,27 @@ class Quest extends Component {
     }
     if(item == 'terrain') {
       let t = terrains.find(a => a.id == terrain);
-      return new Terrain(terrain);
+      return new Terrain(t);
+    }
+    if(item == 'equipment') {
+      let t = equipments.find(a => a.id == equipment);
+      return new Equipment(t);
     }
 
   }
 
   takeCondition(adventure) {
     let p = adventure.player;
-    let {type, amount, item, terrain, scroll} = this.condition;
+    let {type, amount, item, terrain, scroll, equipment} = this.condition;
     if(type == 'deliver') {
       if(item == 'gold') {
         return adventure.addGold(-amount);
       }
       if(item == 'scroll') {
         return p.inventory.remove(p.inventory.itemByTemplateId(scroll));
+      }
+      if(item == 'equipment') {
+        return p.inventory.remove(p.inventory.itemByTemplateId(equipment));
       }
       if(item == 'terrain') {
         let t = terrains.find(t => t.id == terrain);
@@ -169,12 +183,15 @@ class Quest extends Component {
   giveReward(adventure) {
     let p = adventure.player;
     p.addXP(this.bio.xp);
-    let {type, amount, item, terrain, scroll, selection} = this.reward;
+    let {type, amount, item, terrain, scroll, equipment, selection} = this.reward;
     if(type == 'give') {
       if(item == 'gold') {
         return adventure.addGold(amount);
       }
       if(item == 'scroll') {
+        return p.inventory.add(this.rewardItem);
+      }
+      if(item == 'equipment') {
         return p.inventory.add(this.rewardItem);
       }
     }

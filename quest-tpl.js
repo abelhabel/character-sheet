@@ -8,6 +8,7 @@ function sortOnName(a, b) {
 }
 const abilities = require('abilities.js');
 const terrains = require('terrains.js');
+const equipments = require('equipments.js');
 var tpl = {
   name: "Quest",
   folder: "quests",
@@ -83,7 +84,7 @@ var tpl = {
           exportAs: 'item',
           type: 'select',
           initial: '',
-          values: ['', 'gold', 'scroll', 'terrain']
+          values: ['', 'gold', 'scroll', 'terrain', 'equipment']
         },
         {
           name: 'Terrain',
@@ -113,6 +114,28 @@ var tpl = {
           type: 'select',
           initial: '',
           values: ['', ...abilities.sort(sortOnName)],
+          get(item) {
+            if(!item) return '';
+            if(typeof item == 'string') {
+              let t = this.values.find(v => v && v.id == item);
+              if(t) return t.bio.name;
+              return item;
+            }
+            return item.bio.name;
+          },
+          set(name) {
+            if(!name) return '';
+            t = this.values.find(v => v && v.bio && v.bio.name == name);
+            if(t) return t.id;
+            return '';
+          }
+        },
+        {
+          name: 'Equipment',
+          exportAs: 'equipment',
+          type: 'select',
+          initial: '',
+          values: ['', ...equipments.sort(sortOnName)],
           get(item) {
             if(!item) return '';
             if(typeof item == 'string') {
@@ -161,7 +184,7 @@ var tpl = {
           exportAs: 'item',
           type: 'select',
           initial: '',
-          values: ['', 'gold', 'scroll', 'terrain']
+          values: ['', 'gold', 'scroll', 'terrain', 'equipment']
         },
         {
           name: 'Terrain',
@@ -191,6 +214,28 @@ var tpl = {
           type: 'select',
           initial: '',
           values: ['', ...abilities.sort(sortOnName)],
+          get(item) {
+            if(!item) return '';
+            if(typeof item == 'string') {
+              let t = this.values.find(v => v && v.id == item);
+              if(t) return t.bio.name;
+              return item;
+            }
+            return item.bio.name;
+          },
+          set(name) {
+            if(!name) return '';
+            t = this.values.find(v => v && v.bio && v.bio.name == name);
+            if(t) return t.id;
+            return '';
+          }
+        },
+        {
+          name: 'Equipment',
+          exportAs: 'equipment',
+          type: 'select',
+          initial: '',
+          values: ['', ...equipments.sort(sortOnName)],
           get(item) {
             if(!item) return '';
             if(typeof item == 'string') {
