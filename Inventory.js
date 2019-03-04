@@ -106,7 +106,7 @@ class Inventory extends GridBox {
     this.selectedItems.forEach(item => {
       let a = html`<div>${item.item.description}</div>`;
       d.appendChild(a);
-    })
+    });
     this.slots.forEach(s => t.appendChild(this.renderSlot(s)));
     this.append(t);
     this.append(d);

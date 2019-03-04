@@ -13,7 +13,8 @@ class Quest extends Component {
       name: t && t.bio && t.bio.name ? t.bio.name : 'Unnamed',
       sprite: t && t.bio && t.bio.sprite ? t.bio.sprite : null,
       global: t && t.bio && t.bio.global ? t.bio.global : false,
-      description: t && t.bio && t.bio.description ? t.bio.description : ''
+      description: t && t.bio && t.bio.description ? t.bio.description : '',
+      xp: t && t.bio && t.bio.xp ? t.bio.xp : 1,
     };
     this.condition = {
       type: t && t.condition && t.condition.type ? t.condition.type : 'deliver',
@@ -167,6 +168,7 @@ class Quest extends Component {
 
   giveReward(adventure) {
     let p = adventure.player;
+    p.addXP(this.bio.xp);
     let {type, amount, item, terrain, scroll, selection} = this.reward;
     if(type == 'give') {
       if(item == 'gold') {

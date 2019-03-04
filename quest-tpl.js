@@ -44,6 +44,13 @@ var tpl = {
           exportAs: 'description',
           type: 'text',
           initial: ''
+        },
+        {
+          name: 'XP',
+          exportAs: 'xp',
+          type: 'increment',
+          initial: 1,
+          range: [1, 100]
         }
       ]
     },
