@@ -744,10 +744,13 @@ class Adventure extends Component {
     this.player.movesLeft = this.player.movement;
     this.resources.push(new Resource('gold', this.player.gold, goldIcon));
     this.tags.time.player = this.player;
-    this.layers.quests.items.filled(item => {
-      let q = item.item;
-      if(!q.bio.global) return;
-      p.quests.add(q);
+    this.planes.forEach(plane => {
+      plane.layers.quests.items.filled(item => {
+        let q = item.item;
+        if(!q.bio.global) return;
+        p.quests.add(q);
+      })
+
     })
 
     this.draw(this.layers.monsters);
@@ -780,8 +783,11 @@ class Adventure extends Component {
     this.player.movesLeft = player.movesLeft || 20;
 
     player.quests.forEach(questName => {
-      let q = this.layers.quests.items.find(item => {
-        return item.item.bio.name == questName;
+      let q;
+      this.planes.find(p => {
+        return q = p.layers.quests.items.find(item => {
+          return item.item.bio.name == questName;
+        });
       });
       if(!q) return;
       this.player.quests.add(q.item);
