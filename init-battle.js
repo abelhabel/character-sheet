@@ -21,6 +21,9 @@ CSSStyleDeclaration.prototype.copyTo = function(o) {
     o[p] = this[p];
   }
 }
+
+window.__roll = (a, b) => Math.round(a + Math.random() * (b-a));
+
 function html(strings, ...values) {
   let out = '';
   strings.forEach((s, i) => {
@@ -153,15 +156,22 @@ Module.onLoad(['DungeonCrawl_ProjectUtumnoTileset.png', 'Hell2.jpg', 'defeat.jpg
 'mythical_card.jpg', 'outlaws_card.jpg', 'undead_card.jpg', 'beasts_card.jpg', 'order_of_idun_card.jpg', 'aloysias_chosen_card.jpg', 'demons_card.jpg',
 'guid.js', 'sounds.js', 'adventures.js', 'recipes.js', 'storage.js', 'equipments.js',
 'monsters.js', 'abilities.js', 'terrains.js', 'arenas.js', 'icons.js', 'animations.js', 'teams.js', 'elements.js', 'matches.js', 'gauntlets.js',
+'ability-tpl.js',
 'special-effects.js','FixedList.js', 'Component.js', 'ToolTip.js', 'CardList.js', 'Logger.js', 'Rand.js',
 'Canvas.js', 'Sprite.js', 'CompositeSprite.js', 'SoundPlayer.js',
 'AbilityEffect.js', 'Animation.js', 'AdventureTime.js',
-'PositionList2d.js', 'pathfinding.js',  'Ability.js', 'Equipment.js', 'AI.js', 'Terrain.js', 'Scroll.js', 'Menu.js', 'Slider.js', 'Monster.js',
-'BattleMenu.js', 'AdventureMenu.js', 'GridBox.js', 'Inventory.js', 'Crafting.js', 'Quest.js', 'QuestLog.js', 'AdventureMessage.js',
+'PositionList2d.js', 'pathfinding.js',  'Ability.js', 'Equipment.js', 'AI.js', 'Terrain.js', 'Scroll.js', 'Menu.js', 'Slider.js', 'Monster.js', 'CS.js',
+'BattleMenu.js', 'AdventureMenu.js', 'PrimeVessel.js', 'GridBox.js', 'Inventory.js', 'Crafting.js', 'Quest.js', 'QuestLog.js', 'AdventureMessage.js',
 'Arena.js', 'MonsterCard.js',  'Armory.js',
 'TeamSheet.js', 'TeamViewer.js', 'Team.js', 'TeamSelect.js', 'UnitPlacement.js', 'BattleResult.js', 'Match.js',
 'Gauntlet.js', 'View.js', 'Lobby.js', 'Battle.js', 'Adventure.js', 'GameUI.js',
 'game-modes.js', 'lobby-channels-client.js' ], () => {
+  const storage = require('storage.js');
+  const abilities = require('abilities.js');
+  let ca = storage.loadFolder('customAbilities') || [];
+  console.log(ca)
+  abilities.push.apply(abilities, ca.map(f => f.data));
+  console.log(abilities.find(a => a.id == "9fee90d6-763c-275d-747b-0ed91ce03040"))
   const GameUI = require('GameUI.js');
   const channels = require('lobby-channels-client.js');
   const gameui = new GameUI();

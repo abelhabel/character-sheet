@@ -18,6 +18,8 @@ const Component = require('Component.js');
 const Equipment = require('Equipment.js');
 const Armory = require('Armory.js');
 const Inventory = require('Inventory.js');
+const guid = require('guid.js');
+const abilities = require('abilities.js');
 const equipment = require('equipments.js');
 const storage = require('storage.js');
 const adventures = require('adventures.js');
@@ -152,6 +154,19 @@ gameModes.adventure = function(lobby, ui) {
           })
         }
       };
+
+      player.inventory.on('crafted ability', (tpl, items) => {
+        console.log('items used', items);
+        tpl.id = guid();
+        abilities.push(tpl);
+        team.leaders.forEach(l => {
+          logger.log(`Player learned a Custom Ability.`);
+          l.addAbility(tpl.id);
+        });
+        items.forEach(item => player.inventory.remove(item));
+        player.inventory.render();
+        storage.save('customAbilities', tpl.id, tpl);
+      });
 
       player.crafting.on('crafting success', recipe => {
         console.log('recipe', recipe)

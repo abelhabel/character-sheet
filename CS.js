@@ -736,6 +736,15 @@ class CS {
     this.importingId = monster.id;
   }
 
+  get default() {
+    this.categories.forEach(c => {
+      c.items.forEach(item => {
+        this.setState(c, item, item.initial, true);
+      })
+    });
+    return this.state;
+  }
+
   render() {
 
     this.parent.appendChild(this.renderName());

@@ -1,4 +1,5 @@
 const GridBox = require('GridBox.js');
+const PrimeVessel = require('PrimeVessel.js');
 const SoundPlayer = require('SoundPlayer.js');
 const sp = new SoundPlayer();
 class Inventory extends GridBox {
@@ -110,6 +111,9 @@ class Inventory extends GridBox {
     this.slots.forEach(s => t.appendChild(this.renderSlot(s)));
     this.append(t);
     this.append(d);
+    let pv = new PrimeVessel(this.list._filled());
+    pv.on('crafted ability', (tpl, items) => this.trigger('crafted ability', tpl, items));
+    this.append(pv.render());
     return this.tags.outer;
   }
 

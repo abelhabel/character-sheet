@@ -14,6 +14,7 @@ class TeamUnit {
     this.y = y;
     this.equipment = equipment || [];
     this.abilities = abilities || [];
+    this.customAbilities = [];
     this.upgradePointsLeft = 0;
     this.upgradePointsSpent = 0;
     this.upgrades = {
@@ -46,6 +47,9 @@ class TeamUnit {
     if(this.equipment && this.equipment.length) {
       this.equipment.forEach(a => m.equip(a));
     }
+    if(this.customAbilities && this.customAbilities.length) {
+      this.customAbilities.forEach(a => m.addAbilityTpl(a));
+    }
     m.suuid = this.suuid;
     m.x = this.x;
     m.y = this.y;
@@ -75,6 +79,10 @@ class TeamUnit {
     let a = abilities.find(a => a.id == abilityId);
     logger.log(`Player learned new Ability: ${a.bio.name}`);
     this.abilities.push(abilityId);
+  }
+
+  addCustomAbility(tpl) {
+    this.customAbilities.push(tpl);
   }
 
   addScroll(abilityId) {

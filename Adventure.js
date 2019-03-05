@@ -337,7 +337,7 @@ class Adventure extends Component {
         height: 40px;
       }
 
-      .inventory .inventory-item-info {
+      .inventory .inventory-item-info, #prime-vessel {
         position: absolute;
         top: 70px;
         left: -287px;
@@ -345,6 +345,29 @@ class Adventure extends Component {
         height: 145px;
         background-image: url(sheet_of_old_paper.png);
         padding: 20px;
+      }
+
+      #prime-vessel {
+        left: 296px;
+        height: 260px;
+        top: 10px;
+        border-radius: 50%;
+      }
+
+      #prime-vessel .menu-item {
+        position: absolute;
+        border: 2px solid white;
+        width: 48px;
+        height: 48px;
+        border-radius: 50%;
+        padding: 6px;
+      }
+
+      #prime-vessel .glyphs {
+        z-index: 23;
+        position: relative;
+        text-align: center;
+        top: 44%;
       }
 
       .inventory .inventory-dolly {

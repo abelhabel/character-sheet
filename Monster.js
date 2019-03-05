@@ -353,6 +353,10 @@ class Monster {
     this.abilities.push(new Ability(a, this));
   }
 
+  addAbilityTpl(tpl) {
+    this.abilities.push(new Ability(tpl, this));
+  }
+
   get attacks() {
     return this.abilities.filter(a => a.bio.type == 'active' && a.stats.source == 'attack');
   }
