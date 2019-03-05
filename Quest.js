@@ -201,7 +201,8 @@ class Quest extends Component {
         let xy = p.split(':');
         let x = parseInt(xy[0]);
         let y = parseInt(xy[1]);
-        positions.push({x,y});
+        let record = adventure.layers.history.items.get(x, y);
+        record.removeObstacle();
         adventure.layers.obstacles.items.remove(x, y);
 
       });
