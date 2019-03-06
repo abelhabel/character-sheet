@@ -82,6 +82,16 @@ gameModes.loadAdventure = function(lobby, ui) {
         <div>${a.name}</div>
         <div>${new Date(s.date).toUTCString()}</div>
       </div>`;
+      let menu = new Menu([
+        {
+          text: 'Back',
+          fn: () => {
+            ui.clear('adventure');
+            ui.show('lobby');
+          }
+        }
+      ])
+      c.append(menu.render());
       t.addEventListener('click', e => {
         ui.clear('adventure');
         lobby.trigger('adventure', s);
