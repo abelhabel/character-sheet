@@ -14,6 +14,7 @@ const _log = icons.find(ic => ic.bio.name == 'Log');
 const _cs = icons.find(ic => ic.bio.name == 'Character Sheet');
 const _bowl = icons.find(ic => ic.bio.name == 'Bowl');
 const _equipment = icons.find(ic => ic.bio.name == 'Equipment');
+const _help = icons.find(ic => ic.bio.name == 'Help');
 const sprites = {
   inventory: new Sprite(_inventory.bio.sprite),
   time: new Sprite(_wait.bio.sprite),
@@ -21,7 +22,8 @@ const sprites = {
   quests: new Sprite(_log.bio.sprite),
   cs: new Sprite(_cs.bio.sprite),
   craft: new Sprite(_bowl.bio.sprite),
-  equipment: new Sprite(_equipment.bio.sprite)
+  equipment: new Sprite(_equipment.bio.sprite),
+  help: new Sprite(_help.bio.sprite),
 };
 class AdventureMenu extends Component {
   constructor() {
@@ -29,8 +31,9 @@ class AdventureMenu extends Component {
     this.items = [
       {tag: sprites.quests.canvas, e: 'open quests'},
       {tag: sprites.cs.canvas, e: 'open team'},
+      {tag: sprites.equipment.canvas, e: 'open inventory'},
       {tag: sprites.craft.canvas, e: 'open crafting'},
-      {tag: sprites.equipment.canvas, e: 'open inventory'}
+      {tag: sprites.help.canvas, e: 'open help'},
     ];
     this.view = 'menu';
   }

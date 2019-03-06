@@ -13,6 +13,7 @@ const Scroll = require('Scroll.js');
 const Ability = require('Ability.js');
 const Quest = require('Quest.js');
 const Equipment = require('Equipment.js');
+const AdventureHelp = require('AdventureHelp.js');
 const PL = require('PositionList2d.js');
 const storage = require('storage.js');
 const icons = require('icons.js');
@@ -173,6 +174,7 @@ class Adventure extends Component {
     this.menu.on('open team', () => this.openTeamSheet());
     this.menu.on('open quests', () => this.openQuests());
     this.menu.on('open crafting', () => this.openCrafting());
+    this.menu.on('open help', () => this.openHelp());
     this.panSpeed = 10;
     this.pans = {x: 0, y: 0};
     this.mouse = {
@@ -226,6 +228,18 @@ class Adventure extends Component {
 
   static style(a) {
     return html`<style>
+      .big-popup {
+        position: fixed;
+        top: 50%;
+        left: 50%;
+        transform: translate(-50%, -50%);
+        width: 600px;
+        height: 600px;
+        overflow-y: auto;
+        background-image: url(sheet_of_old_paper.png);
+        padding: 20px;
+        border-radius: 10px;
+      }
       .finish-adventure {
         width: 600px;
         height: 600px;
@@ -728,6 +742,10 @@ class Adventure extends Component {
 
   openCrafting() {
     this.append(this.player.crafting.render());
+  }
+
+  openHelp() {
+    this.append(new AdventureHelp().render());
   }
 
   addObstacle(x, y, item) {
