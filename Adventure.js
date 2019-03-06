@@ -240,6 +240,19 @@ class Adventure extends Component {
         padding: 20px;
         border-radius: 10px;
       }
+      .quick-view {
+        position: fixed;
+        top: 50%;
+        left: 50%;
+        transform: translate(-50%, -50%);
+        max-width: 600px;
+        max-height: 600px;
+        overflow-y: auto;
+        background-image: url(sheet_of_old_paper.png);
+        padding: 20px;
+        border-radius: 10px;
+        pointer-events: none;
+      }
       .finish-adventure {
         width: 600px;
         height: 600px;
@@ -928,6 +941,13 @@ class Adventure extends Component {
 
   mouseDown(e) {
     this.mouse.down = e;
+    if(this.mouse.up && this.mouse.up.button == 2) {
+      let mp = this.tpos(e);
+      let team = this.layers.monsters.items.get(mp.x, mp.y);
+      if(team) {
+        this.append(team.renderUnits());
+      }
+    }
   }
 
   mouseUp(e) {
@@ -937,6 +957,10 @@ class Adventure extends Component {
       this.pans.x += e.clientX - this.mouse.down.clientX;
       this.pans.y += e.clientY - this.mouse.down.clientY;
       this.panTo(this.pans.x, this.pans.y);
+      Array.from(this.shadow.querySelectorAll('.quick-view'))
+      .forEach(tag => {
+        tag.parentNode.removeChild(tag);
+      });
 
     }
     this.mouse.down = null;

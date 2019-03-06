@@ -4,6 +4,7 @@ const abilities = require('abilities.js');
 const equipments = require('equipments.js');
 const Monster = require('Monster.js');
 const TeamSheet = require('TeamSheet.js');
+const Component = require('Component.js');
 const portalTemplate = monsters.find(m => m.bio.name == 'Portal');
 class TeamUnit {
   constructor(suuid, templateId, stacks, x, y, equipment, abilities) {
@@ -204,6 +205,15 @@ class Team {
 
   get monsters() {
     return this.units.map(t => t.monster);
+  }
+
+  renderUnits() {
+    let t = new Component(false, 'team-units quick-view');
+    this.monsters.forEach(m => {
+      m.sprite.drawStack(m.stacks);
+      t.append(m.canvas);
+    })
+    return t.tags.outer;
   }
 }
 
