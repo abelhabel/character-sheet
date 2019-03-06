@@ -725,7 +725,6 @@ class Monster {
     }
     if(a.stats.resourceType == 'health' && this.totalHealth >= a.stats.resourceCost) {
       this.harm(a.stats.resourceCost);
-      if(!this.alive) this.battle.kill(this);
     }
   }
 

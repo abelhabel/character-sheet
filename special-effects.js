@@ -71,7 +71,7 @@ module.exports.banish = {
       logger.log(target.bio.name, 'is not a summoned creature.');
       return;
     };
-    battle.kill(target);
+    battle.dealDamage(caster, target, target.totalHealth, ability);
     return new Special();
   }
 };

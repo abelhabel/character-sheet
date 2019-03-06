@@ -114,12 +114,12 @@ class BattleMenu extends Component {
     let slider;
     this.battle.addDOMEvent(volume.canvas, 'click', e => {
       if(slider) {
-        outer.removeChild(slider.tags.container);
+        this.tags.outer.removeChild(slider.tags.container);
         slider = null;
         return;
       }
       slider = new Slider("Volume", Math.round(this.battle.sp.volume*100), this.battle.sp, 'volume', true);
-      outer.appendChild(slider.render());
+      this.tags.outer.appendChild(slider.render());
     });
     let cursor = new Sprite(_cursor.bio.sprite);
     let top = html`<div class='buttons'></div>`;

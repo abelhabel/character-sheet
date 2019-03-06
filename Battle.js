@@ -1567,7 +1567,6 @@ class Battle {
       })
     }
 
-    if(!b.alive) this.kill(b);
   }
 
   vigorMultiplier(a, b, ability) {
@@ -1753,7 +1752,7 @@ class Battle {
   }
 
   applyEffects(a) {
-    if(!a.alive) return;
+    // if(!a.alive) return;
     a.activeEffects.forEach(e => {
       var {source} = e.ability.stats;
       if(e.ability.stats.source == 'attack' || e.ability.stats.source == 'spell') {
