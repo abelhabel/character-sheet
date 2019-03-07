@@ -83,7 +83,6 @@ class Module {
   }
 
   static onLoad(files, fn) {
-    console.log('load modules')
     var o = Promise.resolve();
     let calls = files.map(f => {
       let m = new Module(f);
@@ -158,20 +157,18 @@ Module.onLoad(['DungeonCrawl_ProjectUtumnoTileset.png', 'Hell2.jpg', 'defeat.jpg
 'monsters.js', 'abilities.js', 'terrains.js', 'arenas.js', 'icons.js', 'animations.js', 'teams.js', 'elements.js', 'matches.js', 'gauntlets.js',
 'ability-tpl.js',
 'special-effects.js','FixedList.js', 'Component.js', 'ToolTip.js', 'CardList.js', 'Logger.js', 'Rand.js',
-'Canvas.js', 'Sprite.js', 'CompositeSprite.js', 'SoundPlayer.js',
+'Canvas.js', 'Sprite.js', 'CompositeSprite.js', 'SoundPlayer.js', 'Keyboard.js',
 'AbilityEffect.js', 'Animation.js', 'AdventureTime.js',
 'PositionList2d.js', 'pathfinding.js',  'Ability.js', 'Equipment.js', 'AI.js', 'Terrain.js', 'Scroll.js', 'Menu.js', 'Slider.js', 'MonsterCard.js', 'Monster.js', 'CS.js',
 'BattleMenu.js', 'AdventureMenu.js', 'PrimeVessel.js', 'GridBox.js', 'Inventory.js', 'Crafting.js', 'Quest.js', 'QuestLog.js', 'AdventureMessage.js',
-'Arena.js', 'Armory.js', 'AdventureHelp.js',
+'Arena.js', 'Armory.js', 'AdventureOptions.js', 'AdventureHelp.js', 
 'TeamSheet.js', 'TeamViewer.js', 'Team.js', 'TeamSelect.js', 'UnitPlacement.js', 'BattleResult.js', 'Match.js',
 'Gauntlet.js', 'View.js', 'Lobby.js', 'Battle.js', 'Adventure.js', 'GameUI.js',
 'game-modes.js', 'lobby-channels-client.js' ], () => {
   const storage = require('storage.js');
   const abilities = require('abilities.js');
   let ca = storage.loadFolder('customAbilities') || [];
-  console.log(ca)
   abilities.push.apply(abilities, ca.map(f => f.data));
-  console.log(abilities.find(a => a.id == "9fee90d6-763c-275d-747b-0ed91ce03040"))
   const GameUI = require('GameUI.js');
   const channels = require('lobby-channels-client.js');
   const gameui = new GameUI();

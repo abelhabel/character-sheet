@@ -14,6 +14,7 @@ const Ability = require('Ability.js');
 const Quest = require('Quest.js');
 const Equipment = require('Equipment.js');
 const AdventureHelp = require('AdventureHelp.js');
+const Keyboard = require('Keyboard.js');
 const PL = require('PositionList2d.js');
 const storage = require('storage.js');
 const icons = require('icons.js');
@@ -33,6 +34,7 @@ const tileTargetSprite = new Sprite(tileTargetIcon.bio.sprite);
 const goldSprite = new Sprite(goldIcon.bio.sprite);
 const interactSprite = new Sprite(interactIcon.bio.sprite);
 const sp = new SoundPlayer();
+
 class Dialog extends Component {
   constructor(text) {
     super(true);
@@ -167,11 +169,15 @@ class Adventure extends Component {
     this.resources = [
 
     ];
+
+    this.autoEndTurn = true;
+    this.showHelpOnStart = true;
+
     this.tags.resources = new Component(false, 'resources');
     this.tags.time = new AdventureTime();
     this.menu = new AdventureMenu();
     this.menu.on('end turn', () => this.endTurn());
-    this.menu.on('open inventory', () => this.openGridBox());
+    this.menu.on('open inventory', () => this.openInventory());
     this.menu.on('open equipment', () => this.openEquipment());
     this.menu.on('open team', () => this.openTeamSheet());
     this.menu.on('open quests', () => this.openQuests());
@@ -602,6 +608,20 @@ class Adventure extends Component {
     </style>`;
   }
 
+  stopKeyboard() {
+    this.keyboard.stop();
+  }
+
+  startKeyboard() {
+    this.keyboard = this.keyboard || new Keyboard(this.id, {
+      e: this.endTurn.bind(this),
+      c: this.openTeamSheet.bind(this),
+      i: this.openInventory.bind(this),
+      q: this.openQuests.bind(this)
+    });
+    this.keyboard.start();
+  }
+
   static create(t) {
     let a = new this(t.w, t.h);
     a.id = t.id;
@@ -686,6 +706,7 @@ class Adventure extends Component {
   }
 
   endTurn() {
+    console.log('end turn')
     this.tags.time.nextDay();
     this.planes.forEach(p => {
       p.layers.obstacles.items.each(item => {
@@ -697,6 +718,8 @@ class Adventure extends Component {
     })
     let saveFile = {
       currentPlane: this.currentPlane.name,
+      days: this.tags.time.totalDays,
+      movesLeft: this.player.movesLeft,
       planes: this.planes.map(p => p.layers.history.items.items.map(r => r.compress()))
     };
     storage.save('adventure', this.id, saveFile);
@@ -706,6 +729,7 @@ class Adventure extends Component {
   load() {
     let file = storage.load('adventure', this.id);
     if(!file) return;
+    this.tags.time.setDays(file.data.days);
     this.setPlane(file.data.currentPlane);
     let planes = file.data.planes;
     planes.forEach((p, i) => {
@@ -738,7 +762,7 @@ class Adventure extends Component {
     })
   }
 
-  openGridBox() {
+  openInventory() {
     this.append(this.player.inventory.render());
   }
 
@@ -759,7 +783,24 @@ class Adventure extends Component {
   }
 
   openHelp() {
-    this.append(new AdventureHelp().render());
+    storage.remove('adventureOptions', '');
+    let file = storage.load('config', 'adventure') || {};
+    console.log('config on disk', file.data)
+    let help = new AdventureHelp(file.data);
+    help.on('config changed', o => {
+      console.log(o)
+      if(o.key == 'soundVolume') {
+        sp.updateVolume(o.val);
+      }
+      if(o.key == 'autoEnd') {
+        this.autoEndTurn = o.val;
+      }
+      if(o.key == 'showHelpOnStart') {
+        this.showHelpOnStart = o.val;
+      }
+      storage.save('config', 'adventure', help.options.config);
+    })
+    this.append(help.render());
   }
 
   addObstacle(x, y, item) {
@@ -1224,7 +1265,7 @@ class Adventure extends Component {
     path.shift();
     let c = select.canvas;
     path.forEach((p, i) => {
-      if(!this.player.movesLeft || i > this.player.movesLeft - 1) return;
+      // if(!this.player.movesLeft || i > this.player.movesLeft - 1) return;
       c.drawSprite(tileTargetSprite, p[0] * this.tw, p[1] * this.th, this.tw, this.th);
     });
   }
@@ -1292,7 +1333,12 @@ class Adventure extends Component {
       record.removeFog();
     });
     this.player.movesLeft -= 1;
-    this.tags.time.player && this.tags.time.render();
+    if(this.tags.time.player) {
+      if(this.autoEndTurn && !this.player.movesLeft) {
+        this.endTurn();
+      }
+      this.tags.time.render();
+    }
   }
 
   centerOnPlayer() {
@@ -1323,6 +1369,12 @@ class Adventure extends Component {
     }
     playTheme();
     playEnv();
+    this.startKeyboard();
+    let file = storage.load('config', 'adventure');
+    if(file && file.data) {
+      sp.updateVolume(file.data.soundVolume);
+      if(file.data.showHelpOnStart) this.openHelp();
+    }
   }
 
   render() {

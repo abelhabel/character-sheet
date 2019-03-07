@@ -1,4 +1,7 @@
 let s = {
+  remove(folder, name) {
+    localStorage.removeItem(`${folder}_${name}`);
+  },
   save(folder, name, data) {
     localStorage[`${folder}_${name}`] = JSON.stringify({
       name: name,

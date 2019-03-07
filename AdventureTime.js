@@ -10,15 +10,23 @@ class AdventureTime extends Component {
     this.player = player;
     this.days = ['monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday', 'sunday'];
     this.index = 0;
+    this.totalDays = 0;
   }
 
   get day() {
     return this.days[this.index];
   }
 
+  setDays(days) {
+    if(days < 1) return;
+    this.totalDays = days;
+    this.index = this.totalDays % this.days.length;
+  }
+
   nextDay() {
     this.player.movesLeft = this.player.movement;
     this.index += 1;
+    this.totalDays += 1;
     if(this.index >= this.days.length) {
       this.index = 0;
     }
@@ -28,9 +36,11 @@ class AdventureTime extends Component {
 
   render() {
     this.clear();
-    this.append(html`<div>
+    this.append(html`<div style='text-transform: capitalize;'>
+      <span>Day ${this.totalDays}</span>
       <span>${this.day}</span>
-      <span>${this.player.movesLeft} / ${this.player.movement}</span>
+      <span> | </span>
+      <span>moves today: ${this.player.movesLeft} / ${this.player.movement}</span>
     </div>
     `);
     return this.tags.outer;

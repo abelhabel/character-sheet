@@ -1,8 +1,10 @@
 const Component = require('Component.js');
-
+const AdventureOptions = require('AdventureOptions.js');
 class AdventureHelp extends Component {
-  constructor() {
+  constructor(config) {
     super(true);
+    this.options = new AdventureOptions(config);
+    this.options.on('config changed', o => this.trigger('config changed', o));
   }
 
   render() {
@@ -22,8 +24,48 @@ class AdventureHelp extends Component {
           color: white;
           border-radius: 50%;
         }
+        table {
+          width: 100%;
+        }
+        #adventure-options {
+        }
       </style>
       <div class='close'>X</div>
+      <section>
+        <h3>Controls</h3>
+        <table>
+          <tbody>
+            <tr>
+              <td>Mouse Right Click</td>
+              <td>Adventure Object Information</td>
+            </tr>
+            <tr>
+              <td>Mouse Right Hold</td>
+              <td>Monster Preview</td>
+            </tr>
+            <tr>
+              <td>Mouse Right Drag</td>
+              <td>Pan Map</td>
+            </tr>
+            <tr>
+              <td>Key E</td>
+              <td>End Turn</td>
+            </tr>
+            <tr>
+              <td>Key C</td>
+              <td>Open Character Sheet</td>
+            </tr>
+            <tr>
+              <td>Key I</td>
+              <td>Open Inventory</td>
+            </tr>
+            <tr>
+              <td>Key Q</td>
+              <td>Open Quests</td>
+            </tr>
+          </tbody>
+        </table>
+      </section>
       <section>
         <h3>Movement</h3>
         <p>
@@ -217,6 +259,7 @@ class AdventureHelp extends Component {
     </div>`;
     t.querySelector('.close').addEventListener('click', e => this.unmount());
     this.append(t);
+    t.insertBefore(this.options.render(), t.firstElementChild);
     return this.tags.outer;
   }
 }

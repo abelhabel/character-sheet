@@ -2,7 +2,7 @@ class Slider {
   constructor(name, initial, state, key, hideLabel) {
     this.name = name;
     this.hideLabel = hideLabel;
-    this.value = initial || 50;
+    this.value = typeof initial == 'number' ? initial : 50;
     this.width = 200;
     this.buttonWidth = 64;
     this.mouseRange = [this.buttonWidth/2, this.width - this.buttonWidth/2];
@@ -34,7 +34,7 @@ class Slider {
     let x = Math.min(e.offsetX, this.width);
     x = Math.max(x, 0);
     x = this.translateRange(x, [0, this.width], this.mouseRange);
-    this.value = this.translateRange(x, this.mouseRange, [0, 100]);
+    this.value = Number(this.translateRange(x, this.mouseRange, [0, 100]).toFixed(2));
     this.state[this.stateKey] = this.v;
     this.update();
   }
@@ -90,6 +90,8 @@ class Slider {
         style='
           width: ${this.width}px;
           background-color: blue;
+          border-left: 25px solid gray;
+          border-right: 25px solid gray;
         '
       >
         <button

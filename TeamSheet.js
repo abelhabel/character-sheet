@@ -33,7 +33,6 @@ class TeamSheet extends Component {
   }
 
   render() {
-    console.log(this.team)
     this.clear();
     this.addStyle(Monster.csStyle);
     this.addStyle(TeamSheet.style);

@@ -77,6 +77,8 @@ soundNames.readFileNames().then(fileNames => {
 })
 .catch(err => console.log(err))
 
+loadFile('AdventureOptions.js');
+loadFile('Keyboard.js');
 loadFile('AdventureHelp.js');
 loadFile('PrimeVessel.js');
 loadFile('Equipment.js');

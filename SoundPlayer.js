@@ -31,6 +31,14 @@ class SoundPlayer {
     this.noSound = true;
   }
 
+  updateVolume(v) {
+    console.log('updating sound Volume', v)
+    this.volume = v;
+    Object.keys(this.audio).forEach(key => {
+      this.audio[key].volume = this.volume;
+    })
+  }
+
   fadeOut(name) {
     let src = this.sounds[name];
     let a = this.audio[src];
@@ -73,7 +81,6 @@ class SoundPlayer {
     this.audio[src] = a;
     if(!this.audio[src].paused) {
       let end = () => {
-        console.log(event, 'ended')
         this.play(event, sounds, preventDefault);
         this.audio[src].removeEventListener('ended', end);
       }

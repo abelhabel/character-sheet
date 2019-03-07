@@ -77,6 +77,11 @@ gameModes.loadAdventure = function(lobby, ui) {
     saves.forEach(s => {
       console.log(s)
       let a = adventures.find(a => a.id == s.name);
+      if(!a) {
+        ui.clear('adventure');
+        ui.show('lobby');
+        return;
+      }
       let c = new Component(false, 'load-list');
       let t = html`<div class='save-file'>
         <div>${a.name}</div>
