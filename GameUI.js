@@ -7,6 +7,8 @@ const MonsterCard = require('MonsterCard.js');
 const Match = require('Match.js');
 const Gauntlet = require('Gauntlet.js');
 const UnitPlacement = require('UnitPlacement.js');
+const SoundPlayer = require('SoundPlayer.js');
+const sp = new SoundPlayer();
 const icons = require('icons.js');
 const teamSelect = new Component(false, 'team-select');
 const match = new Component(false, 'match');
@@ -227,6 +229,12 @@ class GameUI extends Component {
 
   show(name) {
     this.inView = this.views.find(v => v.name == name);
+    if(name == 'lobby') {
+      sp.play('lobby_theme');
+      sp.fadeIn('lobby_theme');
+    } else {
+      sp.fadeOut('lobby_theme');
+    }
     this.update();
   }
 

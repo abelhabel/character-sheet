@@ -1,6 +1,7 @@
 var abilities = require('abilities.js');
 var monsters = require('monsters.js');
 var animations = require('animations.js');
+var sounds = require('sounds.js');
 function isEffect(a) {
   return a.bio.type == 'active' && (a.stats.source == 'blessing' || a.stats.source == 'curse');
 }
@@ -92,6 +93,23 @@ var tpl = {
           exportAs: 'description',
           type: 'text',
           initial: 'No description added yet.'
+        }
+      ]
+    },
+    {
+      name: "Sounds",
+      exportAs: 'sounds',
+      items: [
+        {
+          name: 'Cast',
+          type: 'select',
+          values: ['', ...sounds.sort((a, b) => a < b ? -1 : 1)],
+          exportAs: 'cast',
+          onSelect(val) {
+            let a = new Audio();
+            a.src = 'sounds/'+val;
+            a.play();
+          }
         }
       ]
     },

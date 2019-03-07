@@ -26,7 +26,7 @@ class Ability {
       description: t.bio.description || "No description has been added to this ability."
     };
     this.sounds = {
-
+      cast: t.sounds ? t.sounds.cast : ''
     };
     this.stats = {
       shape: t.stats.shape,

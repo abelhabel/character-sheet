@@ -15,6 +15,8 @@ const Sprite = require('Sprite.js');
 const Scroll = require('Scroll.js');
 const AI = require('AI.js');
 const FixedList = require('FixedList.js');
+const MonsterCard = require('MonsterCard.js');
+console.log('MonsterCard', MonsterCard)
 class StatBonus {
   constructor(owner) {
     this.owner = owner;
@@ -248,6 +250,10 @@ class Monster {
         }
       }
     };
+  }
+
+  get card() {
+    return new MonsterCard(this);
   }
 
   get upgradePoints() {

@@ -32,6 +32,7 @@ const selectSprite = new Sprite(selectedIcon.bio.sprite);
 const tileTargetSprite = new Sprite(tileTargetIcon.bio.sprite);
 const goldSprite = new Sprite(goldIcon.bio.sprite);
 const interactSprite = new Sprite(interactIcon.bio.sprite);
+const sp = new SoundPlayer();
 class Dialog extends Component {
   constructor(text) {
     super(true);
@@ -110,6 +111,7 @@ class Record {
     quest.takeCondition(adventure);
     quest.giveReward(adventure);
     this.questFinished = true;
+    sp.play('quest_complete');
   }
 
   shouldDraw(item) {
@@ -184,7 +186,6 @@ class Adventure extends Component {
     };
     this.player = null;
     this.pp = {x: 0, y: 0};
-    this.sp = new SoundPlayer();
   }
 
   nextPlane() {
@@ -1020,7 +1021,7 @@ class Adventure extends Component {
 
     if(item.adventure.action == 'give gold') {
       this.addGold(item.adventure.actionAmount);
-      this.sp.play('gold');
+      sp.play('gold');
       obstacles.items.remove(mp.x, mp.y);
       record.removeObstacle();
     }
@@ -1042,11 +1043,11 @@ class Adventure extends Component {
       this.player.movesLeft += item.adventure.actionAmount;
     }
     if(item.adventure.action == 'open tavern') {
-      this.sp.play('open_book');
+      sp.play('open_book');
       this.trigger('open tavern');
     }
     if(item.adventure.action == 'open armory') {
-      this.sp.play('open_book');
+      sp.play('open_book');
       this.trigger('open armory');
     }
 
@@ -1110,7 +1111,7 @@ class Adventure extends Component {
       return false;
     })
     this.append(dtag);
-    this.sp.play('open_book');
+    sp.play('open_book');
   }
 
   showMessage(item, record) {
@@ -1132,7 +1133,7 @@ class Adventure extends Component {
         dtag.parentNode.removeChild(dtag);
       })
       this.append(dtag);
-      this.sp.play('open_book');
+      sp.play('open_book');
     }
   }
 
@@ -1166,7 +1167,7 @@ class Adventure extends Component {
         return false;
       })
       this.append(dtag);
-      this.sp.play('open_book');
+      sp.play('open_book');
     } else {
       let dtag = html`<div class='message-box'>
       <p>
@@ -1187,7 +1188,7 @@ class Adventure extends Component {
         return false;
       })
       this.append(dtag);
-      this.sp.play('open_book');
+      sp.play('open_book');
 
     }
   }
@@ -1265,7 +1266,7 @@ class Adventure extends Component {
           return done(resolve);
         }
         this.movePlayer(p[0], p[1]);
-        this.sp.play('move');
+        sp.play('move');
         // this.draw(monsters);
         if(!path.length) {
           done(resolve);
@@ -1310,6 +1311,18 @@ class Adventure extends Component {
     a.style.top = y + 'px';
     this.pans.x = x;
     this.pans.y = y;
+  }
+
+  start() {
+    let playTheme = () => {
+      sp.play('grass_theme').addEventListener('ended', () => setTimeout(playTheme, 10000));
+    };
+    let playEnv = () => {
+      sp.play('park').addEventListener('ended', playEnv);
+
+    }
+    playTheme();
+    playEnv();
   }
 
   render() {

@@ -1091,6 +1091,7 @@ class Battle {
   }
 
   openSpriteSheet(item) {
+    console.log(item)
     if(this.images[item.bio.sprite.spritesheet]) {
       return Promise.reolve(this.images[item.bio.sprite.spritesheet]);
     }
@@ -1916,6 +1917,7 @@ class Battle {
 
   useAbility(a, positions, ability, triggered, triggeredPower, triggeredBy, fromEffect) {
     return new Promise((resolve, reject) => {
+      this.sp.play('cast', ability.sounds);
       ability = ability || a.selectedAbility;
       let actions = positions.map(b => {
         a.setOrientation(b.x);

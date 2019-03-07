@@ -5,6 +5,7 @@ const equipments = require('equipments.js');
 const Monster = require('Monster.js');
 const TeamSheet = require('TeamSheet.js');
 const Component = require('Component.js');
+const MonsterCard = require('MonsterCard.js');
 const portalTemplate = monsters.find(m => m.bio.name == 'Portal');
 class TeamUnit {
   constructor(suuid, templateId, stacks, x, y, equipment, abilities) {
@@ -208,11 +209,9 @@ class Team {
   }
 
   renderUnits() {
-    let t = new Component(false, 'team-units quick-view');
-    this.monsters.forEach(m => {
-      m.sprite.drawStack(m.stacks);
-      t.append(m.canvas);
-    })
+    let t = new Component(true, 'team-units quick-view');
+    t.addStyle(html`<style>${MonsterCard.style}</style>`);
+    this.monsters.forEach(m => m.card.render(t.shadow));
     return t.tags.outer;
   }
 }

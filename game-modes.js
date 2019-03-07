@@ -252,6 +252,7 @@ gameModes.adventure = function(lobby, ui) {
       a.addPlayer(player);
       saveFile && a.loadPlayer();
       ui.append(a.render());
+      a.start();
       a.centerOnPlayer();
       a.on('battle', (enemyTeam, tile, autoResolve) => {
         let aiteam = Team.create(enemyTeam.template);
