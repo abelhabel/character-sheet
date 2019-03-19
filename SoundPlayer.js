@@ -1,6 +1,6 @@
 class SoundPlayer {
   constructor() {
-    this.volume = 0.3;
+    this.volume = 0;
     this.noSound = false;
     this.sounds = {
       spell: 'spell.wav',

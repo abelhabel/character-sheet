@@ -94,7 +94,16 @@ var tpl = {
           exportAs: 'action',
           initial: '',
           type: 'select',
-          values: ['', 'give gold', 'give item', 'open tavern', 'give movement' , 'open armory']
+          values: ['', 'give gold', 'give item', 'open tavern',
+          'give movement' , 'open armory', 'open ability trainer',
+          'give ability'
+          ]
+        },
+        {
+          name: 'Tags',
+          exportAs: 'tags',
+          initial: '',
+          type: 'text'
         },
         {
           name: 'Item',

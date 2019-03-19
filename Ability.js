@@ -5,6 +5,7 @@ const Animation = require('Animation.js');
 const CompositeSprite = require('CompositeSprite.js');
 const Sprite = require('Sprite.js');
 const AbilityEffect = require('AbilityEffect.js');
+const AbilityCard = require('AbilityCard.js');
 const nextId = (function() {
   var id = 0;
   return function() {
@@ -72,6 +73,10 @@ class Ability {
     }
     this.effectSprite = new AbilityEffect({ability: this}).sprite;
     this.baseSprite = new Sprite(this.bio.sprite);
+  }
+
+  get card() {
+    return new AbilityCard(this);
   }
 
   minPower(d) {

@@ -111,9 +111,9 @@ class Inventory extends GridBox {
     this.slots.forEach(s => t.appendChild(this.renderSlot(s)));
     this.append(t);
     this.append(d);
-    let pv = new PrimeVessel(this.list._filled());
-    pv.on('crafted ability', (tpl, items) => this.trigger('crafted ability', tpl, items));
-    this.append(pv.render());
+    // let pv = new PrimeVessel(this.list._filled());
+    // pv.on('crafted ability', (tpl, items) => this.trigger('crafted ability', tpl, items));
+    // this.append(pv.render());
     return this.tags.outer;
   }
 

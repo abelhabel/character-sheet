@@ -77,6 +77,7 @@ soundNames.readFileNames().then(fileNames => {
 })
 .catch(err => console.log(err))
 
+loadFile('AbilityCard.js');
 loadFile('AdventureOptions.js');
 loadFile('Keyboard.js');
 loadFile('AdventureHelp.js');

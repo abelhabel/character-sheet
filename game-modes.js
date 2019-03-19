@@ -18,6 +18,8 @@ const Component = require('Component.js');
 const Equipment = require('Equipment.js');
 const Armory = require('Armory.js');
 const Inventory = require('Inventory.js');
+const Ability = require('Ability.js');
+const AbilityCard = require('AbilityCard.js');
 const guid = require('guid.js');
 const abilities = require('abilities.js');
 const equipment = require('equipments.js');
@@ -113,6 +115,18 @@ gameModes.adventure = function(lobby, ui) {
     let tpl = adventures.find(a => a.id == id);
     let a = Adventure.create(tpl);
     saveFile && a.load();
+
+    a.on('open ability trainer', () => {
+      let cards = [];
+      abilities.forEach(t => {
+        let ab = new Ability(t);
+        cards.push(ab.card.render());
+      })
+      let list = new CardList(cards);
+      list.addStyle(AbilityCard.style);
+      ui.show('team select');
+      ui.append(list.render());
+    })
 
     a.on('open tavern', () => {
       ui.show('team select');

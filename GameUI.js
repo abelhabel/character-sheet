@@ -143,6 +143,9 @@ class GameUI extends Component {
         font-size: 0.8em;
         font-weight: 400;
       }
+      .ability-card {
+        display: inline-block;
+      }
       ${MonsterCard.style}
     </style>`;
   }

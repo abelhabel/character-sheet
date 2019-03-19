@@ -27,6 +27,7 @@ class Terrain {
       charges: t.adventure && t.adventure.charges || 0,
       chargeActivation: t.adventure && t.adventure.chargeActivation || '',
       description: t.adventure && t.adventure.description || '',
+      tags: {},
     };
     this.inventory = {
       consumable: t.inventory && t.inventory.consumable,
@@ -38,6 +39,10 @@ class Terrain {
     this.sprites = this.bio.sprite.map(s => new Sprite(s));
     this._sprite = new CompositeSprite(this.bio.sprite);
     this.adventureItemCount = 0;
+    t.adventure && t.adventure.tags && t.adventure.tags.split(',').forEach(keyval => {
+      let kv = keyval.split(':');
+      this.adventure.tags[kv[0]] = kv[1];
+    })
   }
 
   static create(templateId) {

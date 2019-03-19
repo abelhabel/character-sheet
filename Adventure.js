@@ -11,6 +11,7 @@ const AdventureMenu = require('AdventureMenu.js');
 const AdventureMessage = require('AdventureMessage.js');
 const Scroll = require('Scroll.js');
 const Ability = require('Ability.js');
+const AbilityCard = require('AbilityCard.js');
 const Quest = require('Quest.js');
 const Equipment = require('Equipment.js');
 const AdventureHelp = require('AdventureHelp.js');
@@ -125,6 +126,7 @@ class Record {
   }
 
   isConsumed(terrain) {
+    if(!terrain.adventure.charges) return false;
     return this.adventureItemCount >= terrain.adventure.charges * terrain.adventure.actionAmount;
   }
 
@@ -575,7 +577,12 @@ class Adventure extends Component {
         white-space: pre-line;
         text-align: right;
       }
-
+      .message-box .title {
+        text-align: left;
+      }
+      .message-box .content {
+        text-align: center;
+      }
       .message-box p {
         margin-top: 0px;
         text-align: justify;
@@ -1057,8 +1064,11 @@ class Adventure extends Component {
     if(!item) return;
     if(item.adventure.event != 'click') return;
     if(obstacles.items.distance(this.pp.x, this.pp.y, mp.x, mp.y) > 1) return;
-
-    this.showMessage(item, record);
+    let message;
+    if(item.adventure.description) {
+      message = this.showMessage(item, record);
+    }
+    if(record.isConsumed(item)) return;
 
     if(item.adventure.action == 'give gold') {
       this.addGold(item.adventure.actionAmount);
@@ -1085,12 +1095,43 @@ class Adventure extends Component {
     }
     if(item.adventure.action == 'open tavern') {
       sp.play('open_book');
-      this.trigger('open tavern');
+      this.trigger('open tavern', item);
     }
     if(item.adventure.action == 'open armory') {
       sp.play('open_book');
-      this.trigger('open armory');
+      this.trigger('open armory', item);
     }
+    if(item.adventure.action == 'open ability trainer') {
+      sp.play('open_book');
+      this.trigger('open ability trainer', item);
+    }
+    if(item.adventure.action == 'give ability') {
+      let _abilities = abilities.filter(a => {
+        let f = true;
+        if(item.adventure.tags.type) {
+          f = f && item.adventure.tags.type == a.bio.type;
+        }
+        if(item.adventure.tags.tier) {
+          let t = item.adventure.tags.tier.split('-');
+          f = f && a.bio.tier >= t[0] && a.bio.tier <= t[1];
+        }
+        if(item.adventure.tags.source) {
+          f = f && item.adventure.tags.source == a.stats.source;
+        }
+        if(item.adventure.tags.element) {
+          f = f && item.adventure.tags.element == a.stats.element;
+        }
+        return f;
+      });
+      let rand = __roll(0, _abilities.length-1);
+      let ability = _abilities[rand];
+      this.player.team.leaders[0].addAbility(ability.id);
+      message.on('close', () => {
+        let c = this.popupComponent('Learned new Ability', new AbilityCard(new Ability(ability)));
+        c.addStyle(AbilityCard.style);
+      })
+    }
+
 
     record.consume(item);
     if(!record.shouldDraw(item)) {
@@ -1155,27 +1196,47 @@ class Adventure extends Component {
     sp.play('open_book');
   }
 
+  popupComponent(t, comp) {
+    let c = new Component(false, 'message-box');
+    let dtag = html`<div>
+      <div class='title'>${t}</div>
+      <p class='content'></p>
+      <button>Close</button>
+    </div>`;
+    dtag.querySelector('p').appendChild(comp.render());
+    dtag.querySelector('button').addEventListener('click', () => {
+      c.trigger('close');
+      c.unmount();
+    })
+    c.append(dtag);
+    this.append(c.tags.outer);
+    sp.play('open_book');
+    return c;
+  }
+
   showMessage(item, record) {
-    if(item.adventure.description) {
-      let t, n;
-      if(record.isConsumed(item)) {
-        t = `${item.bio.name} can't offer anything else at this point.`;
-        n = '';
-      } else {
-        t = item.adventure.description;
-        n = `+${item.adventure.actionAmount} ${item.adventureItem.bio.name}`;
-      }
-      let dtag = html`<div class='message-box'>
-        <p>${t}</p>
-        <span>${n}</span>
-        <button>Close</button>
-      </div>`;
-      dtag.querySelector('button').addEventListener('click', () => {
-        dtag.parentNode.removeChild(dtag);
-      })
-      this.append(dtag);
-      sp.play('open_book');
+    let t, n;
+    let c = new Component(false, 'message-box');
+    if(record.isConsumed(item)) {
+      t = `${item.bio.name} can't offer anything else at this point.`;
+      n = '';
+    } else {
+      t = item.adventure.description;
+      n = `+${item.adventure.actionAmount} ${item.adventureItem.bio.name}`;
     }
+    let dtag = html`<div>
+      <p>${t}</p>
+      <span>${n}</span>
+      <button>Close</button>
+    </div>`;
+    dtag.querySelector('button').addEventListener('click', () => {
+      c.trigger('close');
+      c.unmount();
+    })
+    c.append(dtag);
+    this.append(c.tags.outer);
+    sp.play('open_book');
+    return c;
   }
 
   showQuest(quest, record) {
