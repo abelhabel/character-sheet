@@ -65,6 +65,36 @@ function addToolTip(tag, tip) {
   })
 }
 
+function resizable(tag) {
+  let d = 15;
+  let isDown = false
+  let sy = 0;
+  let sh = 0;
+  let move = function(e) {
+    let ydiff = tag.offsetHeight - e.offsetY;
+    if(e.offsetY < d || isDown) {
+      tag.style.cursor = 'n-resize';
+    } else {
+      tag.style.cursor = 'inherit';
+    }
+    if(isDown) {
+      tag.style.height = sh + (sy - e.pageY) + 'px';
+    }
+  };
+
+  let down = function(e) {
+    if(e.offsetY > d) return;
+    sy = e.pageY;
+    sh = tag.offsetHeight;
+    isDown = true;
+  };
+  let up = function(e) {
+    isDown = false;
+  };
+  tag.addEventListener('mousedown', down);
+  tag.addEventListener('mouseup', up);
+  tag.addEventListener('mousemove', move);
+}
 
 class Module {
   constructor(name) {

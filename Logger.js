@@ -22,28 +22,28 @@ class Logger {
     var oy = 0;
     this.container = document.createElement('div');
     this.container.appendChild(min);
-    this.container.addEventListener('mousedown', (e) => {
-      if(e.target == min) return;
-      sx = e.screenX;
-      sy = e.screenY;
-      ox = e.offsetX;
-      oy = e.offsetY;
-      state = 'down';
-    });
-    window.addEventListener('mousemove', (e) => {
-      // if(e.target != this.container) return;
-      if(state != 'down') return;
-      var x = e.x;
-      var y = e.y;
-      this.container.style.left = x - ox + 'px';
-      this.container.style.top = y - oy + 'px';
-    });
-    this.container.addEventListener('mouseup', (e) => {
-      state = 'up';
-    });
-    this.container.addEventListener('mouseleave', (e) => {
-      // state = 'out';
-    });
+    // this.container.addEventListener('mousedown', (e) => {
+    //   if(e.target == min) return;
+    //   sx = e.screenX;
+    //   sy = e.screenY;
+    //   ox = e.offsetX;
+    //   oy = e.offsetY;
+    //   state = 'down';
+    // });
+    // window.addEventListener('mousemove', (e) => {
+    //   // if(e.target != this.container) return;
+    //   if(state != 'down') return;
+    //   var x = e.x;
+    //   var y = e.y;
+    //   this.container.style.left = x - ox + 'px';
+    //   this.container.style.top = y - oy + 'px';
+    // });
+    // this.container.addEventListener('mouseup', (e) => {
+    //   state = 'up';
+    // });
+    // this.container.addEventListener('mouseleave', (e) => {
+    //   // state = 'out';
+    // });
     Object.assign(this.container.style, {
       position: 'fixed',
       width: '600px',
@@ -60,7 +60,8 @@ class Logger {
       padding: '2px 4px'
     })
 
-    this.log('Logger started')
+    this.log('Logger started');
+    resizable(this.container);
     document.body.appendChild(this.container);
     this.redraw();
   }
