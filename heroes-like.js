@@ -11,6 +11,14 @@ var tpl = {
       exportAs: 'bio',
       items: [
         {
+          name: "Tier",
+          type: "increment",
+          description: "Power level",
+          initial: 1,
+          range: [1, 5],
+          exportAs: 'tier',
+        },
+        {
           name: 'Sprite',
           type: 'spritesheet',
           exportAs: 'sprite',
@@ -65,6 +73,17 @@ var tpl = {
           exportAs: 'maxStacks',
         }
 
+      ]
+    },
+    {
+      name: "AI",
+      exportAs: 'ai',
+      items: [
+        {
+          name: 'Behavior',
+          type: 'text',
+          exportAs: 'behavior'
+        },
       ]
     },
     {

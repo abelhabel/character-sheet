@@ -19,6 +19,7 @@ const teamView = new Component(false, 'team-view');
 const gauntlet = new Component(false, 'gauntlet');
 const adventure = new Component(false, 'adventure');
 const defeat = new Component(false, 'adventure-defeat');
+const levelUp = new Component(false, 'level-up');
 defeat.tags.outer.addEventListener('click', e => defeat.trigger('done'));
 defeat.append(html`<div class='message'>
   Your whole army has been wiped out by the enemy.
@@ -169,6 +170,7 @@ class GameUI extends Component {
       new View('gauntlet', gauntlet),
       new View('adventure', adventure),
       new View('adventure defeat', defeat),
+      new View('level up', levelUp)
     ];
     this.inView = null;
     this.cursor = new Sprite(icons.find(i => i.bio.name == 'Ability Cursor').bio.sprite);

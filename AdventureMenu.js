@@ -15,6 +15,7 @@ const _cs = icons.find(ic => ic.bio.name == 'Character Sheet');
 const _bowl = icons.find(ic => ic.bio.name == 'Bowl');
 const _equipment = icons.find(ic => ic.bio.name == 'Equipment');
 const _help = icons.find(ic => ic.bio.name == 'Help');
+const _levelUp = icons.find(ic => ic.bio.name == 'Level Up');
 const sprites = {
   inventory: new Sprite(_inventory.bio.sprite),
   time: new Sprite(_wait.bio.sprite),
@@ -24,6 +25,7 @@ const sprites = {
   craft: new Sprite(_bowl.bio.sprite),
   equipment: new Sprite(_equipment.bio.sprite),
   help: new Sprite(_help.bio.sprite),
+  levelUp: new Sprite(_levelUp.bio.sprite)
 };
 class AdventureMenu extends Component {
   constructor() {

@@ -4,7 +4,6 @@ class Keyboard {
     this.events = events;
     let keys = Object.keys(this.events);
     this.fn = (e) => {
-      console.log('keyboard', e.key, this.events)
       if(!~keys.indexOf(e.key)) return;
       this.events[e.key](e);
     }

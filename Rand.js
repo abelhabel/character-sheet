@@ -205,6 +205,10 @@ class Rand {
     this.next();
   }
 
+	random() {
+		return this.generator.random();
+	}
+
   next() {
     this.number = this.generator.random();
     return this;

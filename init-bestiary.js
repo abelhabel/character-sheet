@@ -98,11 +98,17 @@ Module.onLoad(['DungeonCrawl_ProjectUtumnoTileset.png', 'sheet_of_old_paper.png'
   const Sprite = require('Sprite.js');
   const icons = require('icons.js');
   const abilities = require('abilities.js');
-  const monsters = require('monsters.js').map(m => {
+  var monsters = require('monsters.js').map(m => {
     let s = new Sprite(m.bio.sprite);
     m.canvas = s.canvas;
     return new Monster(m)
   });
+  monsters.sort((a, b) => {
+    if(a.tier == b.tier) return 0;
+    if(a.tier < b.tier) return -1;
+    return 1;
+  })
+  monsters = monsters.filter(m => !m.bio.leader)
   class Card {
     constructor(a) {
       this.a = a;
@@ -125,6 +131,7 @@ Module.onLoad(['DungeonCrawl_ProjectUtumnoTileset.png', 'sheet_of_old_paper.png'
       >
         <span class='image'></span>
         <b>${n}</b>${e}${s}
+        <div>${this.a.tier}</div>
       </div>`;
       tag.querySelector('.image').appendChild(this.a.canvas.clone());
       return tag;

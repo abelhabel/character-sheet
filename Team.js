@@ -144,6 +144,10 @@ class Team {
     unit.upgradeStats(stats, spent);
   }
 
+  createTemplate() {
+
+  }
+
   static create(team) {
     let t = new Team(team.name, team.units, team.max);
     t.id = team.id;
@@ -153,6 +157,16 @@ class Team {
 
   static fromMonsters(name, monsters) {
     let t = new Team(name);
+    t.template = {
+      name: name,
+      units: monsters.map(m => {
+        return {
+          stacks: m.stacks,
+          templateId: m.template.id
+        }
+      }),
+      max: 600,
+    };
     t.units.push.apply(t.units, monsters.map(m => new TeamUnit(m.suuid, m.template.id, m.stacks, m.x, m.y)));
     return t;
   }

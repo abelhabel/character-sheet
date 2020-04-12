@@ -284,15 +284,16 @@ class Equipment {
     return this.sprite.canvas;
   }
 
-  renderStoreItem() {
+  renderStoreItem(sell) {
     let c = new Component(false, 'store-item');
     let stats = this.activeStatsText;
+    let cost = sell ? Math.ceil(this.bio.cost / 10) : this.bio.cost;
     let t = html`<div class='item'>
       <div class='image'></div>
       <div>
         <div class='name'>${this.bio.name}</div>
         <div class='stats'>${stats}</div>
-        <div class=''>${this.bio.cost} gold</div>
+        <div class=''>${cost} gold</div>
       </div>
     </div>`;
     t.querySelector('.image').appendChild(this.sprite.canvas.clone());

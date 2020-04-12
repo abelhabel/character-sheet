@@ -111,10 +111,11 @@ gameModes.loadAdventure = function(lobby, ui) {
 
 gameModes.adventure = function(lobby, ui) {
   lobby.on('adventure', (saveFile) => {
+    console.log('adventure', saveFile);
     let id = saveFile ? saveFile.name : '1a1f19de-3da3-e850-3815-0a3bcb0c218f';
     let tpl = adventures.find(a => a.id == id);
-    let a = Adventure.create(tpl);
-    saveFile && a.load();
+    console.log('create adventure')
+    let a = Adventure.create(tpl, saveFile, true);
 
     a.on('open ability trainer', () => {
       let cards = [];
@@ -146,7 +147,8 @@ gameModes.adventure = function(lobby, ui) {
     });
     a.on('open armory', () => {
       ui.show('team select');
-      let armory = new Armory(equipment.map(e => new Equipment(e)), a.player.gold);
+      let eqt = a.player.inventory.equipment;
+      let armory = new Armory(equipment.map(e => new Equipment(e)), eqt, a.player.gold);
       armory.on('close', () => {
         ui.clear('team select');
         ui.show('adventure');
@@ -154,14 +156,17 @@ gameModes.adventure = function(lobby, ui) {
       armory.on('done', () => {
         a.addGold(-armory.spent);
         a.updateResources();
+        eqt.forEach(item => a.player.inventory.remove(item));
         armory.picked.forEach(item => a.player.inventory.add(item));
         ui.clear('team select');
         ui.show('adventure');
       })
       ui.append(armory.render());
     });
+    a.on('level up', () => {
+      ui.show('team select');
+    })
     var onDone = (team) => {
-      console.log(team);
       ui.clear('team select');
       ui.show('adventure');
       window.adventure = a;
@@ -174,13 +179,68 @@ gameModes.adventure = function(lobby, ui) {
         inventory: new Inventory(),
         quests: new QuestLog(),
         crafting: new Crafting(),
+        skills: [
+          {
+            name: 'mechanics',
+            value: 2
+          },
+          {
+            name: 'exploration',
+            value: 2
+          },
+          {
+            name: 'mythology',
+            value: 2
+          },
+          {
+            name: 'divinity',
+            value: 2
+          },
+          {
+            name: 'necromancy',
+            value: 2
+          },
+          {
+            name: 'demonology',
+            value: 2
+          },
+          {
+            name: 'physiology',
+            value: 2
+          },
+          {
+            name: 'trickery',
+            value: 2
+          },
+          {
+            name: 'mythology',
+            value: 2
+          },
+          {
+            name: 'strategy',
+            value: 2
+          },
+          {
+            name: 'tactics',
+            value: 2
+          },
+        ],
         team,
         addXP(xp) {
           player.xp += xp;
           team.leaders.forEach(l => {
             l.upgradePointsLeft = Math.floor(player.xp / 10);
+            if(l.upgradePointsLeft > 1) {
+              a.trigger()
+            }
             logger.log(`Player gained ${xp} XP.`);
           })
+        },
+        checkLevel(check) {
+          if(check.type == 'skill') {
+            let skill = this.skills.find(s => s.name == check.subtype);
+            return skill ? skill.value : 0;
+          }
         }
       };
 
@@ -198,21 +258,18 @@ gameModes.adventure = function(lobby, ui) {
       });
 
       player.crafting.on('crafting success', recipe => {
-        console.log('recipe', recipe)
         recipe.takeResult(a);
         player.crafting.render();
         a.updateResources();
       });
 
       player.inventory.on('equipment changed', items => {
-        console.log('equipment changes', items);
         let leader = team.leaders[0];
         if(!leader) return;
         leader.equipment = items.map(i => i.item.template.id);
       })
 
       player.inventory.on('use inventory item', item => {
-        console.log('use inventory item', item)
         if(item.item instanceof Equipment) return;
         if(item.item.inventory.action == 'give ability') {
           let t = html`<div style='position:fixed;z-index: 4000; top:50%;left:50%;transform:translate(-50%,-50%);background-image: url(sheet_of_old_paper.png);padding:20px;'></div>`;

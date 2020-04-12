@@ -16,6 +16,12 @@ function sortOnMight(a, b) {
   if(g == h) return 0;
   return g > h ? -1 : 1;
 }
+function sortOnWeakness(a, b) {
+  let g = a.totalStat('defence');
+  let h = b.totalStat('defence');
+  if(g == h) return 0;
+  return g < h ? -1 : 1;
+}
 function sortOnAbilityMight(a, b) {
   let g = a.owner.abilityMight(a);
   let h = b.owner.abilityMight(b);
@@ -30,15 +36,18 @@ class AI {
   }
 
   act(Action) {
+    if(this.actor.AI.behavior) {
+      return this.script(Action);
+    }
     return this['routine' + this.level](Action);
   }
 
-  highMight(t) {
+  highMight(t, ability) {
     let {actor, battle} = this;
-    return actor.damaging.sort((a, b) => {
+    let a = ability || actor.damaging.sort((a, b) => {
       return a.might > b.might ? -1 : 1;
     })
-    .find(a => {
+    return a.find(a => {
       if(!actor.canUseAbility(a)) return;
       if(a.stats.element == 'vitality' && t.bio.family != 'Undead') return;
       if(a.stats.element == 'rot' && t.bio.family == 'Undead') return;
@@ -70,6 +79,20 @@ class AI {
     .filter(m => m.alive)
     .sort(sortOn || sortOnActorRange);
 
+  }
+
+  allies(sortOn) {
+    let {actor, battle} = this;
+    return battle.getAllyTeam(actor.team)
+    .filter(m => m.alive)
+    .sort(sortOn || sortOnActorRange);
+
+  }
+
+  aliveActors(sortOn) {
+    return this.battle.tr.actors
+    .filter(m => m.alive)
+    .sort(sortOn || sortOnActorRange);
   }
 
   closestEmpty(tile) {
@@ -114,6 +137,128 @@ class AI {
     var path = battle.grid.path(actor.x, actor.y, p.x, p.y);
     path.shift();
     return path.shift();
+  }
+
+  script(Action) {
+    console.log('scripted actions')
+    let {actor, battle} = this;
+    let distances = {
+      adjacent: 1,
+      nearby: 3,
+      afar: 10,
+    }
+    let target = null;
+    console.log('SCRIPTS', actor.aiScript)
+    let conditionTiles = [];
+    let script = actor.aiScript.find(s => {
+      console.log(s)
+      // find if ability is usable
+      if(s.act.ability && !actor.canUseAbility(s.act.ability)) return;
+      // find if condition is met
+      let met = s.cond.filter(c => {
+        let filtered = [];
+        let met = false;
+        if(c.distance) {
+          let d = distances[c.distance];
+          // ... based on distance
+          let tiles = battle.grid.around(actor.x, actor.y, d);
+          if(c.target == 'enemy') {
+            filtered = tiles.filter(t => {
+              return t.item instanceof actor.constructor && t.item.team != actor.team
+            });
+          } else
+          if(c.target == 'ally') {
+            filtered = tiles.filter(t => {
+              return t.item instanceof actor.constructor && t.item.team == actor.team;
+            })
+          } else {
+            filtered = tiles.filter(t => t.item instanceof actor.constructor);
+          }
+          if(c.neg) {
+            met = !filtered.length;
+          } else {
+            met = !!filtered.length;
+          }
+        }
+        if(c.state == 'movement') {
+          if(c.neg && !actor.canMove) {
+            met = true;
+          }
+          if(!c.neg && actor.canMove) {
+            met = false;
+          }
+        } else
+        if(c.state == 'hurt') {
+          filtered = filtered.filter(t => t.item instanceof actor.constructor && (s.cond.neg ? !t.item.hurt : t.item.hurt));
+          met = !!filtered.length
+        }
+        if(met) {
+          conditionTiles = filtered;
+        }
+        return met;
+
+      })
+      return met.length == s.cond.length;
+    })
+    console.log("SCRIPT", script)
+    console.log('conditionTiles', conditionTiles)
+    if(script) {
+      let sorting = sortOnMight;
+      switch(script.act.targetType) {
+        case 'weakest':
+          sorting = sortOnWeakness;
+          break;
+        case 'mightiest':
+          sorting = sortOnMight;
+          break;
+        default:
+          sorting = sortOnMight;
+      }
+      let actors = [];
+      switch(script.act.target) {
+        case 'it':
+          actors = conditionTiles.map(t => t.item);
+          break;
+        case 'target':
+          actors = this.aliveActors();
+          break;
+        case 'ally':
+          actors = this.allies();
+          break;
+        case 'enemy':
+          actors = this.enemies();
+          break;
+        default:
+          actors = this.aliveActors();
+      }
+      let potentialTargets = actors.sort(sorting);
+      let inRange = potentialTargets.filter(e => battle.inRange(actor, e, script.act.ability));
+      console.log('potentialTargets', potentialTargets)
+      if(!inRange.length) {
+        return this.moveTowards(potentialTargets[0], Action);
+      } else
+      if(script.act.ability) {
+        return battle.addAction(new Action('use ability', [inRange[0]], script.act.ability.template.id));
+      } else
+      if(script.act.move) {
+        return this.moveTowards([inRange[0]], Action);
+      }
+    }
+
+    return this['routine' + this.level](Action);
+  }
+
+  moveTowards(b, Action) {
+    let {actor, battle} = this;
+    if(actor.canMove) {
+      var l = this.moveCloser(b);
+      if(!l) {
+        return battle.addAction(new Action('defend'));
+      }
+      return battle.addAction(new Action('move', [{x: l[0], y: l[1]}]))
+    } else {
+      return battle.addAction(new Action('defend'));
+    }
   }
 
   routine1(Action) {

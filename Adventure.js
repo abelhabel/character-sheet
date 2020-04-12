@@ -1,4 +1,5 @@
 const guid = require('guid.js');
+const Rand = require('Rand.js');
 const Component = require('Component.js');
 const Canvas = require('Canvas.js');
 const Sprite = require('Sprite.js');
@@ -13,9 +14,11 @@ const Scroll = require('Scroll.js');
 const Ability = require('Ability.js');
 const AbilityCard = require('AbilityCard.js');
 const Quest = require('Quest.js');
+const Check = require('Check.js');
 const Equipment = require('Equipment.js');
 const AdventureHelp = require('AdventureHelp.js');
 const Keyboard = require('Keyboard.js');
+const Maze = require('Maze.js');
 const PL = require('PositionList2d.js');
 const storage = require('storage.js');
 const icons = require('icons.js');
@@ -24,6 +27,8 @@ const terrains = require('terrains.js');
 const equipments = require('equipments.js');
 const teams = require('teams.js');
 const interactIcon = icons.find(i => i.bio.name == 'Interact');
+const portingIcon = icons.find(i => i.bio.name == 'Porting');
+const checkIcon = icons.find(i => i.bio.name == 'Check');
 const selectedIcon = icons.find(i => i.bio.name == 'Hit Background');
 const deselectIcon = icons.find(i => i.bio.name == 'Stop');
 const removeIcon = icons.find(i => i.bio.name == 'Delete');
@@ -34,7 +39,11 @@ const selectSprite = new Sprite(selectedIcon.bio.sprite);
 const tileTargetSprite = new Sprite(tileTargetIcon.bio.sprite);
 const goldSprite = new Sprite(goldIcon.bio.sprite);
 const interactSprite = new Sprite(interactIcon.bio.sprite);
+const portingSprite = new Sprite(portingIcon.bio.sprite);
+const checkSprite = new Sprite(checkIcon.bio.sprite);
 const sp = new SoundPlayer();
+
+
 
 class Dialog extends Component {
   constructor(text) {
@@ -73,7 +82,7 @@ class Layer {
     this.name = name;
     this.items = new PL(w, h);
     this.canvas = canvas && new Canvas(tw * w, th * h);
-    this.animations = [];
+    this.animations = new PL(w, h);
   }
 }
 
@@ -84,18 +93,27 @@ class Record {
     this.monsterKilled = false;
     this.obstacleRemoved = false;
     this.fog = true;
+    this.seed = null;
+    this.checkResult = 0;
   }
 
   compress() {
-    return [this.adventureItemCount, this.questFinished, this.monsterKilled, this.obstacleRemoved, this.fog];
+    return [this.adventureItemCount, this.questFinished, this.monsterKilled, this.obstacleRemoved, this.fog, this.seed, this.checkResult];
   }
 
   import(a) {
+    if(a[7]) console.log('failed', a)
     this.adventureItemCount = a[0];
     this.questFinished = a[1];
     this.monsterKilled = a[2];
     this.obstacleRemoved = a[3];
     this.fog = a[4];
+    this.seed = a[5];
+    this.checkResult = a[6];
+  }
+
+  addSeed(seed) {
+
   }
 
   removeFog() {
@@ -117,6 +135,10 @@ class Record {
     sp.play('quest_complete');
   }
 
+  rollCheck(v) {
+    this.checkResult = v;
+  }
+
   shouldDraw(item) {
     if(item instanceof Terrain || item instanceof Equipment) {
       if(!item.adventure.consumable) return true;
@@ -135,7 +157,7 @@ class Record {
   }
 
   resetConsumption(terrain) {
-    if(terrain.adventure.chargeActivation == 'per turn') {
+    if(terrain && terrain.adventure && terrain.adventure.chargeActivation == 'per turn') {
       this.adventureItemCount = 0;
     }
   }
@@ -152,9 +174,11 @@ class Record {
 }
 
 class Adventure extends Component {
-  constructor(w, h, tw, th) {
+  constructor(w, h, tw, th, seed) {
     super(true);
     this.id = Math.random();
+    this.seed = seed || Date.now();
+    this.rand = new Rand(this.seed);
     this.name = "Adventure";
     this.tw = tw || 42;
     this.th = th || 42;
@@ -167,7 +191,6 @@ class Adventure extends Component {
       this.createPlane('underground')
     ];
     this.setPlane('surface');
-
     this.resources = [
 
     ];
@@ -205,19 +228,26 @@ class Adventure extends Component {
   }
 
   setPlane(name) {
+    console.log('set plane', name)
     this.currentPlane = this.planes.find(p => p.name == name);
+  }
+
+  getPlane(name) {
+    return this.planes.find(p => p.name == name);
   }
 
   get layers() {
     return this.currentPlane.layers;
   }
 
-  createPlane(name) {
+  createPlane(name, los) {
     let p = {
       name: name,
+      los: los,
       layers: {
         ground: new Layer('ground', true, this.w, this.h, this.tw, this.th),
         obstacles: new Layer('obstacles', true, this.w, this.h, this.tw, this.th),
+        decorations: new Layer('decorations', true, this.w, this.h, this.tw, this.th),
         select: new Layer('select', true, this.w, this.h, this.tw, this.th),
         grid: new Layer('grid', true, this.w, this.h, this.tw, this.th),
         preselect: new Layer('preselect', true, this.w, this.h, this.tw, this.th),
@@ -225,9 +255,11 @@ class Adventure extends Component {
         monsters: new Layer('monsters', true, this.w, this.h, this.tw, this.th),
         transport: new Layer('transport', false, this.w, this.h, this.tw, this.th),
         planeport: new Layer('planeport', false, this.w, this.h, this.tw, this.th),
+        dungeons: new Layer('dungeons', false, this.w, this.h, this.tw, this.th),
         fog: new Layer('fog', true, this.w, this.h, this.tw, this.th),
         quests: new Layer('quests', false, this.w, this.h, this.tw, this.th),
         history: new Layer('history', false, this.w, this.h, this.tw, this.th),
+        checks: new Layer('checks', false, this.w, this.h, this.tw, this.th),
       }
     };
     p.layers.fog.items.each(i => p.layers.fog.items.set(i.x, i.y, true));
@@ -283,6 +315,12 @@ class Adventure extends Component {
       }
       .adventure.interactive {
         cursor: url(${interactSprite.canvas.toDataURL('image/png')}), auto;
+      }
+      .adventure.porting {
+        cursor: url(${portingSprite.canvas.toDataURL('image/png')}), auto;
+      }
+      .adventure.check {
+        cursor: url(${checkSprite.canvas.toDataURL('image/png')}), auto;
       }
       .adventure canvas {
         position: absolute;
@@ -564,7 +602,7 @@ class Adventure extends Component {
         position: fixed;
         z-index: 100;
         width: 400px;
-        height: 500px;
+        max-height: 500px;
         left: 50%;
         top: 50%;
         transform: translate(-50%, -50%);
@@ -586,7 +624,7 @@ class Adventure extends Component {
       .message-box p {
         margin-top: 0px;
         text-align: justify;
-        height: 320px;
+        max-height: 320px;
         overflow-y: auto;
       }
 
@@ -615,6 +653,14 @@ class Adventure extends Component {
     </style>`;
   }
 
+  createRNG(seed) {
+    this.seed = seed || Date.now();
+    var generator = new Rand(this.seed).generator;
+    this._random = (t) => generator.random();
+    this._roll = (a, b) => Math.round(a + _random() * (b-a));
+    return generator;
+  }
+
   stopKeyboard() {
     this.keyboard.stop();
   }
@@ -629,8 +675,8 @@ class Adventure extends Component {
     this.keyboard.start();
   }
 
-  static create(t) {
-    let a = new this(t.w, t.h);
+  static create(t, saveFile, generate) {
+    let a = new this(t.w, t.h, t.tw, t.th, saveFile && saveFile.data.seed);
     a.id = t.id;
     a.name = t.name;
     a.startPosition = t.startPosition;
@@ -707,13 +753,30 @@ class Adventure extends Component {
           plane.layers.quests.items.set(item.x, item.y, q);
         });
       }
+      if(layers.checks) {
+        layers.checks.forEach(item => {
+          let q = Check.create(item.item);
+          plane.layers.checks.items.set(item.x, item.y, q);
+        });
+      }
+      if(layers.dungeons) {
+        layers.dungeons.forEach(item => {
+          console.log('maze', item)
+          let m = Maze.Editor.create(item.item);
+          plane.layers.dungeons.items.set(item.x, item.y, m);
+        });
+      }
     });
     a.setPlane(a.planes[0].name);
+    generate && a.generateRandomDungeons();
+    if(saveFile) {
+      console.log('load saveFIle')
+      a.load(saveFile);
+    }
     return a;
   }
 
   endTurn() {
-    console.log('end turn')
     this.tags.time.nextDay();
     this.planes.forEach(p => {
       p.layers.obstacles.items.each(item => {
@@ -723,19 +786,185 @@ class Adventure extends Component {
       })
 
     })
+    this.save();
+    this.savePlayer();
+  }
+
+  save() {
     let saveFile = {
+      seed: this.seed,
       currentPlane: this.currentPlane.name,
       days: this.tags.time.totalDays,
       movesLeft: this.player.movesLeft,
       planes: this.planes.map(p => p.layers.history.items.items.map(r => r.compress()))
     };
     storage.save('adventure', this.id, saveFile);
-    this.savePlayer();
   }
 
-  load() {
-    let file = storage.load('adventure', this.id);
-    if(!file) return;
+  generateRandomDungeons() {
+    this.planes.forEach(pl => {
+      pl.layers.dungeons.items.filled(item => {
+        let m = new Maze(item.item.name, item.item.maxTier, item.item.difficulty, this.rand);
+        m.generate();
+        m.addMonsters();
+        m.connectRooms();
+        m.connectRandomRooms();
+        // m.centerOut();
+        // m.renderCenter();
+        // m.render();
+        let upgrades = {
+          max: Math.floor(this.rand.random() * 3),
+          set: 0,
+          get() {
+            if(this.set >= this.max) return null;
+            if(m.rand.random() < 0.7) return null
+            this.set += 1;
+            let t = [];
+            terrains.forEach(tpl => {
+              if(!tpl.adventure || tpl.adventure.action !== 'give ability') return;
+              t.push(new Terrain(tpl));
+            })
+            return t[Math.floor(m.rand.random() * t.length)];
+          }
+        };
+        let randomize = (a, b) => this.rand.random() > 0.5 ? -1 : 1;
+        let decorations = terrains.filter(t => t.stats.decoration).map(t => new Terrain(t));
+        let groundDecorations = decorations.filter(d => d.template.stats.walkable);
+        let plateId = '1e65a8e0-3257-ba30-9c1e-f16036de877b';
+        let torchId = 'b9c05718-dd74-38d6-e0b9-b41a19f8cb7a';
+        let torchUnlitId = 'e62228e0-e012-1dcf-28a0-cbdf3f04c466';
+        let stairsId = '26d4a36d-da69-661a-ed67-622908d17f18';
+        let obstacleId = 'f7118631-ef6e-68b1-ef36-60dd3b7f2ca4';
+        let groundId = '4d7c5f3e-7d2c-8994-48d4-9469f03e44b4';
+        let doorId = '183e804b-0eb5-236c-9b98-b3920f418985';
+        let platetpl = terrains.find(t => t.id == plateId);
+        let torchtpl = terrains.find(t => t.id == torchId);
+        let torchUnlittpl = terrains.find(t => t.id == torchUnlitId);
+        let stairstpl = terrains.find(t => t.id == stairsId);
+        let groundtpl = terrains.find(t => t.id == groundId);
+        let obstacletpl = terrains.find(t => t.id == obstacleId);
+        let doortpl = terrains.find(t => t.id == doorId);
+        let plate = new Terrain(platetpl);
+        let torch = new Terrain(torchtpl);
+        let torchUnlit = new Terrain(torchUnlittpl);
+        let ground = new Terrain(groundtpl);
+        let obstacle = new Terrain(obstacletpl);
+        let door = new Terrain(doortpl);
+        let stairs = new Terrain(stairstpl);
+        let plane = this.createPlane(m.name, true);
+        plane.layers.obstacles.items.fillAll(obstacle);
+        let sx = m.sx;//m.rooms[0].cells[0].x;
+        let sy = m.sy;//m.rooms[0].cells[0].y;
+        // add a planeport point to both planes
+        let a = {plane: plane.name, x: sx, y: sy};
+        let b = {plane: pl.name, x: item.x, y: item.y};
+        pl.layers.planeport.items.set(item.x, item.y, a);
+        plane.layers.planeport.items.set(sx, sy, b);
+        plane.layers.obstacles.items.set(sx, sy, stairs);
+        this.planes.push(plane);
+        m.rooms.forEach((room, roomIndex) => {
+          // place ground, obstacles and monsters
+          room.encounters.forEach(e => {
+            plane.layers.monsters.items.set(e.pos.x, e.pos.y, e.team);
+          })
+          room.cells.forEach(cell => {
+            plane.layers.ground.items.set(cell.x, cell.y, ground);
+            if(cell.x == sx && cell.y == sy) return;
+            plane.layers.obstacles.items.remove(cell.x, cell.y);
+          });
+          room.connectsTo.forEach(c => {
+            c.corridor.forEach(a => {
+              plane.layers.obstacles.items.remove(a.x, a.y);
+              plane.layers.ground.items.set(a.x, a.y, ground);
+            })
+          })
+          // how to get access to other rooms
+          room.exits.forEach(({exit, corridor}) => {
+            if(plane.layers.ground.items.get(exit.x, exit.y)) return;
+            plane.layers.ground.items.set(exit.x, exit.y, ground);
+            let types = ['mechanics', 'exploration', 'pressure plate'];
+            let type = types[Math.floor(this.rand.random() * types.length)];
+            let v = 1;//this.rand.next().between(1, 10).floor().n;
+            if(type == 'exploration') {
+              plane.layers.obstacles.items.set(exit.x, exit.y, obstacle);
+              let check = new Check('skill', 'exploration', v, 'remove obstacle', true);
+              check.addTile(plane.name, exit.x, exit.y);
+              plane.layers.checks.items.set(exit.x, exit.y, check);
+            } else
+            if(type == 'mechanics') {
+              plane.layers.obstacles.items.set(exit.x, exit.y, door);
+              let check = new Check('skill', 'mechanics', v, 'remove obstacle', false);
+              check.addTile(plane.name, exit.x, exit.y);
+              plane.layers.checks.items.set(exit.x, exit.y, check);
+            } else
+            if(type == 'pressure plate') {
+              plane.layers.obstacles.items.set(exit.x, exit.y, door);
+              let edges = room.edges();
+              edges.sort(randomize);
+              let c = edges.find(c => {
+                let isExit = room.exits.find(e => e.exit.x == c.x && e.exit.y == c.y);
+                let isDecoration = plane.layers.decorations.items.get(c.x, c.y);
+                if(isExit || isDecoration) return;
+                return true;
+              })
+              let isExit = room.exits.find(e => e.x == c.x && e.y == c.y);
+              let isDecoration = plane.layers.decorations.items.get(c.x, c.y);
+              if(isExit || isDecoration) return;
+              plane.layers.decorations.items.set(c.x, c.y, torch);
+              let check = new Check('skill', 'mechanics', 1, 'remove obstacle', false, torch.description);
+              check.decorationChange = torchUnlitId;
+              corridor.exits.forEach(e => {
+                check.addTile(plane.name, e.x, e.y);
+              })
+
+              plane.layers.checks.items.set(c.x, c.y, check);
+            }
+          })
+          // upgrades
+          let upgrade = upgrades.get();
+          if(upgrade) {
+            console.log('get upgrade', roomIndex)
+            room.cells.sort(randomize).find(c => {
+              if(plane.layers.obstacles.items.get(c.x, c.y)) return;
+              // if an exit is adjacent don't pick it.
+              let isExit = room.exits.find(e => e.x == c.x && e.y == c.y);
+              if(isExit) return;
+              plane.layers.obstacles.items.set(c.x, c.y, upgrade);
+              return true;
+            })
+          }
+
+          // decorations
+          let d = groundDecorations[Math.floor(this.rand.random() * groundDecorations.length)];
+          room.cells.sort(randomize).forEach(c => {
+            if(this.rand.random() > 0.2) return;
+            plane.layers.decorations.items.set(c.x, c.y, d);
+          })
+
+          // gold
+          let treasure = new Terrain(terrains.find(t => t.id == '5103eb6a-c784-d780-cd71-90f58a81ae53'));
+          room.cells.sort(randomize).forEach(c => {
+            if(plane.layers.obstacles.items.get(c.x, c.y)) return;
+            if(this.rand.random() > 0.05) return;
+            plane.layers.obstacles.items.set(c.x, c.y, treasure);
+          })
+
+          // loot
+          let loot = new Terrain(terrains.find(t => t.id == '48fd8bb6-ba74-e1cb-d2c7-a8ddb62be2dc'));
+          room.cells.sort(randomize).forEach(c => {
+            if(plane.layers.obstacles.items.get(c.x, c.y)) return;
+            if(this.rand.random() > 0.025) return;
+            plane.layers.obstacles.items.set(c.x, c.y, loot);
+          })
+        });
+
+      })
+    })
+  }
+
+  load(file) {
+    console.log('file', file)
+    this.seed = file.data.seed || Date.now();
     this.tags.time.setDays(file.data.days);
     this.setPlane(file.data.currentPlane);
     let planes = file.data.planes;
@@ -752,7 +981,7 @@ class Adventure extends Component {
 
   applyHistory() {
     this.planes.forEach(p => {
-      let {obstacles, monsters, fog} = p.layers;
+      let {obstacles, monsters, fog, checks} = p.layers;
       p.layers.history.items.each(item => {
         if(item.item.obstacleRemoved) {
           obstacles.items.remove(item.x, item.y);
@@ -763,6 +992,14 @@ class Adventure extends Component {
         if(!item.item.fog) {
           fog.items.set(item.x, item.y, false);
           fog.canvas.clearRect(item.x * this.tw, item.y * this.th, this.tw, this.th);
+        }
+        let check = checks.items.get(item.x, item.y);
+        if(check && item.item.checkResult) {
+          if(check.decorationChange) {
+            let t = terrains.find(t => t.id == check.decorationChange);
+            p.layers.decorations.items.set(item.x, item.y, new Terrain(t));
+            this.draw(p.layers.decorations, item.x, item.y);
+          }
         }
       })
 
@@ -792,10 +1029,8 @@ class Adventure extends Component {
   openHelp() {
     storage.remove('adventureOptions', '');
     let file = storage.load('config', 'adventure') || {};
-    console.log('config on disk', file.data)
     let help = new AdventureHelp(file.data);
     help.on('config changed', o => {
-      console.log(o)
       if(o.key == 'soundVolume') {
         sp.updateVolume(o.val);
       }
@@ -916,47 +1151,64 @@ class Adventure extends Component {
     }
   }
 
-  draw(layer) {
-    if(!layer.canvas) return;
-    layer.canvas.clear();
-    this.clearAnimations(layer);
-    if(!layer.items) return;
-    layer.items.each(item => {
-      if(!item.item) return;
-      if(item.item instanceof Sprite) {
-        layer.canvas.drawSprite(item.item, item.x * this.tw, item.y * this.th, this.tw, this.th);
+  drawTile(layer, item) {
+    layer.canvas.clearRect(item.x * this.tw, item.y * this.th, this.tw, this.th)
+    if(!item.item) return;
+
+    if(item.item instanceof Sprite) {
+      layer.canvas.drawSprite(item.item, item.x * this.tw, item.y * this.th, this.tw, this.th);
+    }
+    if(item.item instanceof Terrain) {
+      layer.canvas.drawSprite(item.item.sprite, item.x * this.tw, item.y * this.th, this.tw, this.th);
+      if(item.item.stats.animation) {
+        this.animateTerrain(item, layer);
       }
-      if(item.item instanceof Terrain) {
-        layer.canvas.drawSprite(item.item.sprite, item.x * this.tw, item.y * this.th, this.tw, this.th);
-        if(item.item.stats.animation) {
-          this.animateTerrain(item, layer);
-        }
-      }
-      if(item.item instanceof Equipment) {
-        layer.canvas.drawSprite(item.item.sprite, item.x * this.tw, item.y * this.th, this.tw, this.th);
-      }
-      if(item.item instanceof Team) {
-        layer.canvas.drawSprite(item.item.highestTier.sprite, item.x * this.tw, item.y * this.th, this.tw, this.th);
-      }
-      if(layer.name == 'fog') {
-        layer.canvas.drawRect(item.x * this.tw, item.y * this.th, this.tw, this.th);
-      }
-    });
+    }
+    if(item.item instanceof Equipment) {
+      layer.canvas.drawSprite(item.item.sprite, item.x * this.tw, item.y * this.th, this.tw, this.th);
+    }
+    if(item.item instanceof Team) {
+      layer.canvas.drawSprite(item.item.highestTier.sprite, item.x * this.tw, item.y * this.th, this.tw, this.th);
+    }
+    if(layer.name == 'fog') {
+      layer.canvas.drawRect(item.x * this.tw, item.y * this.th, this.tw, this.th);
+    }
   }
 
-  clearAnimations(layer) {
+  draw(layer, x, y) {
+    if(!layer.canvas) return;
+    if(!layer.items) return;
+    this.clearAnimations(layer, x, y);
+    if(x && y) {
+      this.drawTile(layer, {x, y});
+    } else {
+      layer.items.each(item => {
+        this.drawTile(layer, item);
+      });
+    }
+  }
+
+  clearAnimations(layer, x, y) {
     if(!layer.animations) return;
-    layer.animations.forEach(a => {
-      clearInterval(a);
-    });
-    layer.animations = [];
+    if(x && y) {
+      let int = layer.animations.get(x, y);
+      clearInterval(int);
+      layer.animations.remove(x, y);
+    } else {
+      layer.animations.each(a => {
+        clearInterval(a.item);
+        layer.animations.remove(a.x, a.y);
+      });
+    }
+
   }
 
   animateTerrain(item, layer) {
-    layer.animations[layer.animations.length] = setInterval(() => {
+    let int = setInterval(() => {
       layer.canvas.clearRect(item.x * this.tw, item.y * this.th, this.tw, this.th);
       layer.canvas.drawSprite(item.item.sprite, item.x * this.tw, item.y * this.th, this.tw, this.th);
     }, item.item.fps);
+    layer.animations.set(item.x, item.y, int);
   }
 
   previewPath(e) {
@@ -980,10 +1232,18 @@ class Adventure extends Component {
       a.style.top = this.pans.y + e.clientY - this.mouse.down.clientY + 'px';
     }
     let p = this.tpos(e);
+    let check = this.layers.checks.items.get(p.x, p.y);
+    let record = this.layers.history.items.get(p.x, p.y);
+    if(check && !record.checkPassed && !check.passive) {
+      this.shadow.querySelector('.adventure').classList.add('check');
+    } else
+    if(this.layers.planeport.items.get(p.x, p.y) || this.layers.transport.items.get(p.x, p.y)) {
+      this.shadow.querySelector('.adventure').classList.add('porting');
+    } else
     if(this.isInteractable(p.x, p.y)) {
       this.shadow.querySelector('.adventure').classList.add('interactive');
     } else {
-      this.shadow.querySelector('.adventure').classList.remove('interactive');
+      this.shadow.querySelector('.adventure').classList.remove('interactive', 'porting', 'check');
     }
     !this.moving && this.highlightMovementTile();
   }
@@ -1017,7 +1277,7 @@ class Adventure extends Component {
     if(e.which == 3) {
       return this.showInfo(mp);
     }
-    let {ground, obstacles, transport, planeport, monsters, dialog, quests, history} = this.layers;
+    let {ground, obstacles, transport, planeport, monsters, dialog, quests, dungeons, history, checks} = this.layers;
     let item = obstacles.items.get(mp.x, mp.y);
     let record = history.items.get(mp.x, mp.y);
     // Movement
@@ -1031,11 +1291,16 @@ class Adventure extends Component {
         console.log('walk error', e);
       });
     }
-
     // Quests
     let quest = quests.items.get(mp.x, mp.y);
     if(quest && quests.items.distance(this.pp.x, this.pp.y, mp.x, mp.y) <= 1) {
       return this.showQuest(quest, record);
+    }
+
+    // Checks
+    let check = checks.items.get(mp.x, mp.y);
+    if(check && !record.checkPassed && checks.items.distance(this.pp.x, this.pp.y, mp.x, mp.y) <= 1) {
+      return this.showCheck(check, record);
     }
 
     // Transportation
@@ -1053,7 +1318,9 @@ class Adventure extends Component {
       let toPlane = this.planes.find(p => p.name == planep.plane);
       this.setPlane(toPlane.name);
       this.render();
+      console.log(planep, toPlane.layers.obstacles.items.inx(planep.x, planep.y))
       let empty = toPlane.layers.obstacles.items.closestEmpty(planep.x, planep.y);
+      monsters.items.remove(this.pp.x, this.pp.y);
       this.movePlayer(empty.x, empty.y);
       this.draw(monsters);
       this.centerOnPlayer();
@@ -1089,7 +1356,10 @@ class Adventure extends Component {
       if(item.adventure.consumable && record.isConsumed(item)) {
         // obstacles.items.remove(mp.x, mp.y);
       }
+
+
     }
+
     if(item.adventure.action == 'give movement' && !record.isConsumed(item)) {
       this.player.movesLeft += item.adventure.actionAmount;
     }
@@ -1131,6 +1401,25 @@ class Adventure extends Component {
         c.addStyle(AbilityCard.style);
       })
     }
+    if(item.adventure.action == 'give equipment') {
+      let equipment = equipments.filter(a => {
+        let f = true;
+        if(item.adventure.tags.slot) {
+          f = f && item.adventure.tags.slot == a.bio.slot;
+        }
+        if(item.adventure.tags.cost) {
+          f = f && parseInt(item.adventure.tags.cost) >= parseInt(a.bio.cost);
+        }
+        return f;
+      });
+      let rand = __roll(0, equipment.length-1);
+      let e = new Equipment(equipment[rand]);
+      this.player.inventory.add(e);
+      message.on('close', () => {
+        let c = this.popupComponent(`Looking through the cache you find ${e.bio.name}. You tuck it away in your inventory.`);
+        c.appendIn('.content', e.canvas.clone(48, 48));
+      })
+    }
 
 
     record.consume(item);
@@ -1140,7 +1429,7 @@ class Adventure extends Component {
     }
     this.mouse.down = null;
     this.updateResources();
-    this.draw(obstacles);
+    this.draw(obstacles, mp.x, mp.y);
   }
 
   showInfo(mp) {
@@ -1203,7 +1492,7 @@ class Adventure extends Component {
       <p class='content'></p>
       <button>Close</button>
     </div>`;
-    dtag.querySelector('p').appendChild(comp.render());
+    comp && dtag.querySelector('p').appendChild(comp.render());
     dtag.querySelector('button').addEventListener('click', () => {
       c.trigger('close');
       c.unmount();
@@ -1295,6 +1584,28 @@ class Adventure extends Component {
     }
   }
 
+  showCheck(check, record) {
+    if(record.checkResult) {
+      check.roll = record.checkResult;
+    }
+    let mp = this.tpos(this.mouse.up);
+    let c = check.renderAdventureDialog(this);
+    if(!record.checkResult) {
+      let onRoll = (v) => {
+        if(check.passed) {
+          this.checkReward(check, mp.x, mp.y);
+        }
+        record.rollCheck(v);
+        c.off('roll', onRoll);
+        c.unmount();
+        this.showCheck(check, record);
+      };
+      c.on('roll', onRoll);
+    }
+    this.append(c);
+    sp.play('open_book');
+  }
+
   addGold(n) {
     this.player.gold += n;
     let r = this.resources.find(r => r.name == 'gold');
@@ -1378,6 +1689,26 @@ class Adventure extends Component {
     })
   }
 
+  inLOS(x1, y1, x2, y2) {
+    let cells = this.currentPlane.layers.obstacles.items.inLOS(x1, y1, x2, y2);
+    let occupied = cells.find(c => {
+      return c.item && c.item.stats.cover;
+    });
+    return !occupied;
+  }
+
+  revealFog(x = this.pp.x, y = this.pp.y, r = this.player.vision) {
+    let {fog, obstacles} = this.layers;
+    let reveal = fog.items.inRadius(x, y, r);
+    reveal.forEach(item => {
+      if(this.currentPlane.los && !this.inLOS(x, y, item.x, item.y)) return;
+      fog.items.set(item.x, item.y, false);
+      fog.canvas.clearRect(item.x * this.tw, item.y * this.th, this.tw, this.th);
+      let record = this.layers.history.items.get(item.x, item.y);
+      record.removeFog();
+    });
+  }
+
   movePlayer(x, y) {
     if(this.player.movesLeft < 1) return;
     let {monsters, fog} = this.layers;
@@ -1386,13 +1717,8 @@ class Adventure extends Component {
     this.pp = {x, y};
     monsters.items.set(x, y, this.player.team);
     monsters.canvas.drawSprite(this.player.team.highestTier.sprite, this.pp.x * this.tw, this.pp.y * this.th, this.tw, this.th);
-    let reveal = fog.items.inRadius(x, y, this.player.vision);
-    reveal.forEach(item => {
-      fog.items.set(item.x, item.y, false);
-      fog.canvas.clearRect(item.x * this.tw, item.y * this.th, this.tw, this.th);
-      let record = this.layers.history.items.get(item.x, item.y);
-      record.removeFog();
-    });
+    this.passivePlayerCheck(x, y);
+    this.revealFog(x, y);
     this.player.movesLeft -= 1;
     if(this.tags.time.player) {
       if(this.autoEndTurn && !this.player.movesLeft) {
@@ -1400,6 +1726,39 @@ class Adventure extends Component {
       }
       this.tags.time.render();
     }
+  }
+
+  checkReward(check, x, y) {
+    let mp = this.tpos(this.mouse.up);
+    let plane = this.currentPlane;
+    let record = plane.layers.history.items.get(x, y);
+    if(check.passed) {
+      if(check.reward = 'remove obstacle') {
+        check.tiles.forEach(({plane, x, y}) => {
+          let p = this.getPlane(plane);
+          p.layers.obstacles.items.remove(x, y);
+          let record = p.layers.history.items.get(x, y);
+          record.removeObstacle();
+          this.draw(p.layers.obstacles, x, y);
+        })
+        this.revealFog();
+      }
+      if(check.decorationChange) {
+        let t = terrains.find(t => t.id == check.decorationChange);
+        plane.layers.decorations.items.set(x, y, new Terrain(t));
+        this.draw(plane.layers.decorations, mp.x, mp.y);
+      }
+      plane.layers.checks.items.remove(x, y);
+    }
+  }
+
+  passivePlayerCheck() {
+    let checks = this.layers.checks.items.inRadius(this.pp.x, this.pp.y, 1)
+    checks.forEach(item => {
+      if(!item.item || !item.item.passive || item.item.roll) return;
+      item.item._roll(this);
+      this.checkReward(item.item, item.x, item.y);
+    })
   }
 
   centerOnPlayer() {

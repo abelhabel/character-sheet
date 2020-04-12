@@ -190,10 +190,11 @@ Module.onLoad(['DungeonCrawl_ProjectUtumnoTileset.png', 'Hell2.jpg', 'defeat.jpg
 'Canvas.js', 'Sprite.js', 'CompositeSprite.js', 'SoundPlayer.js', 'Keyboard.js',
 'AbilityEffect.js', 'Animation.js', 'AdventureTime.js',
 'PositionList2d.js', 'pathfinding.js', 'AbilityCard.js', 'Ability.js',  'Equipment.js', 'AI.js', 'Terrain.js', 'Scroll.js', 'Menu.js', 'Slider.js', 'MonsterCard.js', 'Monster.js', 'CS.js',
-'BattleMenu.js', 'AdventureMenu.js', 'PrimeVessel.js', 'GridBox.js', 'Inventory.js', 'Crafting.js', 'Quest.js', 'QuestLog.js', 'AdventureMessage.js',
+'BattleMenu.js', 'AdventureMenu.js', 'PrimeVessel.js', 'GridBox.js', 'Inventory.js', 'Crafting.js',
+'Quest.js', 'QuestLog.js', 'AdventureMessage.js', 'Check.js',
 'Arena.js', 'Armory.js', 'AdventureOptions.js', 'AdventureHelp.js',
 'TeamSheet.js', 'TeamViewer.js', 'Team.js', 'TeamSelect.js', 'UnitPlacement.js', 'BattleResult.js', 'Match.js',
-'Gauntlet.js', 'View.js', 'Lobby.js', 'Battle.js', 'Adventure.js', 'GameUI.js',
+'Gauntlet.js', 'View.js', 'Lobby.js', 'Battle.js', 'Maze.js', 'Adventure.js', 'GameUI.js',
 'game-modes.js', 'lobby-channels-client.js' ], () => {
   const storage = require('storage.js');
   const abilities = require('abilities.js');

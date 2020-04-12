@@ -53,6 +53,7 @@ class Canvas {
 
   drawCircle(x, y, r, fill = '#000', stroke = false) {
     let c = this.context;
+    c.beginPath();
     c.arc(x, y, r, 0, Math.PI * 2);
     if(fill) {
       c.fillStyle = fill;
@@ -83,7 +84,6 @@ class Canvas {
   }
 
   drawGrid(tw, th, color) {
-    console.time('drawGrid')
     let c = this.context;
     for(let y = 0; y <= this.h; y += tw) {
       this.drawLine(0, y, this.w, y, color);
@@ -91,7 +91,6 @@ class Canvas {
     for(let x = 0; x <= this.w; x += tw) {
       this.drawLine(x, 0, x, this.h, color);
     }
-    console.timeEnd('drawGrid')
   }
 
   static cacheSprite(sprite) {

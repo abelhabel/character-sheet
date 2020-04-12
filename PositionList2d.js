@@ -67,6 +67,14 @@ class PositionList2d {
     })
   }
 
+  fillAll(item) {
+    for(var y = 0; y < this.h; y++) {
+      for(var x = 0; x < this.w; x++) {
+        this.items[this.w * y + x] = item;
+      }
+    }
+  }
+
   steps(x1, y1, x2, y2) {
     var dx = Math.abs(x1 - x2);
     var dy = Math.abs(y1 - y2);
@@ -156,6 +164,7 @@ class PositionList2d {
     return targets;
   }
 
+
   rotate(v, radians) {
     var cos = Math.cos(radians);
     var sin = Math.sin(radians);
@@ -211,6 +220,15 @@ class PositionList2d {
     return out;
   }
 
+  inx(cx, cy) {
+    return [
+      cy - 1 > -1 ? this.get(cx, cy - 1) : null,
+      cx + 1 < this.w ? this.get(cx + 1, cy) : null,
+      cy + 1 < this.h ? this.get(cx, cy + 1) : null,
+      cx - 1 > -1 ? this.get(cx - 1, cy) : null
+    ];
+  }
+
   inRadius(cx, cy, r = 1) {
     var out = [];
     for(var y = cy - r; y <= cy + r; y++) {
@@ -225,12 +243,12 @@ class PositionList2d {
   }
 
   get(x, y) {
+    if(x < 0 || x > this.w-1 || y < 0 || y > this.h-1) return null;
     return this.items[this.w * y + x];
   }
 
   set(x, y, item) {
-    if(x > this.w - 1) return;
-    if(y > this.h - 1) return;
+    if(x < 0 || x > this.w-1 || y < 0 || y > this.h-1) return null;
     return this.items[this.w * y + x] = item;
   }
 

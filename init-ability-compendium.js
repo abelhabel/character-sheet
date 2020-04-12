@@ -245,7 +245,6 @@ Module.onLoad(['DungeonCrawl_ProjectUtumnoTileset.png', 'sheet_of_old_paper.png'
         let words = this.term.split(':');
         prop = words[0].trim();
         val = words[1].trim();
-        console.log('prop search', prop, val)
         cards = this.db.filter(c => this.propSearch(c, prop, val));
       } else {
         cards = this.db.filter(c => this.freeSearch(c, this.term));

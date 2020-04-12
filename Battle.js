@@ -116,6 +116,11 @@ class R extends Array {
     return this._actor || this.current.willAct[0];
   }
 
+  get actors() {
+    let {hasActed, willAct, waiting} = this.current;
+    return [...hasActed, ...willAct, ...waiting];
+  }
+
   add(actors) {
     let ca = this.actor;
     this.push.apply(this, actors);
@@ -611,6 +616,11 @@ class Battle {
     return this.team1;
   }
 
+  getAllyTeam(team) {
+    if(team == 'team1') return this.team1;
+    return this.team2;
+  }
+
   get currentTeam() {
     if(this.currentActor.team == 'team1') return this.originalTeam1;
     return this.originalTeam2;
@@ -1091,7 +1101,6 @@ class Battle {
   }
 
   openSpriteSheet(item) {
-    console.log(item)
     if(this.images[item.bio.sprite.spritesheet]) {
       return Promise.reolve(this.images[item.bio.sprite.spritesheet]);
     }
@@ -1911,7 +1920,7 @@ class Battle {
       this.render();
     })
     .catch(e => {
-      // console.log('Action Error:', e)
+      console.log('Action Error:', e)
     })
   }
 
@@ -1962,7 +1971,6 @@ class Battle {
 
             if(ability.stats.special != 'giveEffectAsAbility' && ability.stats.effect) {
               t = ability.stats.effect.stats.target == 'self' ? a : t;
-              console.log('ability effect', ability.stats.effect)
               this.useAbility(a, [t], ability.stats.effect, true, power);
             }
             return this.playAbilityAnimation(a, t, ability);
@@ -2050,6 +2058,7 @@ class Battle {
       if(this.isFarWay(a, e)) {
         this.trigger('when far away enemy move', e, a, 0, null);
       }
+      this.trigger('when enemy move', e, a, 0, null);
     })
   }
 

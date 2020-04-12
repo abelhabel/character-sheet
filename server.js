@@ -34,6 +34,7 @@ const files = {
   'init-bestiary.js': fs.readFileSync(__dirname + '/init-bestiary.js'),
   'init-team.js': fs.readFileSync(__dirname + '/init-team.js'),
   'init-adventure.js': fs.readFileSync(__dirname + '/init-adventure.js'),
+  'init-skilltree.js': fs.readFileSync(__dirname + '/init-skilltree.js'),
 }
 // console.log(files['abilities.js'])
 var ruleLinks = [
@@ -115,6 +116,7 @@ loadFile('DynamicSound.js');
 loadFile('TeamViewer.js');
 loadFile('Quest.js');
 loadFile('QuestLog.js');
+loadFile('Check.js');
 loadFile('Team.js');
 loadFile('UnitPlacement.js');
 loadFile('ToolTip.js');
@@ -126,10 +128,13 @@ loadFile('Gauntlet.js');
 loadFile('CardList.js');
 loadFile('Component.js');
 loadFile('TeamSheet.js');
+loadFile('Maze.js');
 loadFile('Adventure.js');
 loadFile('AdventureEditor.js');
 loadFile('AdventureMenu.js');
 loadFile('AdventureTime.js');
+loadFile('SkillTree.js');
+loadFile('Camera.js');
 loadFile('GridBox.js');
 loadFile('Inventory.js');
 loadFile('Crafting.js');
@@ -154,6 +159,7 @@ loadFile('index.html');
 loadFile('rules.html', addRuleLinks);
 loadFile('battle.html');
 loadFile('animation.html');
+loadFile('skilltree.html');
 loadFile('arena.html');
 loadFile('team.html');
 loadFile('lobby.html');
@@ -175,7 +181,10 @@ loadFile('order_of_idun_card.jpg');
 loadFile('aloysias_chosen_card.jpg');
 loadFile('defeat.jpg');
 
-
+const Spartan = {
+  regular: fs.readFileSync(__dirname + '/Spartan-Regular.ttf'),
+  semibold: fs.readFileSync(__dirname + '/Spartan-SemiBold.ttf')
+};
 
 function saveData(req, res, folder, url) {
   let id = url.searchParams.get('id') ||  guid();
@@ -212,10 +221,30 @@ const server = http.createServer(function(req, res) {
   if(!name) name = 'index.html';
   if(name == 'rules') name = 'rules.html';
   if(files[name]) {
+    let mime = name.split('.')[1];
+    if(mime) {
+      if(mime == 'js') {
+        res.writeHead(200, {'Content-Type': 'text/javascript'});
+      } else
+      if(mime == 'ttf') {
+        res.writeHead(200, {'Content-Type': 'text/css'});
+      }
+      else {
+        res.writeHead(200, {'Content-Type': 'text/' + mime});
+      }
+    }
     if(typeof files[name] == 'function') {
       return res.end(files[name]());
     }
     return res.end(files[name], 'binary');
+  }
+
+  if(name == 'Spartan-Regular.ttf') {
+    return res.end(Spartan.regular, 'binary');
+  }
+
+  if(name == 'Spartan-SemiBold.ttf') {
+    return res.end(Spartan.semibold, 'binary');
   }
 
   if(name.match(/^blog/)) {

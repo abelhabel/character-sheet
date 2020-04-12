@@ -13,6 +13,8 @@ const Ability = require('Ability.js');
 const Scroll = require('Scroll.js');
 const Equipment = require('Equipment.js');
 const Quest = require('Quest.js');
+const Check = require('Check.js');
+const Maze = require('Maze.js');
 const PL = require('PositionList2d.js');
 const icons = require('icons.js');
 const abilities = require('abilities.js');
@@ -28,6 +30,14 @@ const tileTargetIcon = icons.find(i => i.bio.name == 'Tile Target');
 const selectSprite = new Sprite(selectedIcon.bio.sprite);
 const tileTargetSprite = new Sprite(tileTargetIcon.bio.sprite);
 const goldSprite = new Sprite(goldIcon.bio.sprite);
+
+// ADDING A NEW LAYER (BUTTON/FEATURE)
+// 1. add layer in Adventure.createPlane() and AdventureEditor.save()
+// 2. add button for add and remove in render()
+// 3. add Model
+// 4. add for of model in ControlPanel.render() and ControlPanel.renderItem()
+// 5. add methods for add and remove
+
 class ControlPanel extends Component {
   constructor() {
     super(true);
@@ -78,11 +88,17 @@ class ControlPanel extends Component {
     if(item.q) {
       t.appendChild(Quest.Editor.prototype.render.call(item.q));
     }
+    if(item.rd) {
+      t.appendChild(Maze.Editor.prototype.render.call(item.rd));
+    }
+    if(item.c) {
+      t.appendChild(Check.Editor.prototype.render.call(item.c));
+    }
     return t;
   }
 
   render(layers) {
-    let {select, dialog, ground, obstacles, monsters, transport, planeport, quests} = layers;
+    let {select, dialog, ground, obstacles, monsters, transport, planeport, dungeons, quests, checks} = layers;
     this.clear();
     this.addStyle(ControlPanel.style);
     let c = html`<div id='control-panel'></div>`;
@@ -96,7 +112,9 @@ class ControlPanel extends Component {
       let t = transport.items.get(item.x, item.y);
       let p = planeport.items.get(item.x, item.y);
       let q = quests.items.get(item.x, item.y);
-      items.push({d,g,o,m,t,p,q});
+      let rd = dungeons.items.get(item.x, item.y);
+      let c = checks.items.get(item.x, item.y);
+      items.push({d,g,o,m,t,p,q,rd,c});
     })
     items.forEach(item => {
       let t = this.renderItem(item);
@@ -104,6 +122,90 @@ class ControlPanel extends Component {
 
     });
     this.append(c);
+    return this.tags.outer;
+  }
+}
+
+class Panel extends Component {
+  constructor(name, terrains = []) {
+    super(true, 'panel');
+    this.name = name;
+    this.terrains = terrains;
+    this.init();
+  }
+
+  init() {
+    let moving = false;
+    this.tags.outer.style.top = 0;
+    this.tags.outer.style.left = 0;
+    let down = (e) => {
+      console.log(e)
+      if(e.offsetY > 50) return;
+      moving = true;
+      this.tags.outer.style.zIndex = 101;
+    }
+
+    let up = (e) => {
+      moving = false;
+      this.tags.outer.style.zIndex = '';
+    }
+    let click = (e) => {
+      if(e.target.component instanceof Terrain) {
+        console.log('select terrain')
+        this.trigger('select terrain', e.target.component);
+      }
+    }
+    let move = (e) => {
+      if(!moving) return;
+      if(e.offsetY > 50) {
+        moving = false;
+        return;
+      }
+      this.tags.outer.style.top = parseInt(this.tags.outer.style.top) + e.movementY + 'px';
+      this.tags.outer.style.left = parseInt(this.tags.outer.style.left) + e.movementX + 'px';
+    }
+    this.listen(false, 'mousedown', down);
+    this.listen(false, 'mouseup', up);
+    this.listen(false, 'mousemove', move);
+    this.listen(false, 'click', click);
+  }
+
+  static get style() {
+    return html`<style>
+      * {
+        box-sizing: border-box;
+      }
+      .title {
+        height: 50px;
+        background-color: #333;
+        color: white;
+        line-height: 50px;
+        padding: 0px 10px;
+        font-size: 24px;
+        font-family: Monospace;
+        text-transform: capitalize;
+        cursor: move;
+        user-select: none;
+      }
+      .terrains {
+        overflow-y: auto;
+        background-color: #555;
+        max-height: 250px;
+      }
+    </style>`;
+  }
+
+  render() {
+    this.clear();
+    let f = new Component.Fragment();
+    f.addStyle(Panel.style);
+    let t = html`<div class='outer'>
+      <div class='title'>${this.name}</div>
+      <div class='terrains'></div>
+    </div>`;
+    f.append(t);
+    f.appendIn('.terrains', this.terrains.map(t => (t._sprite.canvas.component = t, t._sprite.canvas)));
+    this.append(f);
     return this.tags.outer;
   }
 }
@@ -175,11 +277,14 @@ class AdventureEditor extends Adventure {
             dialog: p.layers.dialog.items._filled(),
             transport: p.layers.transport.items._filled(),
             planeport: p.layers.planeport.items._filled(),
-            quests: p.layers.quests.items._filled()
+            quests: p.layers.quests.items._filled(),
+            dungeons: p.layers.dungeons.items._filled(),
+            checks: p.layers.checks.items._filled()
           }
         };
       })
     };
+    console.log(body)
     let id = this.id;
     let url = 'saveAdventure';
     if(id) {
@@ -409,6 +514,26 @@ class AdventureEditor extends Adventure {
     this.renderControlPanel();
   }
 
+  addRandomDungeon(e) {
+    let selected = this.selected;
+    if(!selected.length) return;
+    let p = selected[0];
+    let {dungeons} = this.layers;
+    let m = new Maze.Editor();
+    console.log(m)
+    dungeons.items.set(p.x, p.y, m);
+    this.renderControlPanel();
+  }
+
+  removeRandomDungeon(e) {
+    let selected = this.selected;
+    if(!selected.length) return;
+    let p = selected[0];
+    let {dungeons} = this.layers;
+    dungeons.items.remove(p.x, p.y);
+    this.renderControlPanel();
+  }
+
   addScroll(e) {
     let selected = this.selected;
     if(!selected.length) return;
@@ -455,10 +580,40 @@ class AdventureEditor extends Adventure {
     this.draw(quests);
   }
 
+  addCheck(e) {
+    let selected = this.selected;
+    if(!selected.length) return;
+    let {checks} = this.layers;
+    selected.forEach(item => {
+      let q = new Check.Editor();
+      checks.items.set(item.x, item.y, q);
+    });
+    this.renderControlPanel();
+  }
+
+  removeCheck() {
+    let {checks} = this.layers;
+    this.selected.forEach(item => {
+      checks.items.remove(item.x, item.y);
+    })
+    this.renderControlPanel();
+  }
+
+  static get style() {
+    return html`<style>
+      .panel {
+        position: absolute;
+        width: 300px;
+        max-height: 300px;
+        z-index: 100;
+      }
+    </style>`;
+  }
+
   render() {
     this.clear();
     this.addStyle(Adventure.style(this));
-
+    this.addStyle(AdventureEditor.style);
     Object.keys(this.layers).forEach(key => {
       this.layers[key]
       if(!this.layers[key].canvas) return;
@@ -475,6 +630,7 @@ class AdventureEditor extends Adventure {
     a.addEventListener('contextmenu', this.zoom.bind(this));
     a.appendChild(this.layers.ground.canvas.canvas);
     a.appendChild(this.layers.obstacles.canvas.canvas);
+    a.appendChild(this.layers.decorations.canvas.canvas);
     a.appendChild(this.layers.select.canvas.canvas);
     a.appendChild(this.layers.grid.canvas.canvas);
     a.appendChild(this.layers.preselect.canvas.canvas);
@@ -483,6 +639,7 @@ class AdventureEditor extends Adventure {
     let foot = html`<div class='foot'>
       <div class='tools' id='ground'><div>Ground</div></div>
       <div class='tools' id='obstacles'><div>Obstacles</div></div>
+      <div class='tools' id='decorations'><div>Decorations</div></div>
       <div class='tools selections'></div>
       <div class='tools' id='buttons'>
         <div>Controls</div>
@@ -504,6 +661,10 @@ class AdventureEditor extends Adventure {
         <select id='equipments'></select>
         <button id='add-quest'>Add Quest</button>
         <button id='remove-quest'>Remove Quest</button>
+        <button id='add-random-dungeon'>Add Random Dungeon</button>
+        <button id='remove-random-dungeon'>Remove Random Dungeon</button>
+        <button id='add-check'>Add Check</button>
+        <button id='remove-check'>Remove Check</button>
         <button id='copy'>Copy</button>
         <button id='paste'>Paste</button>
       </div>
@@ -535,18 +696,42 @@ class AdventureEditor extends Adventure {
     foot.querySelector('#add-equipment').addEventListener('click', this.addEquipment.bind(this));
     foot.querySelector('#add-quest').addEventListener('click', this.addQuest.bind(this));
     foot.querySelector('#remove-quest').addEventListener('click', this.removeQuest.bind(this));
+    foot.querySelector('#add-check').addEventListener('click', this.addCheck.bind(this));
+    foot.querySelector('#remove-check').addEventListener('click', this.removeCheck.bind(this));
+    foot.querySelector('#add-random-dungeon').addEventListener('click', this.addRandomDungeon.bind(this));
+    foot.querySelector('#remove-random-dungeon').addEventListener('click', this.removeRandomDungeon.bind(this));
     let ground = foot.querySelector('#ground');
     let obstacles = foot.querySelector('#obstacles');
+    let decorations = foot.querySelector('#decorations');
+    let groundPanel = new Panel('ground', []);
+    let obstaclesPanel = new Panel('obstacles', []);
+    let decorationsPanel = new Panel('decorations', []);
+    groundPanel.on('select terrain', t => {
+      this.applyTerrain(t, this.layers.ground);
+    })
+    obstaclesPanel.on('select terrain', t => {
+      this.applyTerrain(t, this.layers.obstacles);
+    })
+    decorationsPanel.on('select terrain', t => {
+      this.applyTerrain(t, this.layers.decorations);
+    })
     terrains.forEach(tpl => {
       let t = new Terrain(tpl);
       let s = t.sprite;
       tpl.canvas = s.canvas;
+      if(t.stats.decoration) {
+        decorationsPanel.terrains.push(t);
+        // decorations.appendChild(tpl.canvas);
+        // tpl.canvas.addEventListener('click', e => this.applyTerrain(t, this.layers.decorations));
+      } else
       if(t.stats.walkable) {
-        ground.appendChild(tpl.canvas);
-        tpl.canvas.addEventListener('click', e => this.applyTerrain(t, this.layers.ground));
+        groundPanel.terrains.push(t);
+        // ground.appendChild(tpl.canvas);
+        // tpl.canvas.addEventListener('click', e => this.applyTerrain(t, this.layers.ground));
       } else {
-        obstacles.appendChild(tpl.canvas);
-        tpl.canvas.addEventListener('click', e => this.applyTerrain(t, this.layers.obstacles));
+        obstaclesPanel.terrains.push(t);
+        // obstacles.appendChild(tpl.canvas);
+        // tpl.canvas.addEventListener('click', e => this.applyTerrain(t, this.layers.obstacles));
       }
     });
 
@@ -563,6 +748,7 @@ class AdventureEditor extends Adventure {
     obstacles.appendChild(deselect.canvas);
     obstacles.appendChild(removeObstacles.canvas);
     obstacles.appendChild(invertSelection.canvas);
+    this.append([groundPanel, obstaclesPanel, decorationsPanel]);
     this.append(a);
     this.append(foot);
   }

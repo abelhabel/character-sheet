@@ -46,6 +46,12 @@ var tpl = {
           initial: true
         },
         {
+          name: 'Decoration',
+          exportAs: 'decoration',
+          type: 'binary',
+          initial: false
+        },
+        {
           name: 'Cover',
           exportAs: 'cover',
           type: 'binary',
@@ -96,7 +102,7 @@ var tpl = {
           type: 'select',
           values: ['', 'give gold', 'give item', 'open tavern',
           'give movement' , 'open armory', 'open ability trainer',
-          'give ability'
+          'give ability', 'give equipment'
           ]
         },
         {

@@ -13,6 +13,7 @@ class Terrain {
     };
     this.stats = {
       walkable: t.stats.walkable,
+      decoration: t.stats.decoration,
       cover: t.stats.cover,
       animation: t.stats.animation,
       composite: t.stats.composite,

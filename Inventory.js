@@ -1,6 +1,7 @@
 const GridBox = require('GridBox.js');
 const PrimeVessel = require('PrimeVessel.js');
 const SoundPlayer = require('SoundPlayer.js');
+const Equipment = require('Equipment.js');
 const sp = new SoundPlayer();
 class Inventory extends GridBox {
   constructor() {
@@ -34,6 +35,10 @@ class Inventory extends GridBox {
       this.slots[i].item = models.Equipment.create(s.item);
     });
     GridBox.prototype.import.call(this, inv.list, models);
+  }
+
+  get equipment() {
+    return this.list.filter(item => item instanceof Equipment);
   }
 
   get equipped() {

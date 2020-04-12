@@ -1,7 +1,9 @@
 <!DOCTYPE html>
 <html>
 <head>
-
+  <meta charset="utf-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Fangalia</title>
 </head>
 <body>
 
@@ -97,6 +99,7 @@ Module.loaders = [];
       let heroes = require("heroes-like.js")
       var cs = new CS(heroes, document.body);
       cs.render();
+      document.title = 'Heroes';
     }
 
     function loadLeaders() {
@@ -106,41 +109,48 @@ Module.loaders = [];
       };
       var cs = new CS(heroes, document.body, pools);
       cs.render();
+      document.title = 'Leaders';
     }
 
     function loadAbility() {
       let ability = require("ability-tpl.js");
       var cs  = new CS(ability, document.body);
       cs.render();
+      document.title = 'Abilities';
     }
 
     function loadTerrain() {
       let terrain = require("terrain-tpl.js");
       var cs  = new CS(terrain, document.body);
       cs.render();
+      document.title = 'Terrain';
     }
 
     function loadIcons() {
       let terrain = require("icon-tpl.js");
       var cs  = new CS(terrain, document.body);
       cs.render();
+      document.title = 'Icons';
     }
 
     function loadTeams() {
       let teams = require("team-tpl.js");
       var cs  = new CS(teams, document.body);
       cs.render();
+      document.title = 'Teams';
     }
 
     function loadRecipes() {
       let recipes = require("recipe-tpl.js");
       var cs  = new CS(recipes, document.body);
       cs.render();
+      document.title = 'Recipes';
     }
     function loadEquipment() {
       let equipment = require("equipment-tpl.js");
       var cs  = new CS(equipment, document.body);
       cs.render();
+      document.title = 'Equipment';
     }
 
     function loadSound() {

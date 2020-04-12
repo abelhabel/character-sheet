@@ -6,8 +6,8 @@ class Arena {
     this.template = t;
     this.w = t.ground.w;
     this.h = t.ground.h;
-    this.tw = tw;
-    this.th = th;
+    this.tw = tw || 32;
+    this.th = th || 32;
     this.ground = new PL(this.w, this.h);
     this.obstacles = new PL(this.w, this.h);
     this.highlights = new PL(this.w, this.h);
@@ -21,6 +21,14 @@ class Arena {
     this.highlightedTiles = [];
     this.fillGround();
     this.fillObstacles();
+  }
+
+  get pixw() {
+    return this.w * this.tw;
+  }
+
+  get pixh() {
+    return this.h * this.th;
   }
 
   highlight(x, y) {
@@ -76,19 +84,33 @@ class Arena {
   drawComposite() {
     let {w, h, tw, th} = this;
     let c = this.canvas.composite.getContext('2d');
+    c.clearRect(0, 0, w * tw, h * th);
     c.drawImage(this.canvas.ground, 0, 0, w * tw, h * th);
     c.drawImage(this.canvas.obstacles, 0, 0, w * tw, h * th);
+  }
+
+  renderTile(x, y) {
+    let t = this.ground.get(x, y);
+    let c = this.canvas.ground.getContext('2d');
+    c.clearRect(x * this.tw, y * this.th, this.tw, this.th);
+    t && c.drawImage(t.canvas, x * this.tw, y * this.th, this.tw, this.th);
+    t = this.obstacles.get(x, y);
+    c = this.canvas.obstacles.getContext('2d');
+    c.clearRect(x * this.tw, y * this.th, this.tw, this.th);
+    t && c.drawImage(t.canvas, x * this.tw, y * this.th, this.tw, this.th);
+    this.drawComposite();
   }
 
   render() {
     let {w, h, tw, th} = this;
     let canvas = document.createElement('canvas');
-    canvas.width = this.w * this.tw;
-    canvas.height = this.h * this.th;
+    canvas.width = this.pixw;
+    canvas.height = this.pixh;
     let c = canvas.getContext('2d');
     c.clearRect(0, 0, w*tw, h*th);
     this.ground.filled(({item, x, y}) => {
       let sprite = item.sprite;
+      if(!sprite) return;
       let img = sprite.canvas;
       c.drawImage(img, x*tw, y*th, tw, th);
     });
@@ -108,6 +130,7 @@ class Arena {
     this.canvas.obstacles = canvas;
 
     canvas = document.createElement('canvas');
+    canvas.id = 'arena'
     canvas.width = this.w * this.tw;
     canvas.height = this.h * this.th;
     c = canvas.getContext('2d');

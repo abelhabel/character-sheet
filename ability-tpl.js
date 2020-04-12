@@ -63,6 +63,7 @@ var tpl = {
             'when adjacent enemy is slain',
             'when enemy is slain by self',
             'when moving',
+            'when enemy move',
             'when far away enemy move'
           ],
           initial: 'when selected',

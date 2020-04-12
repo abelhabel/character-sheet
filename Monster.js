@@ -100,6 +100,7 @@ class Monster {
     this.selections = [];
     this.triggerCount = 0;
     this.bio = {
+      tier: t.bio.tier || 1,
       sprite: t.bio.sprite,
       orientation: t.bio.orientation || 'left',
       name: t.bio.name,
@@ -109,8 +110,11 @@ class Monster {
       cost: t.bio.cost,
       maxStacks: t.bio.maxStacks || 1
     };
-    this.abilities = {
-      abilities: t.abilities.abilities
+    this._abilities = {
+      abilities: t.abilities.abilities,
+    };
+    this.AI = {
+      behavior: t.ai ? t.ai.behavior : ''
     };
     this.sounds = {
       start_turn: t.sounds && t.sounds.turnStart,
@@ -260,8 +264,49 @@ class Monster {
   }
 
   addAI(level = 1) {
+    if(this.AI.behavior) {
+      this.parseAI();
+    }
     this.ai = true;
     this.routine = new AI(this.battle, this, level);
+  }
+
+  parseAI() {
+    let actions = this.AI.behavior.split('\n');
+    let whens = ['adjacent', 'nearby', 'afar'];
+    let targets = ['enemy', 'ally', 'target', 'it'];
+    let types = ['weakest', 'mightiest'];
+    let states = ['movement', 'hurt'];
+    this.aiScript = actions.map(a => {
+      let c = a.split('use');
+      let cond = c[0].split('and').map(m => {
+        let effect = m.match(/has effect ([a-zA-Z]+)/);
+        let vigor = m.match(/has vigor ([a-zA-Z]+)/);
+        let ailment = m.match(/has ailment ([a-zA-Z]+)/);
+        let cond = {
+          part: m,
+          distance: whens.find(b => ~m.indexOf(b)),
+          target: targets.find(b => ~m.indexOf(b)),
+          neg: false,
+          state: states.find(b => ~m.indexOf('is ' + b)),
+          effect: effect && effect[1],
+          vigor: vigor && vigor[1],
+          ailment: ailment && ailment[1],
+        };
+        cond.neg = !!whens.find(b => {
+          return ~c[0].indexOf('!' + (cond.distance || cond.state || cond.effect || cond.vigor || cond.ailment));
+        });
+        return cond;
+      })
+      let act = {
+        part: c[1],
+        ability: this.abilities.find(b => ~c[1].indexOf(b.bio.name)),
+        targetType: types.find(b => ~c[1].indexOf(b)),
+        target: targets.find(b => ~c[1].indexOf('on ' + b)),
+        move: !!~c[1].indexOf('move to'),
+      };
+      return {cond, act};
+    });
   }
 
   abilityMight(a) {
@@ -289,7 +334,7 @@ class Monster {
   }
 
   get tier() {
-    return Math.max.apply(null, this.abilities.map(a => a.bio.tier));
+    return this.bio.tier;
   }
 
   get might() {
@@ -334,7 +379,7 @@ class Monster {
   }
 
   createAbilities() {
-    return this.abilities.abilities.map(name => {
+    return this._abilities.abilities.map(name => {
       let a = abilities.find(c => c.bio.name == name);
       if(!a) return;
       return new Ability(a, this);
@@ -762,6 +807,10 @@ class Monster {
     })
   }
 
+  get hurt() {
+    return this.totalHealth < this.maxHealth;
+  }
+
   get alive() {
     return this.totalHealth > 0;
   }
@@ -933,45 +982,44 @@ class Monster {
   }
 
   drawLevelUp(names, onCommit) {
-    let t = html`<div class='monster-stat-upgrades'>
-      <div class='bold upgrade-points'>Points: ${this.upgradePoints}</div>
-    </div>`;
-    Object.keys(this.upgrades.stats).forEach(stat => {
-      let cost = this.upgrades.rules[stat].cost;
-      let ret = this.upgrades.rules[stat].return;
-      let d = html`<div class='upgrade-stat'>
-        <span class='bold'>${names[stat]}</span>
-        <span class='controls'>
-          <span class='upgrade-stat-value'>${this.baseStat(stat) + this.upgrades.changes[stat]}</span>
-          <span class='decrease-stat'>-</span>
-          <span class='increase-stat'>+</span>
-        </span>
-      </div>`;
-      d.addEventListener('click', e => {
-        if(e.target.classList.contains('increase-stat')) {
-          if(this.upgradePoints < 1) return;
-          if(this.upgradePoints < cost) return;
-          console.log('increase stat', stat);
-          this.upgrades.changes[stat] += ret;
-          this.upgradePointsSpent += cost;
-          let p = t.parentNode;
-          p.removeChild(t);
-          p.appendChild(this.drawLevelUp(names, onCommit));
-        }
-        if(e.target.classList.contains('decrease-stat')) {
-          if(this.upgrades.changes[stat] < 1) return;
-          if(this.upgradePoints >= this.upgradePointsLeft) return;
-          console.log('decrease stat', stat);
-          this.upgrades.changes[stat] -= ret;
-          this.upgradePointsSpent -= cost;
-          let p = t.parentNode;
-          p.removeChild(t);
-          p.appendChild(this.drawLevelUp(names, onCommit));
-        }
-      })
-      t.appendChild(d);
-    });
-    let commit = html`<div class='monster-upgrades-commit'>Confirm</div>`;
+    // let t = html`<div class='monster-stat-upgrades'>
+    //   <div class='bold upgrade-points'>Points: ${this.upgradePoints}</div>
+    // </div>`;
+    // Object.keys(this.upgrades.stats).forEach(stat => {
+    //   let cost = this.upgrades.rules[stat].cost;
+    //   let ret = this.upgrades.rules[stat].return;
+    //   let d = html`<div class='upgrade-stat'>
+    //     <span class='bold'>${names[stat]}</span>
+    //     <span class='controls'>
+    //       <span class='upgrade-stat-value'>${this.baseStat(stat) + this.upgrades.changes[stat]}</span>
+    //       <span class='decrease-stat'>-</span>
+    //       <span class='increase-stat'>+</span>
+    //     </span>
+    //   </div>`;
+    //   d.addEventListener('click', e => {
+    //     if(e.target.classList.contains('increase-stat')) {
+    //       if(this.upgradePoints < 1) return;
+    //       if(this.upgradePoints < cost) return;
+    //       this.upgrades.changes[stat] += ret;
+    //       this.upgradePointsSpent += cost;
+    //       let p = t.parentNode;
+    //       p.removeChild(t);
+    //       p.appendChild(this.drawLevelUp(names, onCommit));
+    //     }
+    //     if(e.target.classList.contains('decrease-stat')) {
+    //       if(this.upgrades.changes[stat] < 1) return;
+    //       if(this.upgradePoints >= this.upgradePointsLeft) return;
+    //       this.upgrades.changes[stat] -= ret;
+    //       this.upgradePointsSpent -= cost;
+    //       let p = t.parentNode;
+    //       p.removeChild(t);
+    //       p.appendChild(this.drawLevelUp(names, onCommit));
+    //     }
+    //   })
+    //   t.appendChild(d);
+    // });
+    let t = html`<div class='monster-stat-upgrades'></div>
+    let commit = html`<div class='monster-upgrades-commit'>Level Up</div>`;
     commit.addEventListener('click', e => {
       let changes = Object.assign({}, this.upgrades.changes);
       Object.keys(this.upgrades.changes).forEach(stat => {
@@ -996,9 +1044,8 @@ class Monster {
       tpr: 'Triggers Per Turn', apr: 'Actions Per Turn',
       damage: 'Bonus Damage'
     };
-    if(levelUp) {
+    if(levelUp && this.bio.leader) {
       popup.appendChild(this.drawLevelUp(names, (commits, spent) => {
-        console.log('commit changes');
         typeof levelUp == 'function' && levelUp(commits, spent);
         this.drawMonsterCS(popup, onClose, levelUp);
       }));
