@@ -314,10 +314,21 @@ class PositionList2d {
     }
   }
 
-  canWalkTo(sx, sy, ex, ey) {
+  canWalkTo(sx, sy, ex, ey, diagonal = 'Never') {
     if(this.steps(sx, sy, ex, ey) == 1 && !this.get(ex, ey)) return true;
-    if(this.path(sx, sy, ex, ey).length) return true;
+    if(this.path(sx, sy, ex, ey, diagonal).length) return true;
     return false;
+  }
+
+  map() {
+    let out = [];
+    for(var y = 0; y < this.h; y++) {
+      for(var x = 0; x < this.w; x++) {
+        let item = this.get(x, y);
+        item && out.push(fn({item, x, y}));
+      }
+    }
+    return out;
   }
 
   filled(fn) {
@@ -359,8 +370,8 @@ class PositionList2d {
     return grid;
   }
 
-  path(sx, sy, ex, ey) {
-    return new PF.AStarFinder().findPath(sx, sy, ex, ey, this.matrix);
+  path(sx, sy, ex, ey, diagonal = 'Never') {
+    return new PF.AStarFinder({diagonalMovement: PF.DiagonalMovement[diagonal]}).findPath(sx, sy, ex, ey, this.matrix);
   }
 
   _list() {

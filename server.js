@@ -117,6 +117,7 @@ loadFile('TeamViewer.js');
 loadFile('Quest.js');
 loadFile('QuestLog.js');
 loadFile('Check.js');
+loadFile('upgrade-rules.js');
 loadFile('Team.js');
 loadFile('UnitPlacement.js');
 loadFile('ToolTip.js');
