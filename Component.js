@@ -211,4 +211,5 @@ Fragment.prototype.q = Component.prototype.q;
 Fragment.prototype.listen = Component.prototype.listen;
 Fragment.prototype.addStyle = Component.prototype.addStyle;
 Component.Fragment = Fragment;
+Component.Events = Events;
 module.exports = Component;

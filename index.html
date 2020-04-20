@@ -76,10 +76,10 @@ Module.modules = {};
 Module.loaders = [];
   Module.onLoad(['DungeonCrawl_ProjectUtumnoTileset.png', 'Hell2.jpg', 'guid.js',
   'abilities.js', 'monsters.js', 'terrains.js', 'icons.js','animations.js', 'seven.js', 'teams.js',
-  'leaders.js', 'sounds.js', 'recipes.js', 'equipments.js',
+  'leaders.js', 'sounds.js', 'recipes.js', 'equipments.js', 'skilltree-mods.js',
   'Canvas.js', 'Sprite.js', 'Slider.js', 'Animation.js', 'CS.js', 'DynamicSound.js', 'init-sound.js',
   'heroes-like.js', 'animation-tpl.js', 'ability-tpl.js', 'terrain-tpl.js', 'icon-tpl.js', 'team-tpl.js',
-  'leader-tpl.js', 'recipe-tpl.js', 'equipment-tpl.js'], () => {
+  'leader-tpl.js', 'recipe-tpl.js', 'equipment-tpl.js', 'skilltree-mods-tpl.js'], () => {
     console.log('all loaded')
     const CS = require('CS.js');
     const Canvas = require('Canvas.js');
@@ -151,6 +151,12 @@ Module.loaders = [];
       var cs  = new CS(equipment, document.body);
       cs.render();
       document.title = 'Equipment';
+    }
+    function loadSkilltreeMods() {
+      let mods = require("skilltree-mods-tpl.js");
+      var cs  = new CS(mods, document.body);
+      cs.render();
+      document.title = 'Skilltree Mods';
     }
 
     function loadSound() {
@@ -245,6 +251,9 @@ Module.loaders = [];
         break;
       case 'equipment':
         loadEquipment();
+        break;
+      case 'skilltree-mods':
+        loadSkilltreeMods();
         break;
       case 'sound':
         loadSound();

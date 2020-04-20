@@ -92,15 +92,15 @@ Module.loaders = [];
 Module.loadOrder = [];
 
 Module.onLoad(['DungeonCrawl_ProjectUtumnoTileset.png', 'Rand.js',
-  'icons.js', 'storage.js', 'upgrade-rules.js', 'skilltree-mods.js',
+  'icons.js', 'abilities.js', 'storage.js', 'upgrade-rules.js',
   'PositionList2d.js', 'FixedList.js', 'guid.js', 'Keyboard.js',
   'Component.js', 'Canvas.js', 'Sprite.js', 'CompositeSprite.js',
   'CS.js',
-  'pathfinding.js', 'Camera.js', 'Tree.js', 'SkillTree.js'], () => {
+  'pathfinding.js', 'Camera.js', 'Tree.js', 'AbilityTree.js'], () => {
   console.log('all loaded')
-  const SkillTree = require('SkillTree.js');
-  // let st = SkillTree.Editor.load() || new SkillTree.Editor();
-  let st = SkillTree.load() || new SkillTree();
+  const AbilityTree = require('AbilityTree.js');
+  let st = AbilityTree.Editor.load() || new AbilityTree.Editor();
+  // let st = AbilityTree.load() || new AbilityTree();
   st.loadBuild();
   window.skilltree = st;
   document.body.appendChild(st.render());

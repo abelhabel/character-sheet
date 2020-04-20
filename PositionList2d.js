@@ -242,6 +242,19 @@ class PositionList2d {
     return out;
   }
 
+  inCircle(cx, cy, r = 1) {
+    var out = [];
+    for(var y = cy - r; y <= cy + r; y++) {
+      if(y < 0 || y > this.h-1) continue;
+      for(var x = cx - r; x <= cx + r; x++) {
+        if(x < 0 || x > this.w-1) continue;
+        let d = this.distance(cx, cy, x, y);
+        if(d <= r) out.push({item: this.get(x, y), x:x, y: y});
+      }
+    }
+    return out;
+  }
+
   get(x, y) {
     if(x < 0 || x > this.w-1 || y < 0 || y > this.h-1) return null;
     return this.items[this.w * y + x];
@@ -330,6 +343,20 @@ class PositionList2d {
     }
     return out;
   }
+
+  some(fn) {
+    let out = [];
+    for(var y = 0; y < this.h; y++) {
+      for(var x = 0; x < this.w; x++) {
+        let item = this.get(x, y);
+        if(item && fn({item, x, y})) {
+          out.push({item, x, y});
+        }
+      }
+    }
+    return out;
+  }
+
 
   filled(fn) {
     for(var y = 0; y < this.h; y++) {

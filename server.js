@@ -26,6 +26,7 @@ const files = {
   'recipes.js': () => wrap.pre() + require('./recipes.js')() + wrap.post('recipes.js'),
   'animations.js': () => wrap.pre() + require('./animations.js')() + wrap.post('animations.js'),
   'leaders.js': () => wrap.pre() + require('./leaders.js')() + wrap.post('leaders.js'),
+  'skilltree-mods.js': () => wrap.pre() + require('./skilltree-mods.js')() + wrap.post('skilltree-mods.js'),
   'socket-worker.js': fs.readFileSync(__dirname + '/socket-worker.js'),
   'init-battle.js': fs.readFileSync(__dirname + '/init-battle.js'),
   'init-arena.js': fs.readFileSync(__dirname + '/init-arena.js'),
@@ -35,6 +36,7 @@ const files = {
   'init-team.js': fs.readFileSync(__dirname + '/init-team.js'),
   'init-adventure.js': fs.readFileSync(__dirname + '/init-adventure.js'),
   'init-skilltree.js': fs.readFileSync(__dirname + '/init-skilltree.js'),
+  'init-abilitytree.js': fs.readFileSync(__dirname + '/init-abilitytree.js'),
 }
 // console.log(files['abilities.js'])
 var ruleLinks = [
@@ -134,7 +136,9 @@ loadFile('Adventure.js');
 loadFile('AdventureEditor.js');
 loadFile('AdventureMenu.js');
 loadFile('AdventureTime.js');
+loadFile('Tree.js');
 loadFile('SkillTree.js');
+loadFile('AbilityTree.js');
 loadFile('Camera.js');
 loadFile('GridBox.js');
 loadFile('Inventory.js');
@@ -155,12 +159,14 @@ loadFile('leader-tpl.js');
 loadFile('quest-tpl.js');
 loadFile('recipe-tpl.js');
 loadFile('equipment-tpl.js');
+loadFile('skilltree-mods-tpl.js');
 loadFile('pathfinding.js');
 loadFile('index.html');
 loadFile('rules.html', addRuleLinks);
 loadFile('battle.html');
 loadFile('animation.html');
 loadFile('skilltree.html');
+loadFile('abilitytree.html');
 loadFile('arena.html');
 loadFile('team.html');
 loadFile('lobby.html');
@@ -276,6 +282,9 @@ const server = http.createServer(function(req, res) {
   }
   if(name == 'saveTerrain') {
     return saveData(req, res, 'terrain', url);
+  }
+  if(name == 'saveSkilltreeMod') {
+    return saveData(req, res, 'skilltree-mods', url);
   }
   if(name == 'saveArena') {
     return saveData(req, res, 'arenas', url);

@@ -41,13 +41,18 @@ class Camera {
   }
 
   move(x, y) {
-    this._x += x;
-    this._y += y;
+    this._x += Math.floor(x);
+    this._y += Math.floor(y);
   }
 
   moveTo(x, y) {
     this._x = x;
     this._y = y;
+  }
+
+  centerAt(x, y) {
+    this._x = Math.floor(x - this.w/2);
+    this._y = Math.floor(y - this.h/2);
   }
 }
 

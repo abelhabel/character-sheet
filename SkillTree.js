@@ -1,10 +1,13 @@
 const PL = require('PositionList2d.js');
+const Tree = require('Tree.js');
 const Canvas = require('Canvas.js');
 const Camera = require('Camera.js');
 const Sprite = require('Sprite.js');
+const CompositeSprite = require('CompositeSprite.js');
 const Keyboard = require('Keyboard.js');
 const storage = require('storage.js');
 const icons = require('icons.js');
+const skilltreeMods = require('skilltree-mods.js');
 const sprites = {};
 icons.forEach(i => {
   if(i.bio.name.match(/(Skill|Stat)$/)) {
@@ -21,11 +24,11 @@ const colors = {
 };
 
 class Tile {
-  constructor() {
-    this.highlight = false;
-    this.selected = false;
-    this.power = null;
-    this.picked = false;
+  constructor(t = {}) {
+    this.highlight = t.highlight || false;
+    this.selected = t.selected || false;
+    this.power = t.power || null;
+    this.picked = t.picked || false;
   }
 
 }
@@ -34,6 +37,10 @@ class Power {
   constructor(spriteId, tier) {
     this.spriteId = spriteId;
     this.tier = tier || 1;
+  }
+
+  get sprite() {
+    return sprites[this.spriteId];
   }
 }
 
@@ -71,22 +78,59 @@ class SkillSetting {
 const rules = require('upgrade-rules.js');
 class Summary {
   constructor() {
-    this.canvas = new Canvas(400, 400);
+    this.lh = 14;
+    this.canvas = new Canvas(200, this.lh * Object.keys(rules).length + 2);
   }
 
-  render(picked) {
+  tileStats(item, mods) {
+    let r = rules;
+    let tile = item.item;
+    let {x, y} = item;
+    let name = sprites[tile.power.spriteId].name;
+    if(!r[name]) return {v: 0, t: 0};
+    let v = r[name].value;
+    let t = tile.power.tier;
+    let m = mods.forEach(m => {
+      let d = PL.prototype.distance(m.x, m.y, x, y);
+      if(d <= m.item.power.r) {
+        console.log('mod')
+        v += r[name].mod * m.item.power.value;
+        t += r[name].mod * m.item.power.tier;
+      }
+    })
+    v = Math.floor(v);
+    t = Math.floor(t);
+    let total = v * t;
+    return {name, v, t, total};
+  }
+
+  render(picked, mods) {
     let r = JSON.parse(JSON.stringify(rules));
     let x = 20;
-    let lh = 14;
+    let lh = this.lh;
     this.canvas.drawRect(0, 0, this.canvas.w, this.canvas.h, 'black', 'white');
-    picked.forEach(({item, x, y}) => {
-      if(!item.power) return;
-      let name = sprites[item.power.spriteId].name;
-      if(!r[name]) return;
-      r[name].result += r[name].value * item.power.tier;
+    let ailments = new Set();
+    let vigors = new Set();
+    mods.forEach(m => {
+      if(m.item.ailment) {
+        ailments.add(m.item.ailment);
+      }
+      if(m.item.vigor) {
+        vigors.add(m.item.vigor);
+      }
     });
+    picked.forEach(item => {
+      if(!item.item.power || !item.item.power.spriteId) return;
+      let name = sprites[item.item.power.spriteId].name;
+      if(!r[name]) return;
+      let b = this.tileStats(item, mods);
+      r[name].result += b.total;
+    });
+
     this.canvas.drawText(x, lh, `Points used: ${picked.length}`, 'white')
-    let c = 1;
+    this.canvas.drawText(x, 2*lh, `Vigors: ${Array.from(vigors).join(', ')}`, 'green')
+    this.canvas.drawText(x, 3*lh, `Ailments: ${Array.from(ailments).join(', ')}`, 'red')
+    let c = 3;
     Object.keys(r).forEach((name, i) => {
       if(!r[name].result) return;
       c++;
@@ -97,207 +141,160 @@ class Summary {
   }
 }
 
-class SkillTree {
-  constructor() {
-    this.grid = new PL(21, 21);
-    this._tw = 64;
-    this._th = 64;
-    this._pad = 16;
-    this.mouse = {
-      down: null,
-      up: null,
-      click: null,
-      move: null
+Array.prototype.random = function() {
+  return this[Math.floor(Math.random() * this.length)];
+}
+const modTiers = [0, 1, 2];
+const modValues = [0, 1, 2, 3];
+const modShapes = ['square', 'circle'];
+const modRadii = [1, 2, 3];
+class Mod {
+  constructor(m = {}) {
+    let {bio, stats} = m;
+    this.socketable = true;
+    this.tpl = m;
+    this.bio = {
+      name: bio.name,
+      sprite: bio.sprite
     };
-    this.selectedTile = null;
-    this.selectX = 0;
-    this.selectY = 0;
-    this.highlightedTile = null;
-    this.highlightX = 0;
-    this.highlightY = 0;
-    this.canvas = new Canvas(window.innerWidth, window.innerHeight);
-    this.camera = new Camera(window.innerWidth, window.innerHeight);
+    this.stats = {
+      composite: stats.composite,
+      tier: stats.tier,
+      value: stats.value,
+      r: stats.r,
+      shape: stats.shape,
+      ailment: stats.ailment,
+      vigor: stats.vigor
+    }
+    this.index = 0;
+    this.sprites = this.bio.sprite.map(s => new Sprite(s));
+    this._sprite = new CompositeSprite(this.bio.sprite);
+  }
+
+  get sprite() {
+    if(this.stats.composite) {
+      return this._sprite;
+    }
+    let i = Math.floor(Math.random() * this.bio.sprite.length);
+    this.index = i;
+    return this.sprites[i];
+  }
+
+  get tier() {
+    return this.stats.tier;
+  }
+  get value() {
+    return this.stats.value;
+  }
+  get r() {
+    return this.stats.r;
+  }
+  get shape() {
+    return this.stats.shape;
+  }
+  get ailment() {
+    return this.stats.ailment;
+  }
+  get vigor() {
+    return this.stats.vigor;
+  }
+
+}
+
+class Mods {
+  constructor() {
+    this.mods = [];
+    this.tw = 64;
+    this.th = 64;
+    this.w = 4 * this.tw;
+    this.h = this.th;
+    this.canvas = new Canvas(this.w, this.h);
+  }
+
+  add(tpl = skilltreeMods[0]) {
+    if(tpl instanceof Mod) {
+      this.mods.push(tpl);
+    } else {
+      this.mods.push(new Mod(tpl));
+    }
+  }
+
+  take(mod) {
+    this.mods.splice(this.mods.indexOf(mod), 1);
+    this.render();
+  }
+
+  mouseUp(x, y) {
+    if(!(x < 0 || x > this.w || y < 0 || y > this.h)) {
+      let i = Math.floor(x / 64);
+      return this.mods[i];
+    }
+  }
+
+  render() {
+    let {mods, tw, th, canvas} = this;
+    canvas.drawRect(0, 0, canvas.w, canvas.h, 'black');
+    mods.forEach((m, i) => {
+      canvas.drawSprite(m.sprite, i * tw, 8, tw -16, th-16);
+    })
+    canvas.drawRect(0, 0, canvas.w, canvas.h, false, 'white');
+    return canvas.canvas;
+  }
+}
+
+class SkillTree extends Tree{
+  constructor() {
+    super(21, 21);
+    this.folder = 'skilltree';
+    this.name = 'test';
     this.settings = new SkillSetting();
     this.summary = new Summary();
+    this.mods = new Mods();
+    this.modsX = Math.floor(this.camera.w / 2) - Math.floor(this.mods.w / 2);
+    this.modsY = 20;
+    this.tileSummaryX = this.modsX + this.mods.w + 20;
+    this.tileSummaryY = 20;
+    this.tileSummaryW = 128;
+    this.tileSummaryH = 80;
     this.keyboard = new Keyboard(Math.random(), {
       1: this.setTier.bind(this, 1),
       2: this.setTier.bind(this, 2),
       3: this.setTier.bind(this, 3),
     });
-    this.start = {
-      x: Math.floor(this.grid.w/2),
-      y: Math.floor(this.grid.h/2)
-    };
     this.init();
-    this.center();
   }
 
   init() {
-    this.canvas.canvas.style.backgroundColor = colors.canvasBG;
-    this.canvas.canvas.style.position = 'absolute';
-    this.canvas.canvas.addEventListener('mousedown', this.mouseDown.bind(this));
-    this.canvas.canvas.addEventListener('mouseup', this.mouseUp.bind(this));
-    this.canvas.canvas.addEventListener('mousemove', this.mouseMove.bind(this));
-    this.canvas.canvas.addEventListener('click', this.click.bind(this));
-    this.canvas.canvas.addEventListener('wheel', this.mouseWheel.bind(this));
-    this.canvas.canvas.addEventListener('dblclick', this.doubleClick.bind(this));
-
-    this.grid.each(item => {
-      this.grid.set(item.x, item.y, new Tile());
-    });
+    Tree.prototype.init.call(this);
+    this.mods.add(skilltreeMods[0]);
+    this.mods.add(skilltreeMods[1]);
 
     this.settings.render();
     this.keyboard.start();
-    let t = this.grid.get(this.start.x, this.start.y);
-    t.picked = true;
-  }
 
-  save() {
-    storage.save('skilltree', 'test', this.grid.items);
-  }
-
-  static load() {
-    let data = storage.load('skilltree', 'test');
-    if(!data) return null
-    let st = new this();
-    data.data.forEach((s, i) => {
-      let {x, y} = st.grid.xy(i);
-      if(s.power) {
-        let t = st.grid.get(x, y);
-        t.power = new Power(s.power.spriteId, s.power.tier);
+    this.on('mouse move start', (tile, x, y, e) => {
+      this.clearTileSummary(e);
+    })
+    this.on('mouse move end', (tile, x, y, e) => {
+      this.renderTileSummary(e);
+    })
+    this.on('mouse up', (tile, x, y, e) => {
+      let m = this.mods.mouseUp(e.offsetX - this.modsX, e.offsetY - this.modsY)
+      if(m) {
+        this.mods.take(m);
+        this.mouse.follow = m;
       }
     })
-    // st.grid.items = data.data.map(s => {
-    //   let t = new Tile();
-    //   if(s.power) {
-    //     t.power = new Power(s.power.spriteId, s.power.tier);
-    //   }
-    //   return t;
-    // });
-    return st;
-  }
 
-  loadBuild(name) {
-    let data = storage.load('skilltree-build', 'test');
-    if(!data) return null;
-    data.data.forEach(p => {
-      let tile = this.grid.get(p.x, p.y);
-      if(!tile) return;
-      tile.picked = true;
-    })
-  }
-
-  saveBuild(name) {
-
-    storage.save('skilltree-build', 'test', this.picked);
-
-  }
-
-  get picked() {
-    let picked = [];
-    this.grid.filled(({item, x, y}) => {
-      if(item.picked) {
-        picked.push({item, x, y})
+    this.on('mouse up follow', (follow, tile, x, y) => {
+      if(tile && tile.picked && !tile.power) {
+        tile.power = follow;
+      } else {
+        this.mods.add(follow);
       }
-    })
-    return picked;
-  }
-
-  get pad() {
-    return Math.ceil(this._pad * this.camera.zoom);
-  }
-
-  get tw() {
-    return Math.ceil(this._tw * this.camera.zoom);
-  }
-
-  get th() {
-    return Math.ceil(this._th * this.camera.zoom);
-  }
-
-  get cx() {
-    return Math.ceil(this.grid.w / 2) * this.tw - Math.floor(this.camera.w / 2);
-  }
-
-  get cy() {
-    return Math.ceil(this.grid.h / 2) * this.th - Math.floor(this.camera.h / 2);
-  }
-
-  center() {
-    this.camera.moveTo(this.cx, this.cy);
-  }
-
-  tpos(e, cx = this.camera.x, cy = this.camera.y) {
-    let x = Math.floor((cx + e.offsetX) / this.tw);
-    let y = Math.floor((cy + e.offsetY) / this.th);
-    return {x, y};
-  }
-
-  inSetting(x, y) {
-    let {selectedTile, selectX, selectY, settings} = this;
-    if(!selectedTile) return false;
-    let sx = selectX - Math.floor(settings.grid.w / 2);
-    let sy = selectY - settings.grid.h;
-    return this.settings.grid.get(x-sx, y -sy)
-  }
-
-  setTier(tier, e) {
-    if(!this.selectedTile || !this.selectedTile.power) return;
-    this.selectedTile.power.tier = tier;
-    this.render(this.selectX, this.selectY);
-  }
-
-  click(e) {
-
-  }
-
-  doubleClick(e) {
-    let {x, y} = this.tpos(e);
-    let tile = this.grid.get(x, y);
-    if(!tile) return;
-    tile.power = null;
-    this.render(x, y);
-  }
-
-  mouseWheel(e) {
-    if(e.deltaY > 0) {
-      this.camera.setZoom(-1);
-    } else {
-      this.camera.setZoom(1);
-    }
-    this.render();
-  }
-
-  mouseDown(e) {
-    this.mouse.up = null
-    this.mouse.down = {offsetX: e.offsetX, offsetY: e.offsetY, cx: this.camera.x, cy: this.camera.y};
-  }
-
-  mouseUp(e) {
-    if(!this.mouse.move || this.mouse.move.cx == this.mouse.down.cx && this.mouse.move.cy && this.mouse.down.cy) {
-      let {x, y} = this.tpos(e);
-      let tile = this.grid.get(x, y);
-      let around = this.grid.around(x, y, 1).filter(item => item.item && item.item.picked);
-      // if(!tile) return;
-      if(tile && around.length) {
-        if(tile.picked) {
-          let g = new PL(this.grid.w, this.grid.h);
-          this.picked.forEach(p => {
-            if(p.x == x && p.y == y) return;
-            g.set(p.x, p.y, true);
-          })
-          g.invert(true);
-          let canNotWalkTo = around.find(item => {
-            if(item.x == x && item.y == y) return false;
-            return !g.canWalkTo(this.start.x, this.start.y, item.x, item.y, 'Always');
-          })
-          if(!canNotWalkTo) {
-            tile.picked = false;
-          }
-        } else {
-          tile.picked = true;
-        }
-      }
+    });
+    this.on('tile clicked', (tile, x, y) => {
+      // Editor
       if(this.selectedTile == tile) {
         this.selectedTile = null;
       } else {
@@ -314,100 +311,90 @@ class SkillTree {
           this.selectY = y;
         }
       }
-      this.render();
-    }
-    this.mouse.down = null;
-    this.mouse.move = null;
-    this.mouse.up = {offsetX: e.offsetX, offsetY: e.offsetY};
-  }
-
-  mouseMove(e) {
-    let cx = this.mouse.move ? this.mouse.move.x : 0;
-    let cy = this.mouse.move ? this.mouse.move.y : 0;
-    let {x, y} = this.tpos(e, cx, cy);
-    let tile = this.grid.get(x, y);
-    if(!tile) return;
-    if(this.mouse.down) {
-      this.camera.move(-e.movementX, -e.movementY);
-      this.render();
-
-    }
-    if(this.mouse.move) {
-      let {x, y} = this.tpos(this.mouse.move);
-      let t = this.grid.get(x, y);
-      if(this.highlightedTile) {
-        this.highlightedTile = null;
-        this.render(this.highlightX, this.highlightY);
-      }
-      if(t) {
-        this.highlightedTile = t;
-        this.highlightX = x;
-        this.highlightY = y;
-      } else {
-        this.highlightedTile = null;
-      }
-      this.render(x, y);
-    }
-    tile.highlight = true;
-    this.mouse.move = {
-      offsetX: e.offsetX, offsetY: e.offsetY, movementX: e.movementX, movementY: e.movementY,
-      cx: this.camera.x, cy: this.camera.y
-    };
-    this.render(x, y);
-  }
-
-  renderTile(tile, x, y) {
-    if(!tile) return;
-    if(!this.camera.inView(x * this.tw, y * this.th, this.tw, this.th)) {
-      return;
-    }
-    let {tw, th, pad, selectedTile, highlightedTile, grid, canvas, camera, settings} = this;
-    let cx = Math.ceil(this.grid.w / 2);
-    let cy = Math.ceil(this.grid.h / 2);
-    let alpha = grid.distance(x, y, cx, cy);
-    canvas.clearRect(x * tw - camera.x, y * th - camera.y, tw, th);
-    if(tile.power) {
-      let p = Math.ceil(8 / tile.power.tier) * camera.zoom;
-      let c = tile.power.tier == 3 ? 'gold' : tile.power.tier == 2 ? 'silver' : 'burlywood';
-      // canvas.drawRect(x * tw + pad - camera.x, y * th + pad - camera.y, tw - 2*pad, th - 2*pad, c);
-      canvas.drawCircle(x * tw + pad - camera.x + Math.ceil((tw - 2*pad)/2), y * th + pad - camera.y + Math.ceil((th - 2*pad)/2), Math.ceil((th - 2*pad)/2), c, 'white');
-      canvas.drawSprite(sprites[tile.power.spriteId],x * tw + pad - camera.x, y * th + pad - camera.y, tw - 2*pad, th - 2*pad);
-    } else {
-      let stroke = tile == highlightedTile ? colors.tileStrokeHL : colors.tileStroke;
-      canvas.drawRect(x * tw + pad - camera.x, y * th + pad - camera.y, tw - 2*pad, th - 2*pad, null, stroke);
-    }
-
-  }
-
-  render(x, y) {
-    let {tw, th, pad, selectedTile, highlightedTile, grid, canvas, camera, settings} = this;
-    if(x != undefined && y != undefined) {
-      this.renderTile(grid.get(x, y), x, y);
-    } else {
-      canvas.clear();
-      grid.each(({item, x, y}) => {
-        this.renderTile(item, x, y)
-      });
-    }
-    let stroke = 'green';
-    let picked = this.picked;
-    picked.forEach(({x, y}) => {
-      let around = this.grid.around(x, y, 1);
-      stroke = '#660000';
-      around.forEach(({item, x, y}) => {
-        if(item.picked) return;
-        canvas.drawRect(x * tw + pad - camera.x, y * th + pad - camera.y, tw - 2*pad, th - 2*pad, false, stroke);
-      });
-      stroke = 'green';
-      canvas.drawRect(x * tw + pad - camera.x, y * th + pad - camera.y, tw - 2*pad, th - 2*pad, false, stroke);
-
+    })
+    this.on('render end', (x, y) => {
+      this.renderEnd(x, y);
     });
-    let summary = this.summary.render(picked);
+  }
+
+  get modifiers() {
+    return this.grid.some(item => item.item.power && item.item.power instanceof Mod);
+  }
+
+  inSetting(x, y) {
+    let {selectedTile, selectX, selectY, settings} = this;
+    if(!selectedTile) return false;
+    let sx = selectX - Math.floor(settings.grid.w / 2);
+    let sy = selectY - settings.grid.h;
+    return this.settings.grid.get(x-sx, y -sy)
+  }
+
+  setTier(tier, e) {
+    if(!this.selectedTile || !this.selectedTile.power) return;
+    this.selectedTile.power.tier = tier;
+    this.render(this.selectX, this.selectY);
+  }
+
+  clearTileSummary(m) {
+    this.canvas.clearRect(
+      this.tileSummaryX -1,
+      this.tileSummaryY -1,
+      this.tileSummaryW + 2,
+      this.tileSummaryH +2
+    );
+  }
+
+  renderTileSummary(m) {
+    let {tw, th, pad, selectedTile, highlightedTile, grid, canvas, camera, settings} = this;
+
+    if(highlightedTile && highlightedTile.power) {
+      let modifiers = grid.some(item => item.item.power instanceof Mod);
+      let {x, y} = this.tpos(m);
+      let bonus = this.summary.tileStats({item: highlightedTile,x,y}, modifiers);
+      let lines = [bonus.name];
+      if(bonus.t) lines.push(`Tier: ${bonus.t}`);
+      if(bonus.v) lines.push(`Value: ${bonus.v}`);
+      if(bonus.total) lines.push(`Total: ${bonus.total}`);
+      this.canvas.drawRect(
+        this.tileSummaryX,
+        this.tileSummaryY,
+        this.tileSummaryW,
+        this.tileSummaryH,
+        'black', 'white'
+      );
+      lines.forEach((l, i) => {
+        canvas.drawText(this.tileSummaryX +10, 20 +this.tileSummaryY + 15*i, l, 'white');
+      })
+    }
+  }
+
+  renderEnd(x, y) {
+    let {tw, th, pad, selectedTile, highlightedTile, grid, canvas, camera, settings} = this;
+    let stroke = 'green';
+    let modifiers = this.modifiers;
+    modifiers.forEach(({item, x, y}) => {
+      let affected = [];
+      let r = item.power.r || 1;
+      if(item.power.shape == 'circle') {
+        affected = grid.inCircle(x, y, r);
+        canvas.drawCircle(x * tw + Math.floor(tw/2) - camera.x, y * th + Math.floor(th/2) - camera.y, r * tw, false, 'pink');
+      } else
+      if(item.power.shape == 'square') {
+        affected = grid.around(x, y, r);
+        canvas.drawRect(x * tw - (tw * r) - camera.x, y * th - (th * r) - camera.y, (r * 2 + 1) * tw, (r * 2 + 1) * th, false, 'pink');
+      }
+      affected.forEach(({item, x, y}) => {
+        canvas.drawRect(x * tw + pad - camera.x, y * th + pad - camera.y, tw - 2*pad, th - 2*pad, null, 'pink');
+      })
+    })
+    let summary = this.summary.render(this.picked, modifiers);
     canvas.drawImage(summary, 0, 0, summary.width, summary.height);
+    let mods = this.mods.render();
+    canvas.drawImage(mods, this.modsX, this.modsY, mods.width, mods.height);
     return canvas.canvas;
   }
 }
-
+SkillTree.folder = 'skilltree';
 class Editor extends SkillTree {
   constructor() {
     super();
