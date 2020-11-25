@@ -58,7 +58,7 @@ var tpl = {
             'when nearby ally is hit',
             'when ally is hit',
             'when adjacent enemy is hit',
-            'when nearyby enemy is hit',
+            'when nearby enemy is hit',
             'when enemy is hit',
             'when adjacent enemy is slain',
             'when enemy is slain by self',

@@ -80,7 +80,7 @@ class CS {
   constructor(tpl, parent, pools, onUpdateState, hidePersistence) {
     this.name = tpl.name;
     this.categories = tpl.categories;
-
+    this.tests = tpl.tests || [];
     this.hidePersistence = hidePersistence;
 
     this.library = tpl.library;
@@ -111,6 +111,20 @@ class CS {
       this.drains[k] = 0;
       this.initialPools[k] = this.pools[k];
     });
+  }
+
+  renderTests() {
+    let o = document.createElement('div');
+
+    this.tests.forEach(test => {
+      let b = document.createElement('button');
+      b.textContent = test.name;
+      b.addEventListener('click', e => {
+        test.run(this.state);
+      })
+      o.appendChild(b);
+    })
+    return o;
   }
 
   renderName() {
@@ -322,6 +336,7 @@ class CS {
     o.style.userSelect = 'none';
     var name = document.createElement('div');
     var val = document.createElement('div');
+    let collapse = document.createElement('div');
     name.style.display = val.style.display = 'inline-block';
     name.style.verticalAlign = val.style.verticalAlign = 'top';
     name.style.lineHeight = '40px';
@@ -331,12 +346,35 @@ class CS {
     val.style.backgroundColor = 'darkgray';
     val.style.padding = '10px';
     name.textContent = item.name;
+    let collapsed = true;
+    collapse.textContent = 'Expand';
+    val.appendChild(collapse);
+
     var currentVal = [];
     this.setState(c, item, currentVal, true);
     var tags = [];
+    collapse.addEventListener('click', e => {
+      if(!collapsed) {
+        collapse.textContent = 'Expand';
+        tags.forEach(d => {
+          if(d.classList.contains('selected')) {
+            d.style.display = 'inline-block';
+          } else {
+            d.style.display = 'none';
+          }
+        })
+      } else {
+        collapse.textContent = 'Collapse';
+        tags.forEach(d => {
+          d.style.display = 'inline-block';
+        })
+      }
+      collapsed = !collapsed;
+    })
     item.values.forEach(o => {
       let v = item.get ? item.get(o) : o;
       var d = document.createElement('div');
+      d.className = 'ability-tag';
       Object.assign(d.style, {
         display: 'inline-block',
         backgroundColor: 'gray',
@@ -354,16 +392,24 @@ class CS {
       var selected = v == item.initial;
       if(selected) {
         d.style.backgroundColor = 'black';
-      };
+      } else {
+        if(collapsed) {
+          d.style.display = 'none';
+        }
+      }
       d.addEventListener('click', () => {
         let vi = item.set ? item.set(v) : v;
-        console.log('clicked', v, o)
         let index = currentVal.indexOf(vi);
         if(!~index) {
+          d.classList.add('selected');
           d.style.backgroundColor = 'black';
           currentVal.push(vi);
         } else {
+          d.classList.remove('selected');
           d.style.backgroundColor = 'gray';
+          if(collapsed) {
+            d.style.display = 'none';
+          }
           currentVal.splice(index, 1);
         }
         this.setState(c, item, currentVal);
@@ -384,9 +430,17 @@ class CS {
         currentVal = Array.from(new Set(v));
         tags.forEach(t => {
           if(~currentVal.indexOf(t.textContent)) {
+            t.classList.add('selected');
             t.style.backgroundColor = 'black';
+            t.style.display = 'inline-block';
           } else {
+            t.classList.remove('selected');
             t.style.backgroundColor = 'gray';
+            if(collapsed) {
+              t.style.display = 'none';
+            } else {
+              t.style.display = 'inline-block';
+            }
           }
         })
       }
@@ -631,32 +685,36 @@ class CS {
     Object.keys(s).forEach(b => t.style[b] = s[b]);
   }
 
+  save() {
+    var id = this.importingId ? `?id=${this.importingId}` : '';
+    var qc = this.queryCommand || 'saveMonster';
+    var body = JSON.stringify(this.state);
+    fetch(qc + id, {
+      method: 'POST',
+      body: body
+    })
+    .then(res => res.text())
+    .then(id => {
+      var monsters = require(this.library);
+      var monster = JSON.parse(body);
+      monster.id = id;
+      monsters.push(monster);
+      this.importingId = id;
+      this.importingLabel.textContent = `Now editing ${monster.bio.name}. Click here to stop editing. (id = ${monster.id})`;
+      console.log('saved');
+    })
+    .catch(e => {
+      console.log('error', e)
+    })
+  }
+
   renderExportButton() {
     var d = document.createElement('div');
     CS.applyStyle(d, CS.buttonCss);
     d.textContent = 'Export';
 
     d.addEventListener('click', (e) => {
-      var id = this.importingId ? `?id=${this.importingId}` : '';
-      var qc = this.queryCommand || 'saveMonster';
-      var body = JSON.stringify(this.state);
-      fetch(qc + id, {
-        method: 'POST',
-        body: body
-      })
-      .then(res => res.text())
-      .then(id => {
-        var monsters = require(this.library);
-        var monster = JSON.parse(body);
-        monster.id = id;
-        monsters.push(monster);
-        this.importingId = id;
-        this.importingLabel.textContent = `Now editing ${monster.bio.name}. Click here to stop editing. (id = ${monster.id})`;
-        console.log('saved');
-      })
-      .catch(e => {
-        console.log('error', e)
-      })
+      this.save();
     })
 
     return d;
@@ -749,6 +807,7 @@ class CS {
 
     this.parent.appendChild(this.renderName());
     this.parent.appendChild(this.renderCategories());
+    this.parent.appendChild(this.renderTests());
     if(!this.hidePersistence) {
       this.parent.appendChild(this.renderExportButton());
       this.parent.appendChild(this.renderImportButton());

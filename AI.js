@@ -84,7 +84,7 @@ class AI {
   allies(sortOn) {
     let {actor, battle} = this;
     return battle.getAllyTeam(actor.team)
-    .filter(m => m.alive)
+    .filter(m => m.alive && m != actor)
     .sort(sortOn || sortOnActorRange);
 
   }
@@ -107,6 +107,164 @@ class AI {
       return d1 < d2 ? -1 : 1;
     })[0];
   }
+
+  script(Action) {
+    // console.log('scripted actions')
+    let {actor, battle} = this;
+    let distances = {
+      adjacent: 1,
+      nearby: 3,
+      afar: 10,
+    };
+    let target = null;
+    // console.log('SCRIPTS', actor.aiScript)
+    let conditionTiles = [];
+    let script = actor.aiScript.find(s => {
+      // console.log(s)
+      // find if ability is usable
+      if(s.act.ability && !actor.canUseAbility(s.act.ability)) return;
+      if(s.act.move && !actor.canMove) return;
+      // find if condition is met
+      let met = s.cond.filter(c => {
+        let filtered = [];
+        let met = false;
+        let d = distances[c.distance] || 1000;
+        let tiles = c.distance ? battle.grid.around(actor.x, actor.y, d) : battle.grid._list();
+        if(c.target == 'self') {
+          filtered = [this.actor];
+        } else {
+          if(c.target == 'enemy') {
+            filtered = this.enemies().filter(e => {
+              return battle.grid.squareRadius(e.x, e.y, actor.x, actor.y) <= d;
+            })
+          } else
+          if(c.target == 'ally') {
+            filtered = this.allies().filter(e => {
+              return battle.grid.squareRadius(e.x, e.y, actor.x, actor.y) <= d;
+            })
+          } else {
+            filtered = this.aliveActors().filter(e => {
+              return battle.grid.squareRadius(e.x, e.y, actor.x, actor.y) <= d;
+            })
+          }
+          if(c.neg) {
+            met = !filtered.length;
+          } else {
+            met = !!filtered.length;
+          }
+        }
+
+        if(c.numTargets && filtered.length < c.numTargets) {
+          return false;
+        }
+
+        if(c.state == 'movement') {
+          if(c.neg && !actor.canMove) {
+            met = true;
+          } else
+          if(!c.neg && actor.canMove) {
+            met = false;
+          }
+        } else
+        if(c.state == 'hurt') {
+          filtered = filtered.filter(t => t.item instanceof actor.constructor && (s.cond.neg ? !t.item.hurt : t.item.hurt));
+          met = !!filtered.length;
+        } else
+        if(c.effect) {
+          filtered = filtered.filter(f => {
+            return c.neg ? !f.hasEffect(c.effect) : f.hasEffect(c.effect);
+          });
+          met = !!filtered.length;
+        } else
+        if(c.ailment) {
+          filtered = filtered.filter(f => {
+            return c.neg ? !f.hasAilment(c.ailment) : f.hasAilment(c.ailment);
+          });
+          met = !!filtered.length;
+        } else
+        if(c.vigor) {
+          filtered = filtered.filter(f => {
+            return c.neg ? !f.hasVigor(c.vigor) : f.hasVigor(c.vigor);
+          });
+          met = !!filtered.length;
+        }
+
+        if(met) {
+          conditionTiles = filtered;
+        }
+        return met;
+
+      })
+      return met.length == s.cond.length;
+    })
+    // console.log("SCRIPT", script.act.part)
+    // console.log('conditionTiles', conditionTiles)
+    if(script) {
+      let sorting = sortOnMight;
+      switch(script.act.targetType) {
+        case 'weakest':
+          sorting = sortOnWeakness;
+          break;
+        case 'mightiest':
+          sorting = sortOnMight;
+          break;
+        default:
+          sorting = sortOnMight;
+      }
+      let actors = [];
+      switch(script.act.target) {
+        case 'it':
+          actors = conditionTiles;
+          break;
+        case 'self':
+          actors = [this.actor];
+          break;
+        case 'target':
+          actors = this.aliveActors();
+          break;
+        case 'ally':
+          actors = this.allies();
+          break;
+        case 'enemy':
+          actors = this.enemies();
+          break;
+        default:
+          actors = this.aliveActors();
+      }
+      let potentialTargets = actors.sort(sorting);
+      // console.log('potentialTargets', potentialTargets)
+      let inRange = script.act.ability ? potentialTargets.filter(e => battle.inRange(actor, e, script.act.ability)) : potentialTargets;
+      if(!inRange.length) {
+        return this.moveTowards(potentialTargets[0], Action);
+      } else
+      if(script.act.ability) {
+        return battle.addAction(new Action('use ability', [inRange[0]], script.act.ability.template.id));
+      } else
+      if(script.act.move) {
+        if(script.act.moveAway) {
+          return this.moveAway(inRange[0], Action);
+        } else {
+          return this.moveTowards(inRange[0], Action);
+        }
+      }
+    }
+    // console.log('default AI')
+    return this['routine' + this.level](Action);
+  }
+
+  moveTowards(b, Action) {
+    let {actor, battle} = this;
+    if(actor.canMove) {
+      var l = this.moveCloser(b);
+      if(!l) {
+        return battle.addAction(new Action('defend'));
+      }
+      return battle.addAction(new Action('move', [{x: l[0], y: l[1]}]))
+    } else {
+      return battle.addAction(new Action('defend'));
+    }
+  }
+
 
   moveCloser(potentialTarget) {
     let {actor, battle} = this;
@@ -135,123 +293,13 @@ class AI {
       }
     }
     var path = battle.grid.path(actor.x, actor.y, p.x, p.y);
-    path.shift();
-    return path.shift();
+    return path[1];
   }
 
-  script(Action) {
-    console.log('scripted actions')
-    let {actor, battle} = this;
-    let distances = {
-      adjacent: 1,
-      nearby: 3,
-      afar: 10,
-    }
-    let target = null;
-    console.log('SCRIPTS', actor.aiScript)
-    let conditionTiles = [];
-    let script = actor.aiScript.find(s => {
-      console.log(s)
-      // find if ability is usable
-      if(s.act.ability && !actor.canUseAbility(s.act.ability)) return;
-      // find if condition is met
-      let met = s.cond.filter(c => {
-        let filtered = [];
-        let met = false;
-        if(c.distance) {
-          let d = distances[c.distance];
-          // ... based on distance
-          let tiles = battle.grid.around(actor.x, actor.y, d);
-          if(c.target == 'enemy') {
-            filtered = tiles.filter(t => {
-              return t.item instanceof actor.constructor && t.item.team != actor.team
-            });
-          } else
-          if(c.target == 'ally') {
-            filtered = tiles.filter(t => {
-              return t.item instanceof actor.constructor && t.item.team == actor.team;
-            })
-          } else {
-            filtered = tiles.filter(t => t.item instanceof actor.constructor);
-          }
-          if(c.neg) {
-            met = !filtered.length;
-          } else {
-            met = !!filtered.length;
-          }
-        }
-        if(c.state == 'movement') {
-          if(c.neg && !actor.canMove) {
-            met = true;
-          }
-          if(!c.neg && actor.canMove) {
-            met = false;
-          }
-        } else
-        if(c.state == 'hurt') {
-          filtered = filtered.filter(t => t.item instanceof actor.constructor && (s.cond.neg ? !t.item.hurt : t.item.hurt));
-          met = !!filtered.length
-        }
-        if(met) {
-          conditionTiles = filtered;
-        }
-        return met;
-
-      })
-      return met.length == s.cond.length;
-    })
-    console.log("SCRIPT", script)
-    console.log('conditionTiles', conditionTiles)
-    if(script) {
-      let sorting = sortOnMight;
-      switch(script.act.targetType) {
-        case 'weakest':
-          sorting = sortOnWeakness;
-          break;
-        case 'mightiest':
-          sorting = sortOnMight;
-          break;
-        default:
-          sorting = sortOnMight;
-      }
-      let actors = [];
-      switch(script.act.target) {
-        case 'it':
-          actors = conditionTiles.map(t => t.item);
-          break;
-        case 'target':
-          actors = this.aliveActors();
-          break;
-        case 'ally':
-          actors = this.allies();
-          break;
-        case 'enemy':
-          actors = this.enemies();
-          break;
-        default:
-          actors = this.aliveActors();
-      }
-      let potentialTargets = actors.sort(sorting);
-      let inRange = potentialTargets.filter(e => battle.inRange(actor, e, script.act.ability));
-      console.log('potentialTargets', potentialTargets)
-      if(!inRange.length) {
-        return this.moveTowards(potentialTargets[0], Action);
-      } else
-      if(script.act.ability) {
-        return battle.addAction(new Action('use ability', [inRange[0]], script.act.ability.template.id));
-      } else
-      if(script.act.move) {
-        return this.moveTowards([inRange[0]], Action);
-      }
-    }
-
-    return this['routine' + this.level](Action);
-  }
-
-  moveTowards(b, Action) {
+  moveAway(b, Action) {
     let {actor, battle} = this;
     if(actor.canMove) {
-      var l = this.moveCloser(b);
+      var l = this.moveFurtherAway(b);
       if(!l) {
         return battle.addAction(new Action('defend'));
       }
@@ -259,6 +307,24 @@ class AI {
     } else {
       return battle.addAction(new Action('defend'));
     }
+  }
+
+  moveFurtherAway(potentialTarget) {
+    let t = potentialTarget;
+    let {actor, battle} = this;
+    let tiles = battle.grid.around(actor.x, actor.y);
+    let tile = null;
+    let r = 0;
+    tiles.forEach(a => {
+      let d = battle.grid.steps(a.x, a.y, t.x, t.y);
+      if(!a.item && battle.grid.canWalkTo(actor.x, actor.y, a.x, a.y) && d > r) {
+        r = d;
+        tile = a;
+      }
+    })
+    if(!tile) return;
+    var path = battle.grid.path(actor.x, actor.y, tile.x, tile.y);
+    return path[1];
   }
 
   routine1(Action) {

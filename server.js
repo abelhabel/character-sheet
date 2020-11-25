@@ -271,6 +271,36 @@ const server = http.createServer(function(req, res) {
     }
     return res.end(blog.html())
   }
+  if(name == 'routes') {
+    return res.end(`<html>
+      <head><title>Routes</title>
+        <style>
+          body {
+            font-size: 16px;
+            font-family: Tahoma;
+            line-height: 1.5em;
+          }
+        </style>
+      </head>
+      <body>
+        <ul>
+          <li><a href='/rules.html'>Rules</a></li>
+          <li><a href='/battle.html'>Play</a></li>
+          <li><a href='/index.html'>Monster Editor</a></li>
+          <li><a href='/adventure.html'>Adventure Editor</a></li>
+          <li><a href='/animation.html'>Animation Editor</a></li>
+          <li><a href='/skilltree.html'>Skilltree editor</a></li>
+          <li><a href='/arena.html'>Arena Editor</a></li>
+          <li><a href='/?part=terrain'>Terrain Editor</a></li>
+          <li><a href='/?part=icons'>Icon Editor</a></li>
+          <li><a href='/?part=abilities'>Aility Editor</a></li>
+          <li><a href='/team.html'>Team Editor</a></li>
+          <li><a href='/bestiary.html'>Bestiary</a></li>
+          <li><a href='/ability-compendium.html'>Ability Compendium</a></li>
+        </ul>
+      </body>
+      </html>`)
+  }
   if(name == 'saveMonster') {
     return saveData(req, res, 'monsters', url);
   }

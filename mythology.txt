@@ -1,0 +1,96 @@
+Template
+domain:
+virtues:
+method:
+powers:
+avatar:
+minions:
+minion powers:
+minion domains:
+heroes:
+hero powers:
+follower communication:
+
+domain: Creation
+virtues: benevolent, bored
+method: unknown, vomit, sculpting, sky, fire
+powers: creation, after life, soul control, destiny, permanent death, rain, disease
+avatar: large white man, sickly, half-man
+minions: serpents,  spirits, king, queen, giant, humans
+minion powers: look back and you are dead, blessings, speed, bravery, battle, crafting, teaching
+minion domains: nature
+heroes: fertility, canibalism, virgin birth, priests, oppressor, savior, demon, shape-shifter
+hero powers: healing
+follower communication: offering
+
+domain: Survival
+virtues:
+method: hunting, animal supply
+powers: bow
+avatar: rainbow, leopard
+minions: snakes
+minion powers:
+minion domains:
+heroes:
+hero powers:
+follower communication:
+
+domain: Adversary
+virtues:
+method: eating children
+powers:
+avatar: reptile, dwarf
+minions:
+minion powers: shape-shifting
+minion domains:
+heroes:
+hero powers:
+follower communication:
+
+domain: Death
+virtues:
+method:
+powers:
+avatar:
+minions: messenger, reaper
+minion powers:
+minion domains:
+heroes:
+hero powers:
+follower communication:
+
+domain: Judgement
+virtues: justice, fairness, harsh, greed
+method:
+powers:
+avatar:
+minions:
+minion powers:
+minion domains:
+heroes:
+hero powers:
+follower communication:
+
+domain: Ancestry
+virtues:
+method: visions, burial
+powers: afterlife
+avatar:
+minions:
+minion powers: wresting, challenges
+minion domains:
+heroes: kings, queens, saints
+hero powers:
+follower communication: dreams, prayer, temples, sacrifice
+
+domain: Destruction
+virtues:
+method: dissolution
+powers: end the world, recreation
+avatar:
+minions:
+minion powers:
+minion domains:
+heroes:
+hero powers:
+follower communication:

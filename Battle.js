@@ -608,7 +608,7 @@ class Battle {
   }
 
   isFarWay(a, b) {
-    return this.grid.steps(a.x, a.y, b.x, b.y) > 5;
+    return this.grid.distance(a.x, a.y, b.x, b.y) > 5;
   }
 
   getEnemyTeam(team) {
@@ -1552,7 +1552,7 @@ class Battle {
         if(t == b) return;
         // allied triggers
         this.trigger('when ally is hit', t, b, d, ability);
-        let dist = this.grid.distance(b.x, b.y, t.x, t.y);
+        let dist = this.grid.squareRadius(b.x, b.y, t.x, t.y);
         if(dist < 4) {
           this.trigger('when nearby ally is hit', t, b, d, ability);
         }
@@ -1564,8 +1564,10 @@ class Battle {
         if(t == a) return;
         // enemy triggers
         this.trigger('when enemy is hit', t, b, d, ability);
-        let dist = this.grid.distance(b.x, b.y, t.x, t.y);
+        let dist = this.grid.squareRadius(b.x, b.y, t.x, t.y);
+        console.log('enemey is hit', dist, t.triggers)
         if(dist < 4) {
+          console.log('when nearby enemy is hit')
           this.trigger('when nearby enemy is hit', t, b, d, ability);
         }
         if(dist < 2) {

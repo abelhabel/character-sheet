@@ -41,8 +41,8 @@ class Camera {
   }
 
   move(x, y) {
-    this._x += Math.floor(x);
-    this._y += Math.floor(y);
+    this._x += x;
+    this._y += y;
   }
 
   moveTo(x, y) {

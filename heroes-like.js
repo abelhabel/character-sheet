@@ -5,6 +5,18 @@ var tpl = {
   folder: "monsters",
   library: 'monsters.js',
   queryCommand: 'saveMonster',
+  tests: [
+    {
+      name: 'AI',
+      run(tpl) {
+        let Monster = require('Monster.js');
+        let m = new Monster(tpl);
+        m.addAI();
+        m.parseAI();
+        console.log(m.aiScript);
+      }
+    }
+  ],
   categories: [
     {
       name: 'Name and Family',

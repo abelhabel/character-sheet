@@ -274,36 +274,40 @@ class Monster {
   parseAI() {
     let actions = this.AI.behavior.split('\n');
     let whens = ['adjacent', 'nearby', 'afar'];
-    let targets = ['enemy', 'ally', 'target', 'it'];
+    let targets = ['enemy', 'ally', 'target', 'it', 'self'];
     let types = ['weakest', 'mightiest'];
     let states = ['movement', 'hurt'];
+
     this.aiScript = actions.map(a => {
       let c = a.split('use');
-      let cond = c[0].split('and').map(m => {
-        let effect = m.match(/has effect ([a-zA-Z]+)/);
+      let d = c[1].trim();
+      let cond = c[0].split(/\sand!?\s/).map(m => {
+        m = m.trim();
+        let effect = m.match(/has effect -([!a-zA-Z\s]+)-/);
         let vigor = m.match(/has vigor ([a-zA-Z]+)/);
         let ailment = m.match(/has ailment ([a-zA-Z]+)/);
         let cond = {
           part: m,
-          distance: whens.find(b => ~m.indexOf(b)),
-          target: targets.find(b => ~m.indexOf(b)),
+          distance: whens.find(b => ~m.indexOf(' '+b)),
+          target: targets.find(b => ~m.indexOf(' '+b)),
+          numTargets: c[0].match(/\d/),
           neg: false,
-          state: states.find(b => ~m.indexOf('is ' + b)),
+          state: states.find(b => ~m.indexOf('is ' + b) || ~m.indexOf('has ' + b)),
           effect: effect && effect[1],
           vigor: vigor && vigor[1],
           ailment: ailment && ailment[1],
         };
-        cond.neg = !!whens.find(b => {
-          return ~c[0].indexOf('!' + (cond.distance || cond.state || cond.effect || cond.vigor || cond.ailment));
-        });
+        cond.neg = m.charAt(0) == '!';
+        cond.numTargets = cond.numTargets ? parseInt(cond.numTargets) : null;
         return cond;
       })
       let act = {
-        part: c[1],
-        ability: this.abilities.find(b => ~c[1].indexOf(b.bio.name)),
-        targetType: types.find(b => ~c[1].indexOf(b)),
-        target: targets.find(b => ~c[1].indexOf('on ' + b)),
-        move: !!~c[1].indexOf('move to'),
+        part: d,
+        ability: this.abilities.find(b => ~d.indexOf(b.bio.name)),
+        targetType: types.find(b => ~d.indexOf(' '+b+' ')),
+        target: targets.find(b => ~d.indexOf(' '+b)),
+        move: !!~d.indexOf('move to') || !!~d.indexOf('move away'),
+        moveAway: !!~d.indexOf('move away')
       };
       return {cond, act};
     });
@@ -520,6 +524,10 @@ class Monster {
     if(e.ability.stats.attribute == 'initiative') {
       this.battle.initiativeChanged();
     }
+  }
+
+  hasEffect(name) {
+    return this.activeEffects.find(e => e.ability.bio.name == name);
   }
 
   hasVigor(name) {
@@ -1018,7 +1026,7 @@ class Monster {
     //   })
     //   t.appendChild(d);
     // });
-    let t = html`<div class='monster-stat-upgrades'></div>
+    let t = html`<div class='monster-stat-upgrades'></div>`;
     let commit = html`<div class='monster-upgrades-commit'>Level Up</div>`;
     commit.addEventListener('click', e => {
       let changes = Object.assign({}, this.upgrades.changes);
@@ -1053,7 +1061,7 @@ class Monster {
     let health = new Sprite(icons.find(i => i.bio.name == 'Health Stat').bio.sprite);
     let mana = new Sprite(icons.find(i => i.bio.name == 'Mana Stat').bio.sprite);
     let attack = new Sprite(icons.find(i => i.bio.name == 'Attack Stat').bio.sprite);
-    let defence = new Sprite(icons.find(i => i.bio.name == 'Defence Stat').bio.sprite);
+    let defence = new Sprite(icons.find(i => i.bio.name == 'Defense Stat').bio.sprite);
     let spellPower = new Sprite(icons.find(i => i.bio.name == 'Spell Power Stat').bio.sprite);
     let spellResistance = new Sprite(icons.find(i => i.bio.name == 'Spell Resistance Stat').bio.sprite);
     let initiative = new Sprite(icons.find(i => i.bio.name == 'Initiative Stat').bio.sprite);

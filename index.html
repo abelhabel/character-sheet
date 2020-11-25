@@ -9,6 +9,7 @@
 
 </body>
 <script>
+
 function html(strings, ...values) {
   let out = '';
   strings.forEach((s, i) => {
@@ -36,7 +37,7 @@ class Module {
   }
 
   static onLoad(files, fn) {
-    console.log('load modules')
+    // console.log('load modules')
     var o = Promise.resolve();
     let calls = files.map(f => {
       let m = new Module(f);
@@ -46,7 +47,7 @@ class Module {
         var script = document.createElement(tag);
         script.async = true;
         script.defer = true;
-        console.log('loading...', f)
+        // console.log('loading...', f)
         script.onload = function() {
           if(tag == 'img') {
             m.exports = script;
@@ -79,7 +80,9 @@ Module.loaders = [];
   'leaders.js', 'sounds.js', 'recipes.js', 'equipments.js', 'skilltree-mods.js',
   'Canvas.js', 'Sprite.js', 'Slider.js', 'Animation.js', 'CS.js', 'DynamicSound.js', 'init-sound.js',
   'heroes-like.js', 'animation-tpl.js', 'ability-tpl.js', 'terrain-tpl.js', 'icon-tpl.js', 'team-tpl.js',
-  'leader-tpl.js', 'recipe-tpl.js', 'equipment-tpl.js', 'skilltree-mods-tpl.js'], () => {
+  'leader-tpl.js', 'recipe-tpl.js', 'equipment-tpl.js', 'skilltree-mods-tpl.js',
+  'Sprite.js', 'CompositeSprite.js', 'FixedList.js', 'AbilityEffect.js', 'Equipment.js',
+  'Scroll.js', 'AI.js', 'Ability.js', 'MonsterCard.js', 'Monster.js'], () => {
     console.log('all loaded')
     const CS = require('CS.js');
     const Canvas = require('Canvas.js');
