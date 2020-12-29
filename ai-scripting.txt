@@ -1,0 +1,23 @@
+Actions are either Ability, Move, Defend, Wait.
+
+When Ability, the first check is to see if the Ability
+is usable
+
+Secondly, find if there are any conditions that specify Ability targets (hitable).
+
+
+When Ability, find out who (self, actor, ground) to target and
+who to hit (self, allies, enemies, all), and how many to hit.
+
+Who to target is only decided in the Act part of the script by declaring "target:[self|ally|enemy]".
+Who to hit is decided in the Act part by declaring "on" before the target to hit
+or in the Condition part by declaring "ability" before who to hit.
+
+If the Condition does not declare "ability", then the Condition is fulfilled based on
+the state of the board rather than the ability.
+
+When Move find out where to move to.
+
+When Defend just Defend.
+
+When Wait just Wait.

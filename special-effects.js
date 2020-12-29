@@ -138,6 +138,7 @@ module.exports.berzerkAlly = {
 module.exports.sharedPain = {
   when: 'per target',
   fn: function (battle, caster, target, ability, power, triggeredPower, selections, triggeredBy) {
+    if(!triggeredBy) return;
     let d = Math.ceil(triggeredPower/2);
     battle.dealDamage(triggeredBy.owner, caster, d, triggeredBy, true);
     return new Special();
@@ -253,12 +254,13 @@ module.exports.manaThief = {
   when: 'per target',
   fn: function (battle, caster, target, ability, power, triggeredPower, selections, triggeredBy) {
     let victim = battle.grid.get(selections[0].x, selections[0].y);
-    let benefactor = battle.grid.get(selections[1].x, selections[1].y);
+    let benefactor = caster;
     if(!victim || !benefactor) return;
     let roll = ability.roll();
     let mana = victim.totalMana;
     victim.useMana(roll);
     let manaTaken = mana - victim.totalMana;
+    logger.log(`${benefactor.bio.name} steals ${manaTaken} from ${victim.bio.name}`);
     benefactor.replenishMana(manaTaken);
   }
 };

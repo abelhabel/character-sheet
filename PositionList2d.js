@@ -106,15 +106,34 @@ class PositionList2d {
     return tile;
   }
 
-  closestEmpty(x, y, test) {
+  furthest(x, y, test) {
     let radius = 1;
-    let maxRadius = 5;
+    let maxRadius = Math.max(this.w, this.h);
     let tile;
-    for(let i = 1; i < maxRadius; i++) {
+    let a = this.get(x, y);
+    for(let i  = 1; i < maxRadius; i++) {
       let tiles = this.around(x, y, i);
-      tile = tiles.find(t => !t.item && (test ? test(t.x, t.y) : true));
-      if(tile) break;
+      tile = tiles.find(t => t.item && (test ? test(t.item) : true));
+      if(tile && tile.item != a) break;
     }
+    return tile;
+  }
+
+  closestEmpty(x, y, test, maxRadius = 5) {
+    let radius = 1;
+    let tile;
+    let tiles = this.around(x, y, maxRadius);
+    tiles.sort((a, b) => {
+      let d1 = this.steps(x, y, a.x, a.y);
+      let d2 = this.steps(x, y, b.x, b.y);
+      if(d1 == d2) return 0;
+      if(d1 < d2) return -1;
+      return 1;
+    })
+    tile = tiles.find(t => {
+      if(t.item) return false;
+      return test ? test(t.x, t.y) : true;
+    })
     return tile;
   }
 
@@ -142,6 +161,7 @@ class PositionList2d {
       if(x < 0 || y < 0) continue;
       if(x >= this.w || y >= this.h) continue;
       let t = this.get(x, y);
+      if(targets.find(a => a.item == t)) continue;
       targets.push({item: t, x:x, y: y});
     }
     return targets;
@@ -329,7 +349,7 @@ class PositionList2d {
 
   canWalkTo(sx, sy, ex, ey, diagonal = 'Never') {
     if(this.steps(sx, sy, ex, ey) == 1 && !this.get(ex, ey)) return true;
-    if(this.path(sx, sy, ex, ey, diagonal).length) return true;
+    if(this.path(sx, sy, ex, ey, diagonal).length > 1) return true;
     return false;
   }
 

@@ -16,6 +16,8 @@ const Scroll = require('Scroll.js');
 const AI = require('AI.js');
 const FixedList = require('FixedList.js');
 const MonsterCard = require('MonsterCard.js');
+const Component = require('Component.js');
+const Events = Component.Events;
 class StatBonus {
   constructor(owner) {
     this.owner = owner;
@@ -81,8 +83,9 @@ class StatBonus {
 }
 
 
-class Monster {
+class Monster extends Events {
   constructor(t, stacks, summoned, suuid) {
+    super();
     this.template = t;
     this.summoned = summoned;
     this.suuid = suuid || nextId();
@@ -99,6 +102,7 @@ class Monster {
     this.defending = false;
     this.selections = [];
     this.triggerCount = 0;
+    this.abilitySnapshot = null;
     this.bio = {
       tier: t.bio.tier || 1,
       sprite: t.bio.sprite,
@@ -155,6 +159,7 @@ class Monster {
     this._team = '';
     this.permanentAilments = [];
     this.permanentVigors = [];
+    this.minions = [];
     this.upgradePointsLeft = 0;
     this.upgradePointsSpent = 0;
     this.upgrades = {
@@ -255,6 +260,21 @@ class Monster {
     };
   }
 
+  createAbilitySnapshot() {
+    this.abilitySnapshot = {
+      stacks: this.stacks,
+      health: this.totalHealth,
+      attack: this.totalStat('attack'),
+      defence: this.totalStat('defence'),
+      spellPower: this.totalStat('spellPower'),
+      spellResistance: this.totalStat('spellResistance'),
+      damage: this.totalStat('damage'),
+      movement: this.totalStat('movement'),
+      initiative: this.totalStat('initiative'),
+      apr: this.totalStat('apr'),
+      tpr: this.totalStat('tpr'),
+    };
+  }
   get card() {
     return new MonsterCard(this);
   }
@@ -272,43 +292,99 @@ class Monster {
   }
 
   parseAI() {
+    let distances = {
+      adjacent: 1,
+      nearby: 3,
+      afar: 10,
+    };
     let actions = this.AI.behavior.split('\n');
-    let whens = ['adjacent', 'nearby', 'afar'];
-    let targets = ['enemy', 'ally', 'target', 'it', 'self'];
-    let types = ['weakest', 'mightiest'];
-    let states = ['movement', 'hurt'];
-
+    let distance = ['adjacent', 'nearby', 'afar'];
+    let targets = ['enemy', 'ally', 'target', 'it', 'self', 'tile'];
+    let types = ['weakest', 'mightiest', 'toughest', 'furthest', 'nearest', 'most', 'least', 'excited', 'energetic'];
+    let states = ['hurt', 'wounded', 'near death', 'sick', 'healthy', 'flanked', 'outnumbered', 'occupied'];
+    let factions = ['Undead', 'Order of Idun', 'Outlaws', 'Beasts', 'Demons', 'Mythical', "Aloysia's Chosen", 'Voidless'];
+    let ranges = ['melee', 'ranged'];
+    let roles = ['reactive'];
+    let stats = ['attack', 'defence', 'spellPower', 'spellResistance', 'movement', 'initiative', 'apr', 'tpr', 'mana', 'damage'];
     this.aiScript = actions.map(a => {
       let c = a.split('use');
       let d = c[1].trim();
-      let cond = c[0].split(/\sand!?\s/).map(m => {
-        m = m.trim();
-        let effect = m.match(/has effect -([!a-zA-Z\s]+)-/);
-        let vigor = m.match(/has vigor ([a-zA-Z]+)/);
-        let ailment = m.match(/has ailment ([a-zA-Z]+)/);
-        let cond = {
-          part: m,
-          distance: whens.find(b => ~m.indexOf(' '+b)),
-          target: targets.find(b => ~m.indexOf(' '+b)),
-          numTargets: c[0].match(/\d/),
-          neg: false,
-          state: states.find(b => ~m.indexOf('is ' + b) || ~m.indexOf('has ' + b)),
-          effect: effect && effect[1],
-          vigor: vigor && vigor[1],
-          ailment: ailment && ailment[1],
-        };
-        cond.neg = m.charAt(0) == '!';
-        cond.numTargets = cond.numTargets ? parseInt(cond.numTargets) : null;
-        return cond;
-      })
+      let ability = d.match(/-([a-zA-Z\s]+)-/);
+      let abilityTPL = ability ? abilities.find(a => a.bio.name == ability[1]) : null;
+      let select = d.match(/select:([a-z]+)/);
       let act = {
         part: d,
-        ability: this.abilities.find(b => ~d.indexOf(b.bio.name)),
-        targetType: types.find(b => ~d.indexOf(' '+b+' ')),
-        target: targets.find(b => ~d.indexOf(' '+b)),
-        move: !!~d.indexOf('move to') || !!~d.indexOf('move away'),
-        moveAway: !!~d.indexOf('move away')
+        ability: abilityTPL ? abilityTPL.id : '',
+        select: select && select[1],
+        defend: !!~d.indexOf('Defend'),
+        wait: !!~d.indexOf('Wait'),
+        targetType: types.find(b => !!~d.indexOf(' '+b+' ')),
+        target: targets.find(b => !!~d.indexOf(' '+b)),
+        numTargets: null,
+        range: ranges.find(b => !!~d.indexOf(' '+b)),
+        move: !!~d.indexOf('Move'),
+        moveAway: !!~d.indexOf('Move away'),
+        moveToMost: !!~d.indexOf('Move to most'),
+        moveFully: !!~d.indexOf('full Move')
       };
+      if(act.target) {
+        let test = new RegExp(`(\\d) ${act.target}`);
+        let n = d.match(test);
+        act.numTargets = n ? parseInt(n[1]) : null;
+      }
+      let cond = c[0].split(/\sand!?\s/).map(m => {
+        m = m.trim();
+        let effect = m.match(/has effect -([a-zA-Z\s]+)-/);
+        let aura = m.match(/has aura -([a-zA-Z\s]+)-/);
+        let vigor = m.match(/has vigor ([a-zA-Z]+)/);
+        let ailment = m.match(/has ailment ([a-zA-Z]+)/);
+        let faction = m.match(/is faction -([a-zA-Z\s]+)-/);
+        let minion = m.match(/has minion -([a-zA-Z\s]+)-/);
+        let cond = {
+          part: m,
+          distance: distance.find(b => !!~m.indexOf(' '+b) || !!~m.indexOf(b +' ')),
+          negDistance: false,
+          abilityTargeting: !!~m.indexOf(' ability '),
+          target: targets.find(b => !!~m.indexOf(' '+b) || !!~m.indexOf(b +' ')),
+          range: ranges.find(b => !!~m.indexOf(' '+b)),
+          numTargets: null,
+          stat: stats.find(b => !!~m.indexOf(' '+b)),
+          statAmount: null,
+          neg: false,
+          state: states.find(b => !!~m.indexOf('is ' + b) || !!~m.indexOf('has ' + b)),
+          effect: effect && effect[1],
+          aura: aura && aura[1],
+          minion: minion && minion[1],
+          faction: faction && faction[1],
+          vigor: vigor && vigor[1],
+          ailment: ailment && ailment[1],
+          permanentAilment: !!~c.indexOf('permanent ailment'),
+          role: roles.find(b => ~m.indexOf('is '+b)),
+        };
+        cond.negDistance = !!~m.indexOf('no ' + cond.distance),
+        cond.neg = m.charAt(0) == '!';
+        if(cond.target) {
+          let test = new RegExp(`(\\d) (ability )?${cond.target}`);
+          let n = m.match(test);
+          cond.numTargets = n ? parseInt(n[1]) : null;
+        }
+        if(cond.stat) {
+          let test = new RegExp(`(\\d) ${cond.stat}`);
+          let n = m.match(test);
+          cond.statAmount = n ? parseInt(n[1]) : null;
+        }
+        if(cond.distance) {
+          cond.distance = distances[cond.distance];
+        }
+        // else
+        // if(act.ability) {
+        //   cond.distance = abilityTPL.stats.range;
+        // }
+        return cond;
+      })
+
+
+
       return {cond, act};
     });
   }
@@ -343,9 +419,9 @@ class Monster {
 
   get might() {
     if(this.prefers == 'attack') {
-      return this.maxHealth * this.totalStat('apr') * this.totalStat('attack') * (1 + Math.min(this.totalStat('tpr'), this.triggers.length));
+      return this.stacks * this.maxHealth * this.totalStat('apr') * this.totalStat('attack') * (1 + Math.min(this.totalStat('tpr'), this.triggers.length));
     }
-    return this.maxHealth * this.totalStat('apr') * this.totalStat('spellPower');
+    return this.stacks * this.maxHealth * this.totalStat('apr') * this.totalStat('spellPower');
   }
 
   get potentialRange() {
@@ -362,6 +438,12 @@ class Monster {
 
   set team(t) {
     this._team = t;
+  }
+
+  // roles
+
+  get reactive() {
+    return !!this.triggers.length;
   }
 
   _select(p) {
@@ -411,6 +493,19 @@ class Monster {
     this.abilities.push(new Ability(tpl, this));
   }
 
+  addMinion(m) {
+    this.minions.push(m);
+    m.on('death', () => {
+      let i = this.minions.indexOf(m);
+      this.minions.splice(i, 1);
+      console.log('removed minion', m.bio.name, 'from', this.bio.name);
+    })
+  }
+
+  hasMinion(name) {
+    return !!this.minions.find(m => m.bio.name == name);
+  }
+
   get attacks() {
     return this.abilities.filter(a => a.bio.type == 'active' && a.stats.source == 'attack');
   }
@@ -440,9 +535,35 @@ class Monster {
   }
 
   get ailments() {
-    let e = this.activeEffects.filter(e => e.ability.stats.ailment).map(e => e.ability.stats.ailment);
-    e.push.apply(e, this.permanentAilments);
-    return e;
+    let s = new Set();
+    this.activeEffects.forEach(e => {
+      if(e.ability.stats.ailment) {
+        s.add(e.ability.stats.ailment);
+      }
+    });
+    this.permanentAilments.forEach(a => {
+      s.add(a);
+    })
+    this.passives.forEach(a => {
+      if(a.stats.targetFamily != 'self') return;
+      if(!a.stats.ailment) return;
+      if(!a.owner.abilityConditionMet(a, this)) return;
+      s.add(a.stats.ailment);
+    })
+    return Array.from(s);
+  }
+
+  get removableAilments() {
+    let s = new Set();
+    this.activeEffects.forEach(e => {
+      if(e.ability.stats.ailment) {
+        s.add(e.ability.stats.ailment);
+      }
+    });
+    this.permanentAilments.forEach(a => {
+      s.add(a);
+    })
+    return Array.from(s);
   }
 
   get vigors() {
@@ -482,8 +603,8 @@ class Monster {
     return this.totalStat('movement') - this.tilesMoved;
   }
 
-  get hasAura() {
-    return this.abilities.find(a => a.bio.type == 'passive' && (a.stats.shape == 'circle' || a.stats.shape == 'square') && a.stats.radius);
+  hasAura(name, target) {
+    return this.abilities.find(a => a.bio.type == 'passive' && (a.stats.shape == 'circle' || a.stats.shape == 'square') && a.stats.radius && this.abilityConditionMet(a, target) && (name ? a.bio.name == name : true));
   }
 
   setOrientation(x) {
@@ -527,7 +648,7 @@ class Monster {
   }
 
   hasEffect(name) {
-    return this.activeEffects.find(e => e.ability.bio.name == name);
+    return this.activeEffects.find(e => e.ability.bio.name == name) || this.affectedByAura(name);
   }
 
   hasVigor(name) {
@@ -535,7 +656,13 @@ class Monster {
   }
 
   hasAilment(name) {
-    return this.activeEffects.find(e => e.ability.stats.ailment == name) || ~this.permanentAilments.indexOf(name);
+    return !!this.activeEffects.find(e => e.ability.stats.ailment == name) ||
+    this.hasPermanentAilment(name) ||
+    !!this.passives.find(a => a.stats.targetFamily == 'self' && a.owner.abilityConditionMet(a, this) && (name ? a.stats.ailment == name : a.stats.ailment));
+  }
+
+  hasPermanentAilment(name) {
+    return !!~this.permanentAilments.indexOf(name)
   }
 
   addAilment(ailment) {
@@ -600,9 +727,7 @@ class Monster {
     }
     if(!this.battle) return;
     if(target && a.bio.condition == 'target is flanked') {
-      let flanks = this.battle ? this.battle.flanks(target) : 0;
-      if(flanks < 2) return false;
-      return true;
+      return target.flanked;
     }
     if(a.bio.condition == 'self is flanking') {
       let adjacent = this.adjacentEnemies;
@@ -741,6 +866,10 @@ class Monster {
     return Math.max(0, total);
   }
 
+  getAbility(id) {
+    return this.abilities.find(a => a.template.id == id);
+  }
+
   canUseAbility(a) {
     if(!a) return true;
     let m = this.hasAilment('scorched') ? 1 : 0;
@@ -784,6 +913,13 @@ class Monster {
     if(a.stats.resourceType == 'health' && this.totalHealth >= a.stats.resourceCost) {
       this.harm(a.stats.resourceCost);
     }
+    this.createAbilitySnapshot();
+  }
+
+  get manaPerTurn() {
+    let n = 1;
+    if(this.bio.family == 'Demons') n = 2;
+    return n;
   }
 
   replenishMana(n) {
@@ -815,8 +951,52 @@ class Monster {
     })
   }
 
+  get outnumbered() {
+    return this.battle && this.battle.flanks(this) > 2;
+  }
+
+  get flanked() {
+    return this.battle && this.battle.flanks(this) > 1;
+  }
+
+  get occupied() {
+    return this.battle && this.battle.flanks(this) > 0;
+  }
+
+  isOccupiedBy(m) {
+    return this.battle && !!this.battle.grid.around(this.x, this.y, 1)
+    .find(({item, x, y}) => {
+      if(item && item.team == this.team) return;
+      return item == m;
+    })
+  }
+
+  get sick() {
+    return !!this.permanentAilments.length
+  }
+
+  get cursed() {
+    return !!this.activeEffects.find(e => e.ability.stats.source == 'curse');
+  }
+
+  get blessed() {
+    return !!this.activeEffects.find(e => e.ability.stats.source == 'blessing');
+  }
+
+  get healthy() {
+    return this.totalHealth >= this.maxHealth;
+  }
+
   get hurt() {
     return this.totalHealth < this.maxHealth;
+  }
+
+  get wounded() {
+    return this.totalHealth < this.maxHealth/2;
+  }
+
+  get nearDeath() {
+    return this.totalHealth < this.maxHealth/10;
   }
 
   get alive() {
@@ -1076,7 +1256,7 @@ class Monster {
         <div id='close'>Close</div>
         <div class='bio' id='monster-image'></div>
         <div class='bio'>
-          <div id='monster-name'>${m.bio.name}</div><br>
+          <div id='monster-name'>${m.bio.name} (${m.team})</div><br>
           <div id='monster-description'>${m.bio.description || 'No description available for this monster'}</div>
           <div id='monster-ailments'>Ailments: ${this.ailments.join()}</div>
           <div id='monster-vigors'>Vigors: ${this.vigors.join()}</div>
@@ -1208,20 +1388,7 @@ class Monster {
       tag.querySelector('#active-effects').appendChild(c);
     })
 
-    this.battle && this.battle.auras.all.forEach(a => {
-      if(!a.owner.alive) return;
-      var {source, targetFamily, multiplier, radius} = a.stats;
-      if(a.owner.team == this.team) {
-        if(targetFamily == 'enemies') return;
-      } else {
-        if(targetFamily == 'allies') return;
-      }
-      if(!a.owner.abilityConditionMet(a, this)) return;
-      var d = this.battle.grid.distance(this.x, this.y, a.owner.x, a.owner.y);
-      if(a.stats.shape == 'square') {
-        d = this.battle.grid.squareRadius(this.x, this.y, a.owner.x, a.owner.y);
-      }
-      if(d > radius) return;
+    this.affectedByAuras().forEach(a => {
       var c = a.effectSprite.canvas.clone();
       c.addEventListener('click', e => {
         this.drawEffectStats({ability: a, power: a.power}, tag.querySelector('#details'));
@@ -1241,6 +1408,29 @@ class Monster {
     })
 
     popup.appendChild(tag)
+  }
+
+  affectedByAura(name) {
+    return !!this.affectedByAuras().find(a => a.bio.name == name);
+  }
+
+  affectedByAuras() {
+    return !this.battle ? [] : this.battle.auras.all.filter(a => {
+      if(!a.owner.alive) return;
+      var {source, targetFamily, multiplier, radius} = a.stats;
+      if(a.owner.team == this.team) {
+        if(targetFamily == 'enemies') return;
+      } else {
+        if(targetFamily == 'allies') return;
+      }
+      if(!a.owner.abilityConditionMet(a, this)) return;
+      var d = this.battle.grid.distance(this.x, this.y, a.owner.x, a.owner.y);
+      if(a.stats.shape == 'square') {
+        d = this.battle.grid.squareRadius(this.x, this.y, a.owner.x, a.owner.y);
+      }
+      if(d > radius) return;
+      return true;
+    })
   }
 
   drawEffectStats(e, tag) {

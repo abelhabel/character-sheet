@@ -515,6 +515,8 @@ class Battle {
     this.csPopup = this.popup();
     this.setEvents();
     this.noAnimation = false;
+    this.stepwise = true;
+    this.turnEnded = true;
   }
 
   autoResolve() {
@@ -802,6 +804,9 @@ class Battle {
 
     this.addDOMEvent(window, 'keyup', (e) => {
       switch(e.key) {
+        case 'ArrowRight':
+          console.clear();
+          return this.continueTurn();
         case 'd':
           return this.addAction(new Action('defend'))
           .catch(e => {
@@ -968,8 +973,8 @@ class Battle {
     })
   }
 
-  abilityTargets(a, ability, x, y) {
-    var out = {actors: [], tiles: [], validTargets: false};
+  abilityTargets(a, ability, x, y, targetFamily) {
+    var out = {actors: [], tiles: [], enemies: [], allies: [], x, y, validTargets: false};
     if(!ability) return out;
     if(ability.stats.target == 'actor' && !this.grid.get(x, y)) {
       return out;
@@ -981,7 +986,7 @@ class Battle {
       if(ability.stats.shape == 'point') {
         out.tiles = [{item: this.grid.get(x, y), x: x, y: y}];
       } else
-      if(ability.stats.shape == 'line') {
+      if(ability.stats.shape == 'line' && !(a.x == x && a.y == y)) {
         out.tiles = this.grid.inLine(a.x, a.y, x, y, ability.stats.radius);
       }
       if(ability.stats.shape == 'cone') {
@@ -994,16 +999,29 @@ class Battle {
         out.tiles = this.grid.around(x, y, ability.stats.radius);
       }
     }
-    if(ability.stats.targetFamily == 'self') {
+    if(targetFamily == 'self' || ability.stats.targetFamily == 'self') {
       out.actors = a.x == x && a.y == y ? [a] : out.actors;
     } else
-    if(ability.stats.targetFamily == 'allies') {
+    if(targetFamily == 'ally' || ability.stats.targetFamily == 'allies') {
       out.actors = out.tiles.filter(b => b.item instanceof Monster && b.item.team == a.team).map(m => m.item);
+      out.allies = out.actors;
     } else
-    if(ability.stats.targetFamily == 'enemies') {
+    if(targetFamily == 'enemy' || ability.stats.targetFamily == 'enemies') {
       out.actors = out.tiles.filter(b => b.item instanceof Monster && b.item.team != a.team).map(m => m.item);
+      out.enemies = out.actors;
     } else {
-      out.actors = out.tiles.filter(b => b.item instanceof Monster).map(m => m.item);
+      out.actors = out.tiles.filter(b => b.item instanceof Monster).map(m => {
+        if(m.item.team == a.team) {
+          out.allies.push(m.item);
+        } else {
+          out.enemies.push(m.item);
+        }
+        return m.item
+      });
+    }
+
+    if(ability.stats.source == 'blessing') {
+      out.actors = out.actors.filter(a => !a.hasAilment('blinded'));
     }
 
     if(ability.stats.target == 'ground' && out.tiles.length && this.grid.squareRadius(a.x, a.y, x, y) <= ability.stats.range) {
@@ -1076,7 +1094,7 @@ class Battle {
       })
     }
     let pointerTarget = this.grid.get(x, y);
-    let aura = pointerTarget && pointerTarget.hasAura;
+    let aura = pointerTarget && pointerTarget.hasAura && pointerTarget.hasAura('', this.tr.actor);
     aura && !ability && this.highlightAura(aura);
   }
 
@@ -1445,6 +1463,7 @@ class Battle {
   canWalkTo(a, b) {
     let path = this.grid.path(a.x, a.y, b.x, b.y);
     let length = path.length - 1;
+    if(length < 1) return false;
     return length <= a.movesLeft;
   }
 
@@ -1455,7 +1474,7 @@ class Battle {
   flanks(b) {
     return this.grid.around(b.x, b.y, 1)
     .filter(m => {
-      return m.item instanceof Monster && m.item.team != b.team
+      return m.item instanceof Monster && m.item.team != b.team;
     }).length;
   }
 
@@ -1565,9 +1584,7 @@ class Battle {
         // enemy triggers
         this.trigger('when enemy is hit', t, b, d, ability);
         let dist = this.grid.squareRadius(b.x, b.y, t.x, t.y);
-        console.log('enemey is hit', dist, t.triggers)
         if(dist < 4) {
-          console.log('when nearby enemy is hit')
           this.trigger('when nearby enemy is hit', t, b, d, ability);
         }
         if(dist < 2) {
@@ -1634,13 +1651,13 @@ class Battle {
   }
 
   attackRoll(a, b, ability) {
-    let at = a.totalStat('attack');
-    let df = b.totalStat('defence');
     let stacks = a.stacks;
-    let bonusDamage = a.totalStat('damage', b);
+    let damage = a.totalStat('damage', b);
+    let at = a.totalStat('attack', b);
+    let df = b.totalStat('defence', a);
     let flanks = this.flanks(b) - 1;
     let flankMultiplier = 1 + (flanks / 5);
-    let abilityDamage = ability.roll(bonusDamage);
+    let abilityDamage = ability.roll(damage);
     let multiplier = 1;
     let vigorMultiplier = this.vigorMultiplier(a, b, ability);
     let ailmentMultiplier = this.ailmentMultiplier(a, b, ability);
@@ -1654,13 +1671,13 @@ class Battle {
   }
 
   attackRollMin(a, b, ability) {
-    let df = b.totalStat('defence');
-    let at = a.totalStat('attack');
     let stacks = a.stacks;
-    let bonusDamage = a.totalStat('damage', b);
+    let damage = a.totalStat('damage', b);
+    let at = a.totalStat('attack', b);
+    let df = b.totalStat('defence', a);
     let flanks = this.flanks(b) - 1;
     let flankMultiplier = 1 + (flanks / 5);
-    let abilityDamage = ability.minPower(bonusDamage);
+    let abilityDamage = ability.minPower(damage);
     let multiplier = 1;
     let vigorMultiplier = this.vigorMultiplier(a, b, ability);
     let ailmentMultiplier = this.ailmentMultiplier(a, b, ability);
@@ -1675,12 +1692,12 @@ class Battle {
 
   attackRollMax(a, b, ability) {
     let df = b.totalStat('defence');
-    let at = a.totalStat('attack');
     let stacks = a.stacks;
-    let bonusDamage = a.totalStat('damage', b);
+    let damage = a.totalStat('damage', b);
+    let at = a.totalStat('attack', b);
     let flanks = this.flanks(b) - 1;
     let flankMultiplier = 1 + (flanks / 5);
-    let abilityDamage = ability.maxPower(bonusDamage);
+    let abilityDamage = ability.maxPower(damage);
     let multiplier = 1;
     let vigorMultiplier = this.vigorMultiplier(a, b, ability);
     let ailmentMultiplier = this.ailmentMultiplier(a, b, ability);
@@ -1695,64 +1712,69 @@ class Battle {
 
   dealAttackDamage(a, b, ability, fromEffect, effectPower) {
     let d = this.attackRoll(a, b, ability);
-    if(d) {
-      this.dealDamage(a, b, d, ability, fromEffect);
-      if(!fromEffect) {
-        this.trigger('when attack hits', a, b, d, ability);
-      }
-    }
-
+    this.applyAttackDamage(a, b, d, ability, fromEffect);
     return d;
   }
 
   spellRoll(a, b, ability, fromEffect, effectPower) {
-    let spellResistance = b.totalStat('spellResistance');
+    let stacks = a.stacks;
+    let spellResistance = b.totalStat('spellResistance', a);
     let resistRoll = this.roll(1, 100);
+    let resistMultiplier = 1;
     if(resistRoll < spellResistance) {
       logger.log(b.bio.name, 'resisted spell', ability.bio.name);
-      return 0;
+      resistMultiplier = 0.5;
     }
-    let stacks = a.stacks;
-    let bonusDamage = a.totalStat("damage");
-    let abilityDamage = effectPower || ability.roll(bonusDamage);
-    let spellPower = 1 + a.totalStat('spellPower') / 10;
+    let abilityDamage = effectPower || ability.roll(a.totalStat('damage', b));
+    let spellMultiplier = 1 + a.totalStat('spellPower') / 10;
     let vigorMultiplier = this.vigorMultiplier(a, b, ability);
     let ailmentMultiplier = this.ailmentMultiplier(a, b, ability);
-    let d = Math.ceil(abilityDamage * stacks * spellPower * vigorMultiplier * ailmentMultiplier);
+    let d = Math.ceil(resistMultiplier * abilityDamage * stacks * spellMultiplier * vigorMultiplier * ailmentMultiplier);
     return d;
   }
 
   spellRollMin(a, b, ability, fromEffect, effectPower) {
     let stacks = a.stacks;
-    let bonusDamage = a.totalStat("damage");
-    let abilityDamage = ability.minPower(bonusDamage);
-    let spellPower = 1 + a.totalStat('spellPower') / 10;
+    let abilityDamage = ability.minPower(a.totalStat('damage', b));
+    let spellMultiplier = 1 + a.totalStat('spellPower', b) / 10;
     let vigorMultiplier = this.vigorMultiplier(a, b, ability);
     let ailmentMultiplier = this.ailmentMultiplier(a, b, ability);
-    let d = Math.ceil(abilityDamage * stacks * spellPower * vigorMultiplier * ailmentMultiplier);
+    let d = Math.ceil(abilityDamage * stacks * spellMultiplier * vigorMultiplier * ailmentMultiplier);
     return d;
   }
 
   spellRollMax(a, b, ability, fromEffect, effectPower) {
     let stacks = a.stacks;
-    let bonusDamage = a.totalStat("damage");
-    let abilityDamage = ability.maxPower(bonusDamage);
-    let spellPower = 1 + a.totalStat('spellPower') / 10;
+    let abilityDamage = ability.maxPower(a.totalStat('damage', b));
+    let spellMultiplier = 1 + a.totalStat('spellPower', b) / 10;
     let vigorMultiplier = this.vigorMultiplier(a, b, ability);
     let ailmentMultiplier = this.ailmentMultiplier(a, b, ability);
-    let d = Math.ceil(abilityDamage * stacks * spellPower * vigorMultiplier * ailmentMultiplier);
+    let d = Math.ceil(abilityDamage * stacks * spellMultiplier * vigorMultiplier * ailmentMultiplier);
     return d;
   }
 
   dealSpellDamage(a, b, ability, fromEffect, effectPower) {
     let d = this.spellRoll(a, b, ability, fromEffect, effectPower);
+    this.applySpellDamage(a, b, d, ability, fromEffect);
+    return d;
+  }
+
+  applySpellDamage(a, b, d, ability, fromEffect) {
     if(d) {
       this.dealDamage(a, b, d, ability, fromEffect);
       if(!fromEffect) {
         this.trigger('when spell hits', a, b, d, ability);
       }
     }
-    return d;
+  }
+
+  applyAttackDamage(a, b, d, ability, fromEffect, effectPower) {
+    if(d) {
+      this.dealDamage(a, b, d, ability, fromEffect);
+      if(!fromEffect) {
+        this.trigger('when attack hits', a, b, d, ability);
+      }
+    }
   }
 
   dealAttributeDamage(a, b, ability) {
@@ -1937,8 +1959,25 @@ class Battle {
           return;
         }
         a.useAbility(ability);
-        logger.log(a.bio.name, triggeredPower ? 'trigger' : 'uses' ,'ability:', ability.bio.name);
+        logger.log(a.bio.name, triggeredPower ? 'trigger' : 'uses' ,'ability:', ability.bio.name, 'on', targets.actors.map(a => a.bio.name));
         if(!ability.stats.summon) {
+          let powers = [];
+          // calculate the power first so that stats aren't affected
+          // on subsequent targets
+          targets.actors.forEach((t, i) => {
+            if(ability.stats.source == 'attack') {
+              powers[i] = this.attackRoll(a, t, ability);
+            }
+            if(ability.stats.source == 'spell') {
+              powers[i] = this.spellRoll(a, t, ability);
+            }
+            if(ability.stats.source == 'curse') {
+              powers[i] = this.dealAttributeDamage(a, t, ability);
+            }
+            if(ability.stats.source == 'blessing') {
+              powers[i] = this.dealAttributeDamage(a, t, ability);
+            }
+          });
           let acts = targets.actors.map((t, i) => {
             let specialResult;
             let special = specialEffects[ability.stats.special];
@@ -1946,20 +1985,13 @@ class Battle {
               specialResult = special.fn(this, a, b, ability, power, triggeredPower, positions, triggeredBy);
               if(specialResult.preventUse) return;
             }
-            var power = 0;
+            var power = powers[i];
             if(ability.stats.source == 'attack') {
-              power = this.dealAttackDamage(a, t, ability, triggered);
+              this.applyAttackDamage(a, t, power, ability, triggered);
             }
             if(ability.stats.source == 'spell') {
-              power = this.dealSpellDamage(a, t, ability, triggered);
+              this.applySpellDamage(a, t, power, ability, triggered);
             }
-            if(ability.stats.source == 'curse') {
-              power = this.dealAttributeDamage(a, t, ability, triggered);
-            }
-            if(ability.stats.source == 'blessing') {
-              power = this.dealAttributeDamage(a, t, ability, triggered);
-            }
-
 
             if(special && special.when == 'per target') {
               specialResult = special.fn(this, a, t, ability, power, triggeredPower, positions, triggeredBy);
@@ -2007,7 +2039,8 @@ class Battle {
       tile = this.grid.closestEmpty(tile.x, tile.y);
     };
     let health = a && a.stacks * (10 + 10 * a.totalStat('spellPower'));
-    let stacks = a ? Math.min(template.bio.maxStacks, Math.ceil(health / template.stats.health)) : 1;
+    let maxStacks = a && a.stacks * a.tier;
+    let stacks = a ? Math.min(maxStacks, Math.ceil(health / template.stats.health)) : 1;
     let monster = new Monster(template, 1, true);
     monster.addStack(stacks -1);
     monster.harm(monster.totalHealth);
@@ -2020,6 +2053,10 @@ class Battle {
     this.grid.setItem(monster);
     this.tr.add([monster]);
     this.addAuras(monster);
+    if(a.ai) {
+      monster.addAI();
+    }
+    a.addMinion(monster);
     logger.log(a.bio.name, 'summoned', monster.bio.name)
     this.initiativeChanged('useAbility');
     return monster;
@@ -2041,17 +2078,18 @@ class Battle {
   kill(a) {
     this.sp.play('death');
     this.tr.remove(a);
-    this.grid.remove(a.x,a.y);
+    this.grid.remove(a.x, a.y);
+    a.trigger('death', a);
     this.render();
     logger.log(a.bio.name, 'was killed');
   }
 
   inRange(a, b, ability) {
-    var d = this.grid.distance(a.x, a.y, b.x, b.y);
+    var d = this.grid.squareRadius(a.x, a.y, b.x, b.y);
     ability = ability || a.selectedAbility;
     if(!ability) return;
     var range = ability ? ability.stats.range : 1;
-    return d <= range + 0.42;
+    return d <= range;
   }
 
   movementTriggers(a) {
@@ -2123,6 +2161,7 @@ class Battle {
   }
 
   startTurn() {
+    this.turnEnded = false;
     var a = this.tr.actor;
     logger.log('Turn start for', a.bio.name);
     if(!a.ai) {
@@ -2138,7 +2177,7 @@ class Battle {
     a.resetMovement();
     a.selectAbility(null);
     if(!this.tr.didWait(a)) {
-      a.replenishMana(1);
+      a.replenishMana(a.manaPerTurn);
       this.applyEffects(a);
       if(a.hasAilment('contagious')) this.spreadContagion(a);
     }
@@ -2148,6 +2187,13 @@ class Battle {
       logger.log(a.team, 'won the game!');
       this.endGame(a.team);
     }
+  }
+
+  continueTurn() {
+    this.turnEnded = true;
+    this.tr.nextTurn();
+    this.makeMonsterCards();
+    this.act();
   }
 
   endTurn() {
@@ -2167,8 +2213,13 @@ class Battle {
       effectsToRemove.forEach(e => a.removeEffect(e));
     }
     let currentRound = this.tr.currentRound;
-    this.tr.nextTurn();
-    this.makeMonsterCards();
+    if(this.stepwise) {
+      this.turnEnded = false;
+    } else {
+      this.turnEnded = true;
+      this.tr.nextTurn();
+      this.makeMonsterCards();
+    }
   }
 
   aiAct(a) {
@@ -2176,6 +2227,9 @@ class Battle {
   }
 
   act() {
+    if(this.stepwise && !this.turnEnded) {
+      return;
+    }
     this.startTurn();
     var a = this.currentActor;
     if(!a) return;
@@ -2251,13 +2305,11 @@ class Battle {
   }
 
   showMonsterCards() {
-    console.log('showMonsterCards')
     let c = document.getElementById('monster-cards');
     c.style.display = 'block';
   }
 
   hideMonsterCards() {
-    console.log('hideMonsterCards')
     let c = document.getElementById('monster-cards');
     c.style.display = 'none';
   }
