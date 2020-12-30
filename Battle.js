@@ -623,6 +623,14 @@ class Battle {
     return this.team2;
   }
 
+  areEnemies(a, b) {
+    return a && b && a != b && a.constructor == Monster && b.constructor == Monster && a.team != b.team;
+  }
+
+  areAllies(a, b) {
+    return a && b && a != b && a.constructor == Monster && b.constructor == Monster && a.team == b.team;
+  }
+
   get currentTeam() {
     if(this.currentActor.team == 'team1') return this.originalTeam1;
     return this.originalTeam2;

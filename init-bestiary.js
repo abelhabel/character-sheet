@@ -92,7 +92,7 @@ Module.loaders = [];
 Module.loadOrder = [];
 Module.onLoad(['DungeonCrawl_ProjectUtumnoTileset.png', 'sheet_of_old_paper.png', 'sheet_of_old_paper_horizontal.png',
   'abilities.js', 'monsters.js', 'icons.js',
-  'FixedList.js', 'Canvas.js', 'Sprite.js', 'CompositeSprite.js',
+  'FixedList.js', 'Canvas.js', 'Sprite.js', 'CompositeSprite.js', 'Component.js',
   'AbilityEffect.js', 'Ability.js', 'Monster.js'], () => {
   const Monster = require('Monster.js');
   const Sprite = require('Sprite.js');

@@ -435,7 +435,9 @@ class AI {
             filtered = filtered.filter(filterPassThrough);
         }
       }
-
+      if(c.class) {
+        filtered = filtered.filter(t => t.class == c.class);
+      }
       if(c.state) {
         if(c.state == 'healthy') {
           filtered = filtered.filter(t => t.healthy);
@@ -657,7 +659,8 @@ class AI {
           if(!tiles.length) {
             tile = battle.grid.around(inRange[0].x, inRange[0].y, 1)
             .find(item => {
-              return !item.item;
+              let path = battle.grid.path(actor.x, actor.y, item.x, item.y);
+              return !item.item && path.length;
             });
 
           } else {
@@ -674,10 +677,42 @@ class AI {
         // if acbility has no targets condition is not met
         let {radius, range} = ability.stats;
         if(ability.stats.summon) {
-          let tile = battle.grid.closestEmpty(actor.x, actor.y, null, radius+1);
-          console.log('summon to', tile)
-          if(!tile) return;
-          inRange = [tile];
+          if(s.act.withinRadius) {
+            let m = 'around';
+            if(s.act.radiusType == 'steps') {
+              m = 'inRadius';
+            }
+            let tile;
+            let n = 0;
+            battle.grid.around(actor.x, actor.y, range)
+            .forEach(item => {
+              if(item.item) return;
+              let t = battle.grid[m](item.x, item.y, s.act.withinRadius)
+              .filter(item => {
+                if(s.act.target == 'enemy') {
+                  return battle.areEnemies(actor, item.item);
+                }
+                if(s.act.target == 'ally') {
+                  return battle.areAllies(actor, item.item);
+                }
+              });
+              if(t.length > n) {
+                n = t.length;
+                tile = item;
+              }
+            })
+            if(!tile) {
+              console.log('no tile to summon to', tile, n, m);
+              return;
+            }
+            console.log('summon within', tile)
+            inRange = [tile];
+          } else {
+            let tile = battle.grid.closestEmpty(actor.x, actor.y, null, radius+1);
+            console.log('summon to', tile)
+            if(!tile) return;
+            inRange = [tile];
+          }
         } else
         if(s.act.select == 'self' || ability.stats.target == 'self') {
           let t = battle.abilityTargets(actor, ability, actor.x, actor.y);

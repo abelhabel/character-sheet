@@ -114,7 +114,7 @@ class MonsterCard {
       <div class='card-inner ${turn ? 'turn' : ''} ${item.alive ? '' : 'dead'}'>
         <div class='card-upper'>
           <div class='card-name'>
-            ${name} (${item.stacks}) ${item.alive ? '' : 'dead'}
+            ${name} (${item.stacks}) ${item.alive ? '' : 'dead'} ${item.class}
           </div>
           <div class='card-image'>
           </div>

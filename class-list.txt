@@ -1,0 +1,11 @@
+          attack	    spell	     blessing	   curse
+attack	  fighter	    spellblade paladin	   blackguard
+spell	    spellblade	sorcerer	 sage	       crone
+blessing	paladin	    sage	     cleric	     druid
+curse	    blackguard	crone	     druid	     witch
+
+extra
+sorcerer->summon: conjurer
+sorcerer->vitality: saint
+fighter->far away range: sniper
+fighter->nearby range: ranger

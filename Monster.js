@@ -291,6 +291,109 @@ class Monster extends Events {
     this.routine = new AI(this.battle, this, level);
   }
 
+  get class() {
+    let attacks = this.attacks;
+    let spells = this.spells.filter(s => s.stats.targetFamily != 'self');
+    let blessings = this.blessings.filter(s => s.stats.targetFamily != 'self');
+    let curses = this.curses;
+    let total = attacks.length + spells.length + blessings.length + curses.length;
+    let l = [
+      {val: attacks.length, name: 'attack'},
+      {val: spells.length, name: 'spell'},
+      {val: blessings.length, name: 'blessing'},
+      {val: curses.length, name: 'curse'},
+    ];
+    let max = Math.max.apply(null, l.map(a => a.val));
+    l = l.filter(a => a.val >= (Math.ceil(max/2) || 1));
+    l.sort((a, b) => {
+      if(a.val > b.val) return -1;
+      if(b.val > a.val) return 1;
+      return 0;
+    })
+    if(this.bio.name == 'Aka Manah') {
+      console.log(l, max)
+    }
+    if(l.length == 1) {
+      if(l[0].name == 'attack') {
+        let afars = attacks.filter(a => a.stats.range > 6).length;
+        let closes = attacks.filter(a => a.stats.range > 3).length;
+        let nearbys = attacks.filter(a => a.stats.range > 1).length;
+        let melees = attacks.filter(a => a.stats.range == 1).length;
+        let all = [afars, closes, nearbys, melees];
+        if(Math.max.apply(null, all) == afars) {
+          return 'sniper';
+        }
+        if(Math.max.apply(null, all) == closes) {
+          return 'ranger';
+        }
+
+        return 'fighter';
+      }
+      if(l[0].name == 'spell') {
+        let sum = spells.filter(s => s.stats.summon).length;
+        if(sum > spells.length / 2) return 'conjurer';
+        let vit = spells.filter(s => s.stats.element == 'vitality').length;
+        if(vit > spells.length / 2) return 'saint';
+        return 'sorcerer';
+      }
+      if(l[0].name == 'blessing') {
+        return 'cleric';
+      }
+      if(l[0].name == 'curse') {
+        return 'witch';
+      }
+    } else
+    if(l.length > 1) {
+      if(l[0].name == 'attack') {
+        if(l[1].name == 'spell') {
+          return 'spellblade';
+        }
+        if(l[1].name == 'blessing') {
+          return 'paladin';
+        }
+        if(l[1].name == 'curse') {
+          return 'blackguard';
+        }
+      }
+      if(l[0].name == 'spell') {
+        if(l[1].name == 'attack') {
+          return 'spellblade';
+        }
+        if(l[1].name == 'blessing') {
+          return 'sage';
+        }
+        if(l[1].name == 'curse') {
+          return 'crone';
+        }
+      }
+      if(l[0].name == 'blessing') {
+        if(l[1].name == 'attack') {
+          return 'paladin';
+        }
+        if(l[1].name == 'spell') {
+          return 'sage';
+        }
+        if(l[1].name == 'curse') {
+          return 'druid';
+        }
+      }
+      if(l[0].name == 'curse') {
+        if(l[1].name == 'attack') {
+          return 'blackguard';
+        }
+        if(l[1].name == 'spell') {
+          return 'crone';
+        }
+        if(l[1].name == 'blessing') {
+          return 'druid';
+        }
+      }
+    }
+
+    return 'soldier';
+
+  }
+
   parseAI() {
     let distances = {
       adjacent: 1,
@@ -306,12 +409,21 @@ class Monster extends Events {
     let ranges = ['melee', 'ranged'];
     let roles = ['reactive'];
     let stats = ['attack', 'defence', 'spellPower', 'spellResistance', 'movement', 'initiative', 'apr', 'tpr', 'mana', 'damage'];
+    let classes = [
+      'fighter', 'sorcerer', 'cleric', 'witch',
+      'spellblade', 'sage', 'druid',
+      'paladin', 'crone',
+      'blackguard',
+      'sniper', 'ranger',
+      'conjurer', 'saint'
+    ];
     this.aiScript = actions.map(a => {
       let c = a.split('use');
       let d = c[1].trim();
       let ability = d.match(/-([a-zA-Z\s]+)-/);
       let abilityTPL = ability ? abilities.find(a => a.bio.name == ability[1]) : null;
       let select = d.match(/select:([a-z]+)/);
+      let withinRadius = d.match(/within (\d) (steps|squareRadius)/);
       let act = {
         part: d,
         ability: abilityTPL ? abilityTPL.id : '',
@@ -325,8 +437,13 @@ class Monster extends Events {
         move: !!~d.indexOf('Move'),
         moveAway: !!~d.indexOf('Move away'),
         moveToMost: !!~d.indexOf('Move to most'),
-        moveFully: !!~d.indexOf('full Move')
+        moveFully: !!~d.indexOf('full Move'),
+        withinRadius: withinRadius && withinRadius[1],
+        radiusType: withinRadius && withinRadius[2],
       };
+      if(act.withinRadius) {
+        act.withinRadius = parseInt(act.withinRadius);
+      }
       if(act.target) {
         let test = new RegExp(`(\\d) ${act.target}`);
         let n = d.match(test);
@@ -340,6 +457,7 @@ class Monster extends Events {
         let ailment = m.match(/has ailment ([a-zA-Z]+)/);
         let faction = m.match(/is faction -([a-zA-Z\s]+)-/);
         let minion = m.match(/has minion -([a-zA-Z\s]+)-/);
+        let klass = m.match(/is class ([a-zA-Z\s]+)/);
         let cond = {
           part: m,
           distance: distance.find(b => !!~m.indexOf(' '+b) || !!~m.indexOf(b +' ')),
@@ -358,8 +476,10 @@ class Monster extends Events {
           faction: faction && faction[1],
           vigor: vigor && vigor[1],
           ailment: ailment && ailment[1],
-          permanentAilment: !!~c.indexOf('permanent ailment'),
+          permanentAilment: !!~m.indexOf('permanent ailment'),
           role: roles.find(b => ~m.indexOf('is '+b)),
+          class: klass && klass[1],
+          isSummoned: !!~m.indexOf('is summoned'),
         };
         cond.negDistance = !!~m.indexOf('no ' + cond.distance),
         cond.neg = m.charAt(0) == '!';
@@ -516,6 +636,14 @@ class Monster extends Events {
 
   get attacks() {
     return this.abilities.filter(a => a.bio.type == 'active' && a.stats.source == 'attack');
+  }
+
+  get blessings() {
+    return this.abilities.filter(a => a.bio.type == 'active' && a.stats.source == 'blessing');
+  }
+
+  get curses() {
+    return this.abilities.filter(a => a.bio.type == 'active' && a.stats.source == 'curse');
   }
 
   get damaging() {
