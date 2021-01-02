@@ -1,10 +1,10 @@
 module.exports = {};
 const monsters = require('monsters.js');
 class Special {
-  constructor(onEffectEnd = null, preventUse) {
+  constructor(onEffectEnd = null, preventUse, afterUse) {
     this.onEffectEnd = onEffectEnd;
     this.preventUse = preventUse;
-
+    this.afterUse = afterUse;
   }
 }
 
@@ -72,6 +72,36 @@ module.exports.banish = {
       return;
     };
     battle.dealDamage(caster, target, target.totalHealth, ability);
+    return new Special();
+  }
+};
+
+module.exports.mark = {
+  when: 'per target',
+  fn: function (battle, caster, target, ability, power, triggeredPower, selections, triggeredBy) {
+
+    return new Special();
+  }
+};
+
+module.exports.consumeMark = {
+  when: 'before use',
+  fn: function (battle, caster, target, ability, power, triggeredPower, selections, triggeredBy) {
+    let t = battle.grid.get(selections[0].x, selections[0].y);
+    if(!t) return new Special();
+    let mark = t.effects.find(e => e.ability.stats.special == 'mark');
+    if(!mark) return new Special();
+    let {minPower, attribute} = mark.ability.stats;
+    if(attribute == 'damage') {
+      let d = mark.rounds * minPower;
+      if(!caster.bonusdamage) caster.bonusdamage = 0;
+      caster.bonusdamage += d;
+      console.log('added damage bonus', d, caster)
+      return new Special(null, null, () => {
+        caster.bonusdamage -= d;
+        console.log('removed damage bonus', d);
+      })
+    }
     return new Special();
   }
 };
@@ -286,9 +316,13 @@ module.exports.lifeLeech = {
   recurring: true,
   fn: function (battle, caster, target, ability, power, triggeredPower, selections, triggeredBy) {
     if(triggeredPower) {
-      caster.heal(Math.ceil(triggeredPower/2))
+      let d = Math.ceil(triggeredPower/2);
+      logger.log(caster.bio.name, 'leeched', d, 'life');
+      caster.heal(d)
     } else {
-      caster.heal(Math.ceil(power/2))
+      let d = Math.ceil(power/2);
+      logger.log(caster.bio.name, 'leeched', d, 'life');
+      caster.heal(d)
     }
 
   }

@@ -49,7 +49,7 @@ var tpl = {
           name: 'Name',
           type: 'input',
           minCharacters: 1,
-          maxCharacters: 20,
+          maxCharacters: 40,
           exportAs: 'name',
         },
         {

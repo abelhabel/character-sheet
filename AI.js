@@ -47,6 +47,12 @@ function sortOnMight(a, b) {
   if(g == h) return 0;
   return g > h ? -1 : 1;
 }
+function sortOnStrength(a, b) {
+  let g = a.totalStat('attack');
+  let h = b.totalStat('attack');
+  if(g == h) return 0;
+  return g > h ? -1 : 1;
+}
 function sortOnToughness(a, b) {
   let g = a.totalStat('defence');
   let h = b.totalStat('defence');
@@ -296,6 +302,9 @@ class AI {
       case 'weakest':
         sorting = sortOnWeakness;
         break;
+      case 'strongest':
+        sorting = sortOnStrength;
+        break;
       case 'mightiest':
         sorting = sortOnMight;
         break;
@@ -411,10 +420,10 @@ class AI {
           return;
         }
       }
-
+      console.log("BEGIN FILTER", filtered)
       if(c.range) {
         if(c.range == 'melee') {
-          filtered = filtered.filter(e => e.potentialRange < 2);
+          filtered = filtered.filter(e => e.attacks.length && e.potentialRange < 2);
 
         } else
         if(c.range == 'ranged') {
@@ -423,7 +432,7 @@ class AI {
       }
 
       if(c.faction) {
-        filtered = filtered.filter(e => e.bio.family == c.faction);
+        filtered = filtered.filter(e => c.neg ? e.bio.family != c.faction : e.bio.family == c.faction);
       }
 
       if(c.role) {
@@ -579,7 +588,7 @@ class AI {
             return;
           }
           if(p.x == actor.x && p.y == actor.y) {
-            console.log('same position')
+            console.log('same position');
             return;
           }
           if(s.act.numTargets && s.act.numTargets > p.at.targets.length) {
@@ -600,19 +609,31 @@ class AI {
           inRange.forEach(m => {
             battle.grid.around(m.x, m.y, 1)
             .forEach(t => {
-              if(t.item) return;
+              let same = false;
+              if(t.item)  {
+                if(t.x == actor.x && t.y == actor.y) {
+                  same = true;
+                  console.log('checking current position')
+                } else {
+                  return;
+                }
+              }
+              if(s.act.moveFully && !battle.canWalkTo(actor, t) && !same) {
+                console.log('cannot fully move to', t)
+                return;
+              }
               let count = battle.grid.around(t.x, t.y, 1)
               .filter(k => {
-                if(!k.item || k.item.constructor != actor.constructor) return;
                 if(s.act.target == 'enemy') {
-                  return actor.team != k.item.team;
+                  return battle.areEnemies(actor, k.item);
                 }
                 if(s.act.target == 'ally') {
-                  return actor.team == k.item.team;
+                  return battle.areAllies(actor, k.item);
                 }
                 return true;
               }).length;
               if(count > best) {
+                console.log(best)
                 best = count;
                 p = t;
               }
@@ -626,7 +647,13 @@ class AI {
             console.log('same position')
             return;
           }
+          console.log('move to most', actor.x, actor.y, p.x, p.y, best)
           let t = battle.grid.path(actor.x, actor.y, p.x, p.y);
+          if(s.act.moveFully) {
+            return action = new Action('move', [p]);
+          } else {
+            return action = new Action('move', [{x: t[1][0], y: t[1][1]}]);
+          }
           return action = new Action('move', [{x: t[1][0], y: t[1][1]}]);
         } else
         if(s.act.moveAway) {
@@ -708,10 +735,17 @@ class AI {
             console.log('summon within', tile)
             inRange = [tile];
           } else {
-            let tile = battle.grid.closestEmpty(actor.x, actor.y, null, radius+1);
-            console.log('summon to', tile)
-            if(!tile) return;
-            inRange = [tile];
+            if(ability.stats.shape == 'point') {
+              let tile = battle.grid.closestEmpty(actor.x, actor.y, null, radius+1);
+              console.log('summon to', tile)
+              if(!tile) return;
+              inRange = [tile];
+            } else {
+              let x = (battle.w / 2) - actor.x > 1 ? 1 : -1;
+              let y = (battle.h / 2) - actor.y > 1 ? 1 : -1;
+              let at = battle.abilityTargets(actor, ability, actor.x + x, actor.y + y);
+              inRange = at.tiles;
+            }
           }
         } else
         if(s.act.select == 'self' || ability.stats.target == 'self') {
@@ -729,7 +763,7 @@ class AI {
             let select = s.act.select || ability.stats.target;
             let target = targeting[s.act.target] || ability.stats.targetFamily;
             let t = this.findBestAbilityTarget(ability, select, target);
-            if(!t.at.validTargets) {
+            if(!t.targets.length) {
               console.log('cannot use ability', ability.bio.name, select, target, t)
               return;
             }
@@ -760,7 +794,7 @@ class AI {
           return action = new Action('use ability', [inRange[0]], ability.template.id);
         }
       } else
-      if(s.act.wait) {
+      if(s.act.wait && battle.canWait(actor)) {
         return action = new Action('wait');
       } else
       if(s.act.defend) {
@@ -776,173 +810,6 @@ class AI {
     } else {
       return battle.addAction(action);
     }
-    return;
-    // console.log('conditionTiles', conditionTiles)
-    if(script) {
-      let ability = actor.getAbility(script.act.ability);
-      let sorting = this.getSortForTargetType(script.act.targetType, ability);
-
-      let rangeFilter = this.getFilterForRange();
-      switch(script.act.range) {
-        case 'melee':
-          rangeFilter = filterOnMeleeRange;
-          break;
-        case 'ranged':
-          rangeFilter = filterOnNonMeleeRange;
-          break;
-        default:
-          rangeFilter = filterPassThrough;
-      }
-
-      let actors = [];
-      switch(script.act.target) {
-        case 'it':
-          actors = conditionTiles;
-          break;
-        case 'self':
-          actors = [this.actor];
-          break;
-        case 'target':
-          actors = this.aliveActors();
-          break;
-        case 'ally':
-          actors = this.allies();
-          break;
-        case 'enemy':
-          actors = this.enemies();
-          break;
-        default:
-          actors = this.aliveActors();
-      }
-      let potentialTargets;
-      let inRange;
-      if(ability) {
-        if(ability.stats.target == 'ground') {
-          let {radius, range, summon} = ability.stats;
-          if(summon) {
-            let tile = battle.grid.closestEmpty(actor.x, actor.y, null, radius+1);
-            inRange = [tile];
-            console.log('summon', inRange)
-          } else {
-            potentialTargets = battle.grid.around(actor.x, actor.y, range);
-            let best = {x: 0, y: 0};
-            let targetCount = 0;
-            potentialTargets.forEach(({item, x, y}) => {
-              let targets = battle.abilityTargets(actor, ability, x, y, script.act.target);
-              if(targets.validTargets && targets.actors.length > targetCount) {
-                best.x = x;
-                best.y = y;
-                targetCount = targets.actors.length;
-              }
-            })
-            inRange = [best];
-
-          }
-        } else {
-          if(script.act.selectSelf || ability.stats.target == 'self') {
-            inRange = [actor];
-          } else {
-            potentialTargets = actors.sort(sorting);
-            if(rangeFilter) {
-              potentialTargets = potentialTargets.filter(rangeFilter);
-            }
-            inRange = potentialTargets.filter(e => battle.inRange(actor, e, ability));
-
-          }
-        }
-        if(ability && ability.stats.source == 'blessing') {
-          inRange = inRange.filter(m => !m.hasAilment('blinded'));
-        }
-      } else {
-        potentialTargets = actors.sort(sorting);
-        if(rangeFilter) {
-          potentialTargets = potentialTargets.filter(rangeFilter);
-        }
-        inRange = potentialTargets;
-
-      }
-      console.log('in range', inRange)
-      // console.log('potentialTargets', potentialTargets)
-      if(script.act.wait) {
-        return battle.addAction(new Action('wait'));
-      } else
-      if(script.act.defend) {
-        return battle.addAction(new Action('defend'));
-      } else
-      if(script.act.move) {
-        if(ability) {
-          let select = script.act.select || ability.stats.target;
-          let target = targeting[script.act.target] || ability.stats.targetFamily;
-          let p = this.findBestMoveForAbility(ability, select, target);
-          let t = battle.grid.path(actor.x, actor.y, p.x, p.y);
-          console.log('found best position to move', p, t[1][0], t[1][1]);
-          return battle.addAction(new Action('move', [{x: t[1][0], y: t[1][1]}]));
-        }
-        if(script.act.moveToMost) {
-          let best = 0;
-          let p = {x: 0, y: 0};
-          inRange.forEach(m => {
-            battle.grid.around(m.x, m.y, 1)
-            .forEach(t => {
-              if(t.item) return;
-              let count = battle.grid.around(t.x, t.y, 1)
-              .filter(k => {
-                if(!k.item || k.item.constructor != actor.constructor) return;
-                if(script.act.target == 'enemy') {
-                  return actor.team != k.item.team;
-                }
-                if(script.act.target == 'ally') {
-                  return actor.team == k.item.team;
-                }
-                return true;
-              }).length;
-              if(count > best) {
-                best = count;
-                p = t;
-              }
-            });
-          });
-          let t = battle.grid.path(actor.x, actor.y, p.x, p.y);
-          return battle.addAction(new Action('move', [{x: t[1][0], y: t[1][1]}]));
-        } else
-        if(script.act.moveAway) {
-          console.log('move away')
-          return this.moveAway(inRange[0], Action);
-        } else {
-          console.log('moveTowards', inRange[0].bio.name, inRange[0].team);
-          let tile = battle.grid.closestEmpty(inRange[0].x, inRange[0].y, (x, y) => {
-            return battle.canWalkTo(actor, {x, y});
-          }, 10);
-          console.log('TILE', tile);
-          let t = battle.grid.path(actor.x, actor.y, tile.x, tile.y);
-          return battle.addAction(new Action('move', [{x: t[1][0], y: t[1][1]}]));
-          return this.moveTowards(inRange[0], Action);
-        }
-      } else
-      if(!inRange.length) {
-        return this.moveTowards(potentialTargets[0], Action);
-      } else
-      if(ability) {
-        if(ability.stats.selections > 1) {
-          let targets = [];
-          let index = 0;
-          for(var i = 0; i < ability.stats.selections; i++) {
-            targets.push(inRange[index]);
-            index++;
-            if(!inRange[index]) {
-              index = 0;
-            }
-          }
-          console.log('multiple selections', targets)
-          return battle.addAction(new Action('use ability', targets, ability.template.id));
-        } else {
-          return battle.addAction(new Action('use ability', [inRange[0]], ability.template.id));
-        }
-      }
-
-    }
-    console.log('default AI')
-    return this['routine' + this.level](Action);
   }
 
   moveTowards(b, Action) {

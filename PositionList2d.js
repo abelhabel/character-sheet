@@ -161,7 +161,22 @@ class PositionList2d {
       if(x < 0 || y < 0) continue;
       if(x >= this.w || y >= this.h) continue;
       let t = this.get(x, y);
-      if(targets.find(a => a.item == t)) continue;
+      targets.push({item: t, x:x, y:y});
+    }
+    return targets;
+  }
+
+  inWall(x1, y1, x2, y2, l) {
+    var dx = x2 - x1;
+    var dy = y2 - y1;
+    var a = Math.atan2(dy, dx) + Math.PI/2;
+    var targets = [];
+    for(var step = -l; step <= l; step++) {
+      let x = Math.round(x2 + step * Math.cos(a));
+      let y = Math.round(y2 + step * Math.sin(a));
+      if(x < 0 || y < 0) continue;
+      if(x >= this.w || y >= this.h) continue;
+      let t = this.get(x, y);
       targets.push({item: t, x:x, y: y});
     }
     return targets;
@@ -204,16 +219,18 @@ class PositionList2d {
         let p = Math.floor((d*2 -1) / 2);
         let x = (step2 - p);
         let y = (step);
-        targets.push({item: null, x: x, y: y});
+        targets.push({item: null, x, y});
       }
     }
+    let m = new Map();
     targets.forEach(t => {
       let p = this.rotate(t, a);
       t.x = x2 + Math.round(p.x);
       t.y = y2 + Math.round(p.y);
       t.item = this.get(t.x, t.y);
+      m.set(t.item, t);
     })
-    return targets;
+    return Array.from(m.values());
   }
 
   around(cx, cy, r = 1) {
@@ -256,6 +273,19 @@ class PositionList2d {
       for(var x = cx - r; x <= cx + r; x++) {
         if(x < 0 || x > this.w-1) continue;
         if(this.steps(cx, cy, x, y) > r) continue;
+        out.push({item: this.get(x, y), x:x, y: y});
+      }
+    }
+    return out;
+  }
+
+  onRadius(cx, cy, r = 1) {
+    var out = [];
+    for(var y = cy - r; y <= cy + r; y++) {
+      if(y < 0 || y > this.h-1) continue;
+      for(var x = cx - r; x <= cx + r; x++) {
+        if(x < 0 || x > this.w-1) continue;
+        if(this.steps(cx, cy, x, y) != r) continue;
         out.push({item: this.get(x, y), x:x, y: y});
       }
     }

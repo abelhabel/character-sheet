@@ -996,15 +996,21 @@ class Battle {
       } else
       if(ability.stats.shape == 'line' && !(a.x == x && a.y == y)) {
         out.tiles = this.grid.inLine(a.x, a.y, x, y, ability.stats.radius);
-      }
+      } else
       if(ability.stats.shape == 'cone') {
         out.tiles = this.grid.inCone(a.x, a.y, x, y, ability.stats.radius);
-      }
+      } else
       if(ability.stats.shape == 'circle') {
         out.tiles = this.grid.inRadius(x, y, ability.stats.radius);
-      }
+      } else
       if(ability.stats.shape == 'square') {
         out.tiles = this.grid.around(x, y, ability.stats.radius);
+      } else
+      if(ability.stats.shape == 'wall') {
+        out.tiles = this.grid.inWall(a.x, a.y, x, y, ability.stats.radius);
+      } else
+      if(ability.stats.shape == 'ring') {
+        out.tiles = this.grid.onRadius(x, y, ability.stats.radius);
       }
     }
     if(targetFamily == 'self' || ability.stats.targetFamily == 'self') {
@@ -1398,7 +1404,8 @@ class Battle {
   playAbilityAnimation(a, b, ability) {
     if(this.noAnimation) return Promise.resolve();
     if(ability.animation.template) {
-      let {sprite, template} = ability.animation;
+      console.log('playAbilityAnimation', ability)
+      let {sprite, template, angleOffset} = ability.animation;
       if(!sprite) sprite = new Sprite(ability.bio.sprite);
       let anim = new Animation(a.x * this.tw, a.y*this.th, b.x*this.tw, b.y*this.th, sprite, template.stats);
       return this.ap.add(anim)
@@ -1661,6 +1668,7 @@ class Battle {
   attackRoll(a, b, ability) {
     let stacks = a.stacks;
     let damage = a.totalStat('damage', b);
+    console.log('attackRoll damage', damage)
     let at = a.totalStat('attack', b);
     let df = b.totalStat('defence', a);
     let flanks = this.flanks(b) - 1;
@@ -1780,6 +1788,7 @@ class Battle {
     if(d) {
       this.dealDamage(a, b, d, ability, fromEffect);
       if(!fromEffect) {
+        console.log('trigger attack hits', ability.bio.name, fromEffect)
         this.trigger('when attack hits', a, b, d, ability);
       }
     }
@@ -1939,8 +1948,11 @@ class Battle {
       p.then(() => {
         this.turn.addAction(action);
         if(this.turn.isOver) {
-          this.endTurn();
-          this.act();
+          if(!this.stepwise) {
+            this.endTurn();
+            this.act();
+
+          }
         } else {
           if(actor.ai) return this.aiAct(actor).then(resolve, reject);
         }
@@ -1963,8 +1975,15 @@ class Battle {
       let actions = positions.map(b => {
         a.setOrientation(b.x);
         var targets = this.abilityTargets(a, ability, b.x, b.y);
-        if(!a.canUseAbility(ability)) {
+        if(!fromEffect && !a.canUseAbility(ability)) {
+          console.log('cannot use ability', ability.bio.name);
           return;
+        }
+        let special = specialEffects[ability.stats.special];
+        let specialResult
+        if(special && special.when == 'before use') {
+          specialResult = special.fn(this, a, b, ability, 0, triggeredPower, positions, triggeredBy);
+          if(specialResult.preventUse) return;
         }
         a.useAbility(ability);
         logger.log(a.bio.name, triggeredPower ? 'trigger' : 'uses' ,'ability:', ability.bio.name, 'on', targets.actors.map(a => a.bio.name));
@@ -2013,13 +2032,11 @@ class Battle {
 
             if(ability.stats.special != 'giveEffectAsAbility' && ability.stats.effect) {
               t = ability.stats.effect.stats.target == 'self' ? a : t;
-              this.useAbility(a, [t], ability.stats.effect, true, power);
+              this.useAbility(a, [t], ability.stats.effect, true, power, a, true);
             }
             return this.playAbilityAnimation(a, t, ability);
           });
           let power = ability.roll(a.totalStat('damage'));
-          let special = specialEffects[ability.stats.special];
-          let specialResult;
           if(special && special.when == 'per use') {
             specialResult = special.fn(this, a, b, ability, power, triggeredPower, positions, triggeredBy);
           }
@@ -2028,11 +2045,20 @@ class Battle {
           if(ability.stats.attribute == 'initiative') {
             this.initiativeChanged('useAbility');
           }
+          if(specialResult && specialResult.afterUse) {
+            specialResult.afterUse();
+          }
           return Promise.all(acts);
         } else {
           // let tile = a.selections[0].tiles[0];
           let template = monsters.find(m => m.bio.name == ability.stats.summon);
-          this.summon(a, ability, template, b);
+          positions.forEach(b => {
+            var targets = this.abilityTargets(a, ability, b.x, b.y);
+            targets.tiles.forEach(p => {
+              this.summon(a, ability, template, p);
+            })
+
+          })
           return Promise.resolve();
         }
 
@@ -2049,6 +2075,11 @@ class Battle {
     let health = a && a.stacks * (10 + 10 * a.totalStat('spellPower'));
     let maxStacks = a && a.stacks * a.tier;
     let stacks = a ? Math.min(maxStacks, Math.ceil(health / template.stats.health)) : 1;
+    // if(a.hasMinion(template.bio.name)) {
+    //   let m = a.getMinion(template.bio.name);
+    //   m.addStack(stacks);
+    //   return m;
+    // }
     let monster = new Monster(template, 1, true);
     monster.addStack(stacks -1);
     monster.harm(monster.totalHealth);
@@ -2090,6 +2121,9 @@ class Battle {
     a.trigger('death', a);
     this.render();
     logger.log(a.bio.name, 'was killed');
+    if(a.minions.length) {
+      a.minions.forEach(m => this.kill(m));
+    }
   }
 
   inRange(a, b, ability) {
@@ -2198,6 +2232,7 @@ class Battle {
   }
 
   continueTurn() {
+    this.endTurn();
     this.turnEnded = true;
     this.tr.nextTurn();
     this.makeMonsterCards();
@@ -2243,10 +2278,16 @@ class Battle {
     if(!a) return;
     if(!a.alive) {
       this.kill(a);
+      if(this.stepwise) {
+        return this.continueTurn();
+      }
       this.endTurn();
       return this.act();
     }
     if(!a.canAct) {
+      if(this.stepwise) {
+        return this.continueTurn();
+      }
       this.endTurn();
       return this.act();
     }

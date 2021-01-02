@@ -69,12 +69,13 @@ class TeamSelect  {
     this.items.forEach(item => {
       if(~families.indexOf(item.bio.family)) return;
       families.push(item.bio.family);
-      let o = html`<option value='${item.bio.family}'>${item.bio.family}</option>`;
+      let o = html`<option value="${item.bio.family}">${item.bio.family}</option>`;
       familySelect.appendChild(o);
     })
 
     familySelect.addEventListener('change', e => {
       this.selectedFamily = familySelect.value;
+      console.log(this)
       this.cardList.reset();
       this.monsterCards.forEach(c => {
         // c.cached.style.display = 'inline-block';

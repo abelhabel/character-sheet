@@ -19,6 +19,16 @@ class Sprite {
     return this.canvas.toDataURL('image/png');
   }
 
+  rotate(deg) {
+    console.log('offset angle', deg)
+    let r = (deg / 180) * Math.PI;
+    this._canvas.clear();
+    this._canvas.context.translate(Math.floor(this.w/2), Math.floor(this.h/2));
+    this._canvas.context.rotate(r);
+    this._canvas.drawSprite(this);
+    this._canvas.context.translate(0, 0);
+  }
+
   drawWithOpacity(opacity) {
     let c = this.canvas.clone();
     this._canvas.clear();

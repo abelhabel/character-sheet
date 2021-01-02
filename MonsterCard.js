@@ -44,7 +44,7 @@ class MonsterCard {
       return 'url(beasts_card.jpg)';
     }
     if(this.item.bio.family == "Aloysia's Chosen") {
-      return 'url(mythical_card.jpg)';
+      return 'url(aloysias_chosen_card.jpg)';
     }
     if(this.item.bio.family == 'Outlaws') {
       return 'url(outlaws_card.jpg)';
@@ -114,7 +114,7 @@ class MonsterCard {
       <div class='card-inner ${turn ? 'turn' : ''} ${item.alive ? '' : 'dead'}'>
         <div class='card-upper'>
           <div class='card-name'>
-            ${name} (${item.stacks}) ${item.alive ? '' : 'dead'} ${item.class}
+            ${name} (${item.stacks}) ${item.alive ? '' : 'dead'} <span class='card-class'>${item.class}</span>
           </div>
           <div class='card-image'>
           </div>
@@ -254,6 +254,11 @@ class MonsterCard {
       text-align: left;
       border-top-left-radius: 7px;
       border-top-right-radius: 7px
+    }
+
+    .card-class {
+      font-size: 0.8em;
+      color: #882020;
     }
 
     .card-image {

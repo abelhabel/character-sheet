@@ -57,7 +57,8 @@ class Ability {
     this.sprite = new CompositeSprite([icons.find(i => i.bio.name == 'Ability Background').bio.sprite, this.template.bio.sprite]);
     this.animation = {
       sprite: t.animation && t.animation.sprite && new Sprite(t.animation.sprite),
-      template: t.animation && t.animation.template
+      template: t.animation && t.animation.template,
+      angleOffset: t.animation && t.animation.angleOffset
     }
     this._animation = null;
     if(this.animation.template) {

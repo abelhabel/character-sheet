@@ -132,6 +132,13 @@ var tpl = {
           exportAs: 'template',
           values: ['', ...animations.map(a => a.bio.name)],
           initial: ''
+        },
+        {
+          name: 'Angle Offset',
+          exportAs: 'angleOffset',
+          type: "increment",
+          range: [-360, 360],
+          initial: 0
         }
       ]
     },
@@ -142,7 +149,7 @@ var tpl = {
         {
           name: 'Shape',
           type: 'select',
-          values: ['point', 'line', 'cone', 'circle', 'square'],
+          values: ['point', 'line', 'cone', 'circle', 'square', 'wall', 'ring'],
           initial: 'point',
           exportAs: 'shape'
         },
@@ -312,7 +319,7 @@ var tpl = {
             'dispel', 'teleport', 'lifeLeech', 'polymorph', 'blink',
             'chain', 'manaThief', 'suicide', 'charge', 'reflectArrows',
             'transferCurse', 'addMonster', 'manaLeech', 'cleanse',
-            'knockback', 'sharedPain', 'pullIn', 'banish'
+            'knockback', 'sharedPain', 'pullIn', 'banish', 'mark', 'consumeMark'
           ],
           initial: 'false',
           exportAs: 'special'
@@ -320,7 +327,7 @@ var tpl = {
         {
           name: 'Selections',
           type: 'increment',
-          range: [1, 2],
+          range: [1, 10],
           initial: 1,
           exportAs: 'selections'
         },

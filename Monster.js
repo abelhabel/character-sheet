@@ -310,9 +310,6 @@ class Monster extends Events {
       if(b.val > a.val) return 1;
       return 0;
     })
-    if(this.bio.name == 'Aka Manah') {
-      console.log(l, max)
-    }
     if(l.length == 1) {
       if(l[0].name == 'attack') {
         let afars = attacks.filter(a => a.stats.range > 6).length;
@@ -403,7 +400,7 @@ class Monster extends Events {
     let actions = this.AI.behavior.split('\n');
     let distance = ['adjacent', 'nearby', 'afar'];
     let targets = ['enemy', 'ally', 'target', 'it', 'self', 'tile'];
-    let types = ['weakest', 'mightiest', 'toughest', 'furthest', 'nearest', 'most', 'least', 'excited', 'energetic'];
+    let types = ['weakest', 'mightiest', 'toughest', 'strongest', 'furthest', 'nearest', 'most', 'least', 'excited', 'energetic'];
     let states = ['hurt', 'wounded', 'near death', 'sick', 'healthy', 'flanked', 'outnumbered', 'occupied'];
     let factions = ['Undead', 'Order of Idun', 'Outlaws', 'Beasts', 'Demons', 'Mythical', "Aloysia's Chosen", 'Voidless'];
     let ranges = ['melee', 'ranged'];
@@ -618,12 +615,15 @@ class Monster extends Events {
     m.on('death', () => {
       let i = this.minions.indexOf(m);
       this.minions.splice(i, 1);
-      console.log('removed minion', m.bio.name, 'from', this.bio.name);
     })
   }
 
   hasMinion(name) {
     return !!this.minions.find(m => m.bio.name == name);
+  }
+
+  getMinion(name) {
+    return this.minions.find(m => m.bio.name == name);
   }
 
   get attacks() {
@@ -806,7 +806,13 @@ class Monster extends Events {
     }
     let e = this.effects.filter(e => e.ability.bio.name == ability.bio.name);
     if(e && e.length >= ability.stats.stacks ) {
-      e[0].rounds = 0;
+      let longest = e[0];
+      e.forEach(l => {
+        if(l.rounds > longest.rounds) {
+          longest = l;
+        }
+      })
+      longest.rounds = 0;
       return;
     }
 
@@ -1182,6 +1188,9 @@ class Monster extends Events {
       * {
         box-sizing: border-box;
       }
+      .right {
+        float: right;
+      }
       .monster-cs-outer {
         font-weight: bold;
         font-size: 11px;
@@ -1192,7 +1201,7 @@ class Monster extends Events {
         padding: 10px;
       }
       .stat-column {
-        width: 116px;
+        width: 120px;
         display: inline-block;
         vertical-align: top;
       }
@@ -1384,7 +1393,7 @@ class Monster extends Events {
         <div id='close'>Close</div>
         <div class='bio' id='monster-image'></div>
         <div class='bio'>
-          <div id='monster-name'>${m.bio.name} (${m.team})</div><br>
+          <div id='monster-name'>${m.bio.name} (${m.team})<span class='right'>${family}</span></div><br>
           <div id='monster-description'>${m.bio.description || 'No description available for this monster'}</div>
           <div id='monster-ailments'>Ailments: ${this.ailments.join()}</div>
           <div id='monster-vigors'>Vigors: ${this.vigors.join()}</div>
