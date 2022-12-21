@@ -391,7 +391,6 @@ class AI {
         let select = s.act.select || ability.stats.target;
         let target = targeting[c.target] || ability.stats.targetFamily;
         let t = this.findBestAbilityTarget(ability, select, target);
-        console.log(t)
         filtered = t.targets;
       } else {
         // Condition is based on the state of the game
@@ -524,7 +523,14 @@ class AI {
       }
       let num = c.numTargets || 1;
       console.log('FILTERED:', c.part, num, filtered.length)
-      if(filtered.length < num) return;
+      if(c.noTarget) {
+        if(filtered.length) {
+          console.log('should be no target', filtered)
+          return;
+        }
+      } else {
+        if(filtered.length < num) return;
+      }
       conditionTiles = filtered;
       return true;
 
@@ -558,7 +564,6 @@ class AI {
       // find if ability is usable
       console.log(s.act.part)
       let ability = actor.getAbility(s.act.ability);
-
       console.log('CHECK CONDITIONS')
       let check = this.checkScriptConditions(s, ability);
       if(!check.pass) return;
@@ -579,7 +584,7 @@ class AI {
           console.log('cannot move')
           return;
         }
-        if(ability) {
+        if(ability && actor.canUseAbility(ability)) {
           let select = s.act.select || ability.stats.target;
           let target = targeting[s.act.target] || ability.stats.targetFamily;
           let p = this.findBestMoveForAbility(ability, select, target);
@@ -649,6 +654,7 @@ class AI {
           }
           console.log('move to most', actor.x, actor.y, p.x, p.y, best)
           let t = battle.grid.path(actor.x, actor.y, p.x, p.y);
+          if(!t.length) return;
           if(s.act.moveFully) {
             return action = new Action('move', [p]);
           } else {
@@ -828,7 +834,7 @@ class AI {
 
   moveCloser(potentialTarget) {
     let {actor, battle} = this;
-    let p;
+    let p = {x: -1, y: -1};
     if(potentialTarget) {
       p = battle.grid.closestEmpty(potentialTarget.x, potentialTarget.y, (x, y) => {
         return battle.canWalkTo(actor, {x, y});
@@ -841,7 +847,7 @@ class AI {
         return true;
       });
       p = battle.grid.around(tile.x, tile.y).filter( t => {
-        return !t.item && battle.canWalkTo(actor, {x:t.x, y:t.y});
+        return !t.item && battle.isWalkPathFree(actor, {x:t.x, y:t.y});
       })
       .sort((a, b) => {
         let d1 = battle.grid.steps(a.x, a.y, actor.x, actor.y);
@@ -849,6 +855,9 @@ class AI {
         if(d1 == d2) return 0;
         return d1 < d2 ? -1 : 1;
       })[0];
+    }
+    if(p.x < 0 || p.y < 0) {
+      return
     }
     var path = battle.grid.path(actor.x, actor.y, p.x, p.y);
     return path[1];

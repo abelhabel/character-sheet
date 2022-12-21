@@ -24,7 +24,7 @@ class AdventureTime extends Component {
   }
 
   nextDay() {
-    this.player.movesLeft = this.player.movement;
+    this.player.resetMovement();
     this.index += 1;
     this.totalDays += 1;
     if(this.index >= this.days.length) {
@@ -40,7 +40,7 @@ class AdventureTime extends Component {
       <span>Day ${this.totalDays}</span>
       <span>${this.day}</span>
       <span> | </span>
-      <span>moves today: ${this.player.movesLeft} / ${this.player.movement}</span>
+      <span>moves today: ${this.player.movesLeft} / ${this.player.stats.movement}</span>
     </div>
     `);
     return this.tags.outer;

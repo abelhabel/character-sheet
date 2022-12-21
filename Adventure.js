@@ -34,6 +34,13 @@ const deselectIcon = icons.find(i => i.bio.name == 'Stop');
 const removeIcon = icons.find(i => i.bio.name == 'Delete');
 const invertIcon = icons.find(i => i.bio.name == 'Invert');
 const goldIcon = icons.find(i => i.bio.name == 'Gold');
+const azuriteIcon = icons.find(i => i.bio.name == 'Azurite');
+const zirconIcon = icons.find(i => i.bio.name == 'Zircon');
+const ironIcon = icons.find(i => i.bio.name == 'Iron');
+const topazIcon = icons.find(i => i.bio.name == 'Topaz');
+const adamiteIcon = icons.find(i => i.bio.name == 'Adamite');
+const bruciteIcon = icons.find(i => i.bio.name == 'Brucite');
+const mudIcon = icons.find(i => i.bio.name == 'Mud');
 const tileTargetIcon = icons.find(i => i.bio.name == 'Tile Target');
 const selectSprite = new Sprite(selectedIcon.bio.sprite);
 const tileTargetSprite = new Sprite(tileTargetIcon.bio.sprite);
@@ -175,7 +182,7 @@ class Record {
 
 class Adventure extends Component {
   constructor(w, h, tw, th, seed) {
-    super(true);
+    super(true, 'adventure');
     this.id = Math.random();
     this.seed = seed || Date.now();
     this.rand = new Rand(this.seed);
@@ -565,6 +572,7 @@ class Adventure extends Component {
         bottom: 0px;
         background-color: lightgray;
         z-index: 3;
+        width: 100%;
       }
 
       .tools {
@@ -594,8 +602,12 @@ class Adventure extends Component {
       }
 
 
-      .resources .resource {
+      .resources .component .resource {
         display: inline-block;
+      }
+
+      .resources .component .resource span {
+        vertical-align: middle;
       }
 
       .message-box {
@@ -716,6 +728,17 @@ class Adventure extends Component {
         if(n === null) return;
         let item = ter[n];
         plane.layers.obstacles.items.set(xy.x, xy.y, item);
+      });
+      ter = layers.decorations.lookup.map(id => {
+        let tpl = terrains.find(t => t.id == id);
+        let item = new Terrain(tpl);
+        return item;
+      })
+      layers.decorations.items.forEach((n, i) => {
+        let xy = plane.layers.decorations.items.xy(i);
+        if(n === null) return;
+        let item = ter[n];
+        plane.layers.decorations.items.set(xy.x, xy.y, item);
       });
       if(layers.monsters) {
         ter = layers.monsters.lookup.map(id => {
@@ -1056,8 +1079,14 @@ class Adventure extends Component {
   addPlayer(p) {
     this.player = p;
     this.movePlayer(this.startPosition.x, this.startPosition.y);
-    this.player.movesLeft = this.player.movement;
-    this.resources.push(new Resource('gold', this.player.gold, goldIcon));
+    this.resources.push(new Resource('gold', this.player.resources.gold, goldIcon));
+    this.resources.push(new Resource('azurite', this.player.resources.azurite, azuriteIcon));
+    this.resources.push(new Resource('zircon', this.player.resources.zircon, zirconIcon));
+    this.resources.push(new Resource('iron', this.player.resources.iron, ironIcon));
+    this.resources.push(new Resource('topaz', this.player.resources.topaz, topazIcon));
+    this.resources.push(new Resource('adamite', this.player.resources.adamite, adamiteIcon));
+    this.resources.push(new Resource('brucite', this.player.resources.brucite, bruciteIcon));
+    this.resources.push(new Resource('mud', this.player.resources.mud, mudIcon));
     this.tags.time.player = this.player;
     this.planes.forEach(plane => {
       plane.layers.quests.items.filled(item => {
@@ -1073,12 +1102,12 @@ class Adventure extends Component {
 
   savePlayer() {
     storage.save('player', this.id, {
-      xp: this.player.xp,
-      gold: this.player.gold,
+      xp: this.player.stats.xp,
+      gold: this.player.resources.gold,
       position: this.pp,
-      vision: this.player.vision,
-      movement: this.player.movement,
-      movesLeft: this.player.movesLeft,
+      vision: this.player.stats.vision,
+      movement: this.player.stats.movement,
+      movesMade: this.player.pools.movement,
       quests: this.player.quests.quests.map(q => q.bio.name),
       inventory: this.player.inventory.export(),
       crafting: this.player.crafting.export(),
@@ -1091,11 +1120,11 @@ class Adventure extends Component {
     if(!save) return;
     let player = save.data;
     this.player.addXP(player.xp);
-    this.addGold(player.gold);
+    this.addGold(player.resources.gold);
     this.player.position = this.pp;
-    this.player.vision = player.vision || 10;
-    this.player.movement = player.movement || 20;
-    this.player.movesLeft = player.movesLeft || 20;
+    this.player.stats.vision = player.vision || 10;
+    this.player.stats.movement = player.movement || 20;
+    this.player.pools.movement = player.movesMade || 20;
 
     player.quests.forEach(questName => {
       let q;
@@ -1111,7 +1140,7 @@ class Adventure extends Component {
     this.player.crafting.import(player.crafting, {Terrain, Scroll});
     if(player.position) {
       this.movePlayer(player.position.x, player.position.y);
-      this.player.movesLeft = player.movesLeft || 20;
+      this.player.pools.movement = player.movesMade || 20;
     }
   }
 
@@ -1338,10 +1367,20 @@ class Adventure extends Component {
     if(record.isConsumed(item)) return;
 
     if(item.adventure.action == 'give gold') {
-      this.addGold(item.adventure.actionAmount);
+      this.rand.between(item.adventure.actionAmount - item.adventure.actionAmountVariation, item.adventure.actionAmount + item.adventure.actionAmountVariation).round();
+      this.addGold(this.rand.n);
       sp.play('gold');
       obstacles.items.remove(mp.x, mp.y);
       record.removeObstacle();
+    }
+    if(item.adventure.action == 'give azurite') {
+      this.rand.between(item.adventure.actionAmount - item.adventure.actionAmountVariation, item.adventure.actionAmount + item.adventure.actionAmountVariation).round();
+      console.log('give azurite', this.rand.n)
+      this.addResource(this.rand.n, 'azurite');
+      sp.play('gold');
+      obstacles.items.remove(mp.x, mp.y);
+      record.removeObstacle();
+
     }
     if(item.adventure.action == 'give item') {
       let items = record.takeAdventureItems(item);
@@ -1361,7 +1400,7 @@ class Adventure extends Component {
     }
 
     if(item.adventure.action == 'give movement' && !record.isConsumed(item)) {
-      this.player.movesLeft += item.adventure.actionAmount;
+      this.player.pools.movement -= item.adventure.actionAmount;
     }
     if(item.adventure.action == 'open tavern') {
       sp.play('open_book');
@@ -1607,9 +1646,15 @@ class Adventure extends Component {
   }
 
   addGold(n) {
-    this.player.gold += n;
+    this.player.addResource(n, 'gold');
     let r = this.resources.find(r => r.name == 'gold');
-    if(r) r.amount = this.player.gold;
+    if(r) r.amount = this.player.resources.gold;
+  }
+
+  addResource(n, r) {
+    this.player.addResource(n, r);
+    let a = this.resources.find(b => b.name == r);
+    if(a) a.amount = this.player.resources[r];
   }
 
   updateResources() {
@@ -1719,7 +1764,7 @@ class Adventure extends Component {
     monsters.canvas.drawSprite(this.player.team.highestTier.sprite, this.pp.x * this.tw, this.pp.y * this.th, this.tw, this.th);
     this.passivePlayerCheck(x, y);
     this.revealFog(x, y);
-    this.player.movesLeft -= 1;
+    this.player.pools.movement += 1;
     if(this.tags.time.player) {
       if(this.autoEndTurn && !this.player.movesLeft) {
         this.endTurn();
@@ -1842,7 +1887,7 @@ class Resource extends Component {
 
   render() {
     this.clear();
-    let t = html`<div id='resource'>
+    let t = html`<div class='resource'>
       <span class='icon'></span>
       <span class='amount'>${this.amount}</span>
     </div>`;

@@ -10,7 +10,8 @@ let ailments = {
 let vigors = {
   'vitality': ['illuminated'],
   'fire': ['engorged'],
-  'earth': ['grounded']
+  'earth': ['grounded'],
+  'water': ['energized']
 };
 module.exports = {
   randomAilment(element) {

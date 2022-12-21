@@ -499,8 +499,14 @@ class CS {
     image.style.left = '0px';
     image.style.top = '0px';
     image.style.backgroundColor = 'gray';
+    let scale = 1;
     var selected = [];
     if(typeof fn == 'function') {
+      image.addEventListener('contextmenu', e => {
+        e.preventDefault();
+        scale = scale == 1 ? 2 : 1;
+        image.style.width = `${image.naturalWidth * scale}px`;
+      })
       image.addEventListener('click', (e) => {
         selected.push([
           item.w * Math.floor(e.offsetX / item.w),

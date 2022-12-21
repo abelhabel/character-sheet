@@ -20,6 +20,7 @@ const Armory = require('Armory.js');
 const Inventory = require('Inventory.js');
 const Ability = require('Ability.js');
 const AbilityCard = require('AbilityCard.js');
+const Player = require('Player.js');
 const guid = require('guid.js');
 const abilities = require('abilities.js');
 const equipment = require('equipments.js');
@@ -31,8 +32,8 @@ const leaders = require('monsters.js').filter(m => m.bio.leader);
 const OOI = monsters.filter(m => m.bio.family == 'Order of Idun');
 const matches = require('matches.js');
 const gauntlets = require('gauntlets.js');
-const tw = 42;
-const th = 42;
+const tw = 48;
+const th = 48;
 const cash = 600;
 const gameModes = {};
 function assembleTeam(team) {
@@ -170,79 +171,7 @@ gameModes.adventure = function(lobby, ui) {
       ui.clear('team select');
       ui.show('adventure');
       window.adventure = a;
-      let player = {
-        xp: 0,
-        gold: 0,
-        vision: 8,
-        movement: 20,
-        movesLeft: 20,
-        inventory: new Inventory(),
-        quests: new QuestLog(),
-        crafting: new Crafting(),
-        skills: [
-          {
-            name: 'mechanics',
-            value: 2
-          },
-          {
-            name: 'exploration',
-            value: 2
-          },
-          {
-            name: 'mythology',
-            value: 2
-          },
-          {
-            name: 'divinity',
-            value: 2
-          },
-          {
-            name: 'necromancy',
-            value: 2
-          },
-          {
-            name: 'demonology',
-            value: 2
-          },
-          {
-            name: 'physiology',
-            value: 2
-          },
-          {
-            name: 'trickery',
-            value: 2
-          },
-          {
-            name: 'mythology',
-            value: 2
-          },
-          {
-            name: 'strategy',
-            value: 2
-          },
-          {
-            name: 'tactics',
-            value: 2
-          },
-        ],
-        team,
-        addXP(xp) {
-          player.xp += xp;
-          team.leaders.forEach(l => {
-            l.upgradePointsLeft = Math.floor(player.xp / 10);
-            if(l.upgradePointsLeft > 1) {
-              a.trigger()
-            }
-            logger.log(`Player gained ${xp} XP.`);
-          })
-        },
-        checkLevel(check) {
-          if(check.type == 'skill') {
-            let skill = this.skills.find(s => s.name == check.subtype);
-            return skill ? skill.value : 0;
-          }
-        }
-      };
+      let player = new Player(team);
 
       player.inventory.on('crafted ability', (tpl, items) => {
         console.log('items used', items);

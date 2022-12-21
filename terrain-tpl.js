@@ -100,7 +100,9 @@ var tpl = {
           exportAs: 'action',
           initial: '',
           type: 'select',
-          values: ['', 'give gold', 'give item', 'open tavern',
+          values: ['', 'give gold', 'give azurite', 'give zircon',
+          'give topaz', 'give adamite', 'give iron', 'give brucite',
+          'give mud', 'give item', 'open tavern',
           'give movement' , 'open armory', 'open ability trainer',
           'give ability', 'give equipment'
           ]
@@ -136,6 +138,13 @@ var tpl = {
         {
           name: 'Action Amount',
           exportAs: 'actionAmount',
+          initial: 0,
+          type: 'increment',
+          range: [0, 10000]
+        },
+        {
+          name: 'Action Amount Variation',
+          exportAs: 'actionAmountVariation',
           initial: 0,
           type: 'increment',
           range: [0, 10000]

@@ -119,6 +119,7 @@ loadFile('TeamViewer.js');
 loadFile('Quest.js');
 loadFile('QuestLog.js');
 loadFile('Check.js');
+loadFile('Player.js');
 loadFile('upgrade-rules.js');
 loadFile('Team.js');
 loadFile('UnitPlacement.js');
@@ -225,7 +226,7 @@ function saveData(req, res, folder, url) {
 const server = http.createServer(function(req, res) {
   var url = new URL('http://home.com' + req.url);
   var name = url.pathname.replace('/', '');
-  if(!name) name = 'index.html';
+  if(!name) name = 'battle.html';
   if(name == 'rules') name = 'rules.html';
   if(files[name]) {
     let mime = name.split('.')[1];

@@ -53,6 +53,7 @@ var tpl = {
           values: [
             'when selected',
             'when attack hits',
+            'when spell hits',
             'when self is hit',
             'when adjacent ally is hit',
             'when nearby ally is hit',
@@ -306,7 +307,7 @@ var tpl = {
           values: [
             '',
             'intimidating', 'prepared', 'precise', 'hidden', 'illuminated',
-            'engorged', 'grounded', 'charged'
+            'engorged', 'grounded', 'charged', 'energized'
           ],
           initial: '',
           exportAs: 'vigor'
@@ -314,7 +315,7 @@ var tpl = {
         {
           name: 'Special',
           type: 'select',
-          values: ['', 'hypnotize', 'berzerk', 'berzerkAlly', 'reflectDamage',
+          values: ['', 'charm', 'hypnotize', 'berzerk', 'berzerkAlly', 'reflectDamage',
             'giveEffectAsAbility', 'phantomImage', 'stealBlessing',
             'dispel', 'teleport', 'lifeLeech', 'polymorph', 'blink',
             'chain', 'manaThief', 'suicide', 'charge', 'reflectArrows',

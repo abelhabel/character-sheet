@@ -122,6 +122,19 @@ module.exports.charge = {
   }
 };
 
+module.exports.charm = {
+  when: 'per target',
+  fn: function (battle, caster, target, ability, power, triggeredPower, selections, triggeredBy) {
+    let allyTeam = battle.getAllyTeam(target.team);
+    let enemyTeam = battle.getEnemyTeam(target.team);
+    allyTeam.splice(allyTeam.indexOf(target), 1);
+    target.team = caster.team;
+    enemyTeam.push(target);
+    logger.log(`${target.bio.name} was charmed and switched teams.`);
+    return new Special();
+  }
+};
+
 module.exports.hypnotize = {
   when: 'per target',
   fn: function (battle, caster, target, ability, power, triggeredPower, selections, triggeredBy) {
@@ -142,9 +155,15 @@ module.exports.berzerk = {
     var t = battle.grid.closest(target.x, target.y, (b) => {
       return b instanceof target.constructor && b.team != caster.team;
     });
-    if(!t) return;
+    if(!t) {
+      target.team = originalTeam;
+      return;
+    }
     var a = target.actives.find(a => a.stats.targetFamily == 'enemies' && battle.grid.squareRadius(target.x, target.y, t.x, t.y) <= a.stats.range);
-    if(!a) return;
+    if(!a)  {
+      target.team = originalTeam;
+      return;
+    }
     battle.useAbility(target, [t], a);
     target.team = originalTeam;
     return new Special();
@@ -231,9 +250,7 @@ module.exports.transferCurse = {
 
     let effect = effects[0];
     if(!effect) return;
-    let index = caster.effects.indexOf(effect);
-    caster.effects.splice(index, 1);
-    effect.rounds = effect.ability.stats.duration;
+    caster.removeEffect(effect);
     target.addEffect(caster, effect.ability, effect.power, true, power);
     return new Special();
   }
@@ -344,17 +361,23 @@ module.exports.manaLeech = {
 module.exports.polymorph = {
   when: 'per target',
   fn: function (battle, caster, target, ability, power, triggeredPower, selections, triggeredBy) {
+    let name = target.bio.name;
     let rand = battle.roll(0, monsters.length-1);
-    let monster = monsters[rand];
+    let monster = new target.constructor(monsters[rand]);
     let stacks = Math.floor(target.totalHealth / monster.stats.health);
     Object.assign(target.bio, monster.bio);
     Object.assign(target.stats, monster.stats);
-    Object.assign(target.abilities, monster.abilities);
-    target.damageTaken = 0;
-    target.initialStacks = 1;
-    target.addStack(stacks);
+    Object.assign(target.AI, monster.AI);
+    Object.assign(target._abilities, monster._abilities);
+    // target.damageTaken = 0;
+    // target.initialStacks = 1;
+    // target.addStack(stacks);
+    target.parseAI();
     target.abilities = target.createAbilities();
-    target.template = monster;
+    target.template = monsters[rand];
+    target.cacheCanvases();
+    battle.render();
+    logger.log(`${caster.bio.name} polymorphed ${name} to ${target.bio.name}`);
   }
 };
 

@@ -260,21 +260,6 @@ class Monster extends Events {
     };
   }
 
-  createAbilitySnapshot() {
-    this.abilitySnapshot = {
-      stacks: this.stacks,
-      health: this.totalHealth,
-      attack: this.totalStat('attack'),
-      defence: this.totalStat('defence'),
-      spellPower: this.totalStat('spellPower'),
-      spellResistance: this.totalStat('spellResistance'),
-      damage: this.totalStat('damage'),
-      movement: this.totalStat('movement'),
-      initiative: this.totalStat('initiative'),
-      apr: this.totalStat('apr'),
-      tpr: this.totalStat('tpr'),
-    };
-  }
   get card() {
     return new MonsterCard(this);
   }
@@ -461,6 +446,7 @@ class Monster extends Events {
           negDistance: false,
           abilityTargeting: !!~m.indexOf(' ability '),
           target: targets.find(b => !!~m.indexOf(' '+b) || !!~m.indexOf(b +' ')),
+          noTarget: false,
           range: ranges.find(b => !!~m.indexOf(' '+b)),
           numTargets: null,
           stat: stats.find(b => !!~m.indexOf(' '+b)),
@@ -484,6 +470,9 @@ class Monster extends Events {
           let test = new RegExp(`(\\d) (ability )?${cond.target}`);
           let n = m.match(test);
           cond.numTargets = n ? parseInt(n[1]) : null;
+        }
+        if(cond.target) {
+          cond.noTarget = !!m.match(`no ${cond.target}`);
         }
         if(cond.stat) {
           let test = new RegExp(`(\\d) ${cond.stat}`);
@@ -673,9 +662,17 @@ class Monster extends Events {
       s.add(a);
     })
     this.passives.forEach(a => {
-      if(a.stats.targetFamily != 'self') return;
       if(!a.stats.ailment) return;
+      if(a.stats.targetFamily != 'self') return;
       if(!a.owner.abilityConditionMet(a, this)) return;
+      s.add(a.stats.ailment);
+    })
+    this.battle && this.battle.getEnemyAuras(this.team).forEach(a => {
+      if(!a.stats.ailment) return;
+      if(a.stats.targetFamily == 'ally') return;
+      if(!a.owner.abilityConditionMet(a, this)) return;
+      if(!this.battle.inAura(a, this)) return;
+      if(a.stats.source == 'blessing' && this.hasAilment('blinded')) return;
       s.add(a.stats.ailment);
     })
     return Array.from(s);
@@ -695,9 +692,30 @@ class Monster extends Events {
   }
 
   get vigors() {
-    let e = this.activeEffects.filter(e => e.ability.stats.vigor).map(e => e.ability.stats.vigor);
-    e.push.apply(e, this.permanentVigors);
-    return e;
+    let s = new Set();
+    this.activeEffects.forEach(e => {
+      if(e.ability.stats.vigor) {
+        s.add(e.ability.stats.vigor);
+      }
+    });
+    this.permanentVigors.forEach(a => {
+      s.add(a);
+    })
+    this.passives.forEach(a => {
+      if(!a.stats.vigor) return;
+      if(a.stats.targetFamily != 'self') return;
+      if(!a.owner.abilityConditionMet(a, this)) return;
+      s.add(a.stats.vigor);
+    })
+    this.battle && this.battle.getAllyAuras(this.team).forEach(a => {
+      if(!a.stats.vigor) return;
+      if(a.stats.targetFamily == 'enemy') return;
+      if(!a.owner.abilityConditionMet(a, this)) return;
+      if(!this.battle.inAura(a, this)) return;
+      if(a.stats.source == 'blessing' && this.hasAilment('blinded')) return;
+      s.add(a.stats.vigor);
+    })
+    return Array.from(s);
   }
 
   removePermanentAilments() {
@@ -728,6 +746,7 @@ class Monster extends Events {
   }
 
   get movesLeft() {
+    if(this.hasAilment('stunned') || this.hasAilment('held')) return 0;
     return this.totalStat('movement') - this.tilesMoved;
   }
 
@@ -1047,12 +1066,12 @@ class Monster extends Events {
     if(a.stats.resourceType == 'health' && this.totalHealth >= a.stats.resourceCost) {
       this.harm(a.stats.resourceCost);
     }
-    this.createAbilitySnapshot();
   }
 
   get manaPerTurn() {
     let n = 1;
     if(this.bio.family == 'Demons') n = 2;
+    if(this.hasVigor('energized')) n += 1;
     return n;
   }
 
@@ -1142,11 +1161,11 @@ class Monster extends Events {
   }
 
   get canMove() {
-    return this.movesLeft > 0 && !this.activeEffects.find(e => e.ability.stats.ailment == 'held');
+    return this.movesLeft > 0 && !~this.ailments.indexOf('held') && !~this.ailments.indexOf('stunned');
   }
 
   get canAct() {
-    return this.totalStat('apr') && !this.activeEffects.find(e => e.ability.stats.ailment == 'stunned');
+    return this.totalStat('apr') && !~this.ailments.indexOf('stunned');
   }
 
   get maxHealth() {
@@ -1218,7 +1237,7 @@ class Monster extends Events {
       .stat, .stat div {
         display: inline-block;
         margin: 4px;
-        white-space: normal;
+        white-space: nowrap;
         vertical-align: middle;
 
       }

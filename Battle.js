@@ -515,11 +515,12 @@ class Battle {
     this.csPopup = this.popup();
     this.setEvents();
     this.noAnimation = false;
-    this.stepwise = true;
+    this.stepwise = false;
     this.turnEnded = true;
   }
 
   autoResolve() {
+    this.stepwise = false;
     this.noAnimation = true;
     this.sp.dontPlay();
   }
@@ -542,7 +543,6 @@ class Battle {
     let actor1 = m.team1.actor.match(/AI - level (\d)/);
     let actor2 = m.team2.actor.match(/AI - level (\d)/);
     if(actor1) {
-      console.log('actor 1 ai', actor1[1])
       b.team1.forEach(u => u.addAI(parseInt(actor1[1])));
     }
     if(actor2) {
@@ -621,6 +621,16 @@ class Battle {
   getAllyTeam(team) {
     if(team == 'team1') return this.team1;
     return this.team2;
+  }
+
+  getEnemyAuras(team) {
+    if(team == 'team1') return this.auras.team2;
+    return this.auras.team1;
+  }
+
+  getAllyAuras(team) {
+    if(team == 'team1') return this.auras.team1;
+    return this.auras.team2;
   }
 
   areEnemies(a, b) {
@@ -1047,6 +1057,20 @@ class Battle {
       out.validTargets = true;
     }
     return out;
+  }
+
+  inAura(aura, m) {
+    if(!aura.isAura) return false;
+    if(aura.stats.targetFamily == 'allies' && !this.areAllies(aura.owner, m)) return;
+    if(aura.stats.targetFamily == 'enemies' && !this.areEnemies(aura.owner, m)) return;
+    if(aura.stats.shape == 'circle') {
+      return this.grid.inRadius(aura.owner.x, aura.owner.y, aura.stats.radius)
+      .find(t => t.item == m && aura.owner.abilityConditionMet(aura, m));
+    }
+    if(aura.stats.shape == 'square') {
+      return this.grid.around(aura.owner.x, aura.owner.y, aura.stats.radius)
+      .find(t => t.item == m && aura.owner.abilityConditionMet(aura, m));
+    }
   }
 
   highlightAbility(x, y, image) {
@@ -1482,6 +1506,12 @@ class Battle {
     return length <= a.movesLeft;
   }
 
+  isWalkPathFree(a, b) {
+    let path = this.grid.path(a.x, a.y, b.x, b.y);
+    let length = path.length - 1;
+    return length > 0;
+  }
+
   roll(a, b) {
     return Math.ceil(a + _random('battle roll') * (b-a));
   }
@@ -1871,6 +1901,7 @@ class Battle {
         }
 
         p.then(() => {
+          if(this.isOver) return reject();
           this.turn.addAction(action);
           if(this.turn.isOver) {
             this.endTurn();
@@ -1891,6 +1922,9 @@ class Battle {
       this.render();
     })
     .catch(e => {
+      if(this.isOver) {
+        return this.endGame();
+      }
       console.log('fast forward failed', e)
     })
   }
@@ -1946,6 +1980,7 @@ class Battle {
       }
 
       p.then(() => {
+        if(this.isOver) return reject();
         this.turn.addAction(action);
         if(this.turn.isOver) {
           if(!this.stepwise) {
@@ -1964,6 +1999,9 @@ class Battle {
       this.render();
     })
     .catch(e => {
+      if(this.isOver) {
+        return this.endGame();
+      }
       console.log('Action Error:', e)
     })
   }
@@ -2145,7 +2183,7 @@ class Battle {
   }
 
   walk(a, path) {
-    let t = this.noAnimation ? 0 : 100;
+    let t = this.noAnimation ? 1000 : 100;
     return new Promise((resolve, reject) => {
       var int = setInterval(() => {
         let p = path.shift();
@@ -2210,6 +2248,7 @@ class Battle {
       this.sp.play('start_turn', a.sounds, true);
     }
     this.currentActor = a;
+    logger.log('is over', this.isOver, 'current actor', this.currentActor && this.currentActor.bio.name, this.currentActor && this.getEnemyTeam(this.currentActor.team).map(a => a.alive && a.bio.name))
     var turn = new Turn(a);
     this.turns.push(turn);
     this.undefend(a);
@@ -2263,6 +2302,11 @@ class Battle {
       this.tr.nextTurn();
       this.makeMonsterCards();
     }
+  }
+
+  get isOver() {
+    if(!this.currentActor) return false;
+    return !this.getEnemyTeam(this.currentActor.team).find(a => a.alive);
   }
 
   aiAct(a) {

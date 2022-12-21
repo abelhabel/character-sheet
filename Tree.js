@@ -79,6 +79,7 @@ class Tree extends Events {
   init() {
     this.canvas.canvas.style.backgroundColor = colors.canvasBG;
     this.canvas.canvas.style.position = 'absolute';
+    this.canvas.canvas.addEventListener('contextmenu', e => e.preventDefault());
     this.canvas.canvas.addEventListener('mousedown', this.mouseDown.bind(this));
     this.canvas.canvas.addEventListener('mouseup', this.mouseUp.bind(this));
     this.canvas.canvas.addEventListener('mousemove', this.mouseMove.bind(this));

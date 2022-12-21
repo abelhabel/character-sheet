@@ -1,5 +1,6 @@
 const PL = require('PositionList2d.js');
 const Tree = require('Tree.js');
+const Component = require('Component.js');
 const Canvas = require('Canvas.js');
 const Camera = require('Camera.js');
 const Sprite = require('Sprite.js');
@@ -395,9 +396,50 @@ class SkillTree extends Tree{
   }
 }
 SkillTree.folder = 'skilltree';
+class ControlPanel extends Component {
+  constructor() {
+    super(true, 'control-panel');
+    this.cc.save = new Component(false, 'save', 'button');
+    this.cc.saveName = new Component(false, 'save-name', 'input');
+    this.cc.load = new Component(false, 'load', 'button');
+    this.cc.loadName = new Component(false, 'save-name', 'select');
+    this.cc.novel = new Component(false, 'save', 'button');
+    this.init();
+  }
+
+  init() {
+    let {save, saveName, load, loadName, novel} = this.cc;
+    save.append(this.html`<span>Save</span>`);
+    load.append(this.html`<span>Load</span>`);
+    novel.append(this.html`<span>New</span>`);
+    save.listen(false, 'click', e => {
+      this.trigger('save', saveName.value);
+    })
+    load.listen(false, 'click', e => {
+      this.trigger('load', loadName.value);
+    })
+    novel.listen(false, 'click', e => {
+      this.trigger('new', e);
+    })
+    Object.assign(this.tags.outer.style, {
+      position: 'fixed',
+      top: '0px',
+      left: '0px',
+      width: '100%',
+    })
+  }
+
+  render() {
+    this.clear();
+    let {save, saveName, load, loadName, novel} = this.cc;
+    this.append([save, saveName, load, loadName, novel]);
+    return this.tags.outer;
+  }
+}
 class Editor extends SkillTree {
   constructor() {
     super();
+    this.controls = new ControlPanel();
   }
 
   renderTile(tile, x, y) {

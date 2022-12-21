@@ -99,11 +99,25 @@ Module.onLoad(['DungeonCrawl_ProjectUtumnoTileset.png', 'Rand.js',
   'pathfinding.js', 'Camera.js', 'Tree.js', 'SkillTree.js'], () => {
   console.log('all loaded')
   const SkillTree = require('SkillTree.js');
-  // let st = SkillTree.Editor.load() || new SkillTree.Editor();
-  let st = SkillTree.load() || new SkillTree();
+  let st = SkillTree.Editor.load() || new SkillTree.Editor();
+  // let st = SkillTree.load() || new SkillTree();
+  console.log(st.controls)
+  function createNew() {
+    console.log('create new')
+    document.body.removeChild(st.canvas.canvas);
+    document.body.removeChild(st.controls.tags.outer);
+    st = new SkillTree.Editor();
+    window.skilltree = st;
+    document.body.appendChild(st.render());
+    document.body.appendChild(st.controls.render());
+    st.controls.on('new', createNew);
+  }
+  st.controls.on('new', createNew);
   st.loadBuild();
+  console.log(st.loadBuild)
   window.skilltree = st;
   document.body.appendChild(st.render());
+  document.body.appendChild(st.controls.render());
   document.body.style.overflow = 'hidden';
   document.body.style.margin = '0px';
 })

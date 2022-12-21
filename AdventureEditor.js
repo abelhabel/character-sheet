@@ -16,6 +16,7 @@ const Quest = require('Quest.js');
 const Check = require('Check.js');
 const Maze = require('Maze.js');
 const PL = require('PositionList2d.js');
+const adventures = require('adventures.js');
 const icons = require('icons.js');
 const abilities = require('abilities.js');
 const terrains = require('terrains.js');
@@ -148,15 +149,22 @@ class Panel extends Component {
     let up = (e) => {
       moving = false;
       this.tags.outer.style.zIndex = '';
+      localStorage[`panel${this.name}`] = JSON.stringify({top: this.tags.outer.style.top, left: this.tags.outer.style.left});
     }
     let click = (e) => {
-      if(e.target.component instanceof Terrain) {
-        console.log('select terrain')
-        this.trigger('select terrain', e.target.component);
+      let path = e.composedPath();
+      if(path[0].component instanceof Terrain) {
+        this.trigger('select terrain', path[0].component);
       }
     }
     let move = (e) => {
-      if(!moving) return;
+      if(!moving) {
+        let path = e.composedPath();
+        if(path[0].component instanceof Terrain) {
+          this.q('#selected').textContent = path[0].component.bio.name;
+        }
+        return;
+      }
       if(e.offsetY > 50) {
         moving = false;
         return;
@@ -168,6 +176,12 @@ class Panel extends Component {
     this.listen(false, 'mouseup', up);
     this.listen(false, 'mousemove', move);
     this.listen(false, 'click', click);
+    let pos = localStorage[`panel${this.name}`];
+    if(pos) {
+      pos = JSON.parse(pos);
+      this.tags.outer.style.top = pos.top;
+      this.tags.outer.style.left = pos.left;
+    }
   }
 
   static get style() {
@@ -187,6 +201,10 @@ class Panel extends Component {
         cursor: move;
         user-select: none;
       }
+      .title #selected {
+        font-size: 0.5em;
+        margin-left: 10px;
+      }
       .terrains {
         overflow-y: auto;
         background-color: #555;
@@ -200,7 +218,7 @@ class Panel extends Component {
     let f = new Component.Fragment();
     f.addStyle(Panel.style);
     let t = html`<div class='outer'>
-      <div class='title'>${this.name}</div>
+      <div class='title'>${this.name}<span id='selected'></span></div>
       <div class='terrains'></div>
     </div>`;
     f.append(t);
@@ -210,7 +228,7 @@ class Panel extends Component {
   }
 }
 class AdventureEditor extends Adventure {
-  constructor(w, h) {
+  constructor(w = 50, h = 50) {
     super(w, h, 12, 12);
     this.cp = new ControlPanel();
   }
@@ -261,6 +279,12 @@ class AdventureEditor extends Adventure {
 
   }
 
+  load() {
+    let id = this.q('#adventures').value;
+    if(!id) return alert('Not a valid adventure');
+    window.loadAdventure(id);
+  }
+
   save() {
     let body = {
       name: this.name,
@@ -273,6 +297,7 @@ class AdventureEditor extends Adventure {
           layers: {
             ground: this.compressLayer(p.layers.ground),
             obstacles: this.compressLayer(p.layers.obstacles),
+            decorations: this.compressLayer(p.layers.decorations),
             monsters: this.compressLayer(p.layers.monsters),
             dialog: p.layers.dialog.items._filled(),
             transport: p.layers.transport.items._filled(),
@@ -602,7 +627,7 @@ class AdventureEditor extends Adventure {
   static get style() {
     return html`<style>
       .panel {
-        position: absolute;
+        position: fixed;
         width: 300px;
         max-height: 300px;
         z-index: 100;
@@ -643,8 +668,13 @@ class AdventureEditor extends Adventure {
       <div class='tools selections'></div>
       <div class='tools' id='buttons'>
         <div>Controls</div>
-        <button id='save-adventure'>Save</button>
-        <input id='adventure-name' value='${this.name}'>
+        <span class='button-group'>
+        <button id='new-adventure'>New</button>
+          <button id='save-adventure'>Save</button>
+          <input id='adventure-name' value='${this.name}'>
+          <button id='load-adventure'>Load</button>
+          <select id='adventures'></select>
+        </span>
         <button id='switch-plane'>Switch Plane</button>
         <button id='add-dialog'>Add Dialog</button>
         <button id='remove-dialog'>Remove Dialog</button>
@@ -678,11 +708,17 @@ class AdventureEditor extends Adventure {
       let o = html`<option value='${a.id}'>${a.bio.name}</option>`;
       foot.querySelector('#equipments').appendChild(o);
     });
+    adventures.forEach(a => {
+      let o = html`<option value='${a.id}'>${a.name}</option>`;
+      foot.querySelector('#adventures').appendChild(o);
+    })
     foot.querySelector('#switch-plane').addEventListener('click', this.nextPlane.bind(this));
     foot.querySelector('#copy').addEventListener('click', this.copy.bind(this));
     foot.querySelector('#paste').addEventListener('click', this.paste.bind(this));
+    foot.querySelector('#new-adventure').addEventListener('click', window.newAdventure);
     foot.querySelector('#save-adventure').addEventListener('click', this.save.bind(this));
     foot.querySelector('#adventure-name').addEventListener('keyup', this.setName.bind(this));
+    foot.querySelector('#load-adventure').addEventListener('click', this.load.bind(this));
     foot.querySelector('#add-dialog').addEventListener('click', this.addDialog.bind(this));
     foot.querySelector('#remove-dialog').addEventListener('click', this.removeDialog.bind(this));
     foot.querySelector('#add-monsters').addEventListener('click', this.addMonsters.bind(this));
@@ -711,6 +747,7 @@ class AdventureEditor extends Adventure {
     })
     obstaclesPanel.on('select terrain', t => {
       this.applyTerrain(t, this.layers.obstacles);
+      console.log('applied terrain')
     })
     decorationsPanel.on('select terrain', t => {
       this.applyTerrain(t, this.layers.decorations);

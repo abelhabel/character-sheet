@@ -122,9 +122,9 @@ class Team {
   get xp() {
     let xp = 0;
     this.monsters.forEach(m => {
-      xp += m.might;
+      xp += m.bio.tier * m.bio.tier * m.initialStacks;
     })
-    return Math.ceil(xp / 100);
+    return xp;
   }
 
   removeUnit(suuid) {

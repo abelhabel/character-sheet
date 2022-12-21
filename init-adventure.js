@@ -100,10 +100,32 @@ Module.onLoad(['DungeonCrawl_ProjectUtumnoTileset.png', 'Rand.js',
   'AdventureTime.js', 'AdventureMenu.js', 'pathfinding.js', 'Maze.js', 'Adventure.js', 'AdventureEditor.js',], () => {
   const AdventureEditor = require('AdventureEditor.js');
   const adventures = require('adventures.js');
-  let a = AdventureEditor.create(adventures.find(a => a.id == '1a1f19de-3da3-e850-3815-0a3bcb0c218f'));
+  // let a = AdventureEditor.create(adventures.find(a => a.id == '1a1f19de-3da3-e850-3815-0a3bcb0c218f'));
   // let a = new Adventure(50, 50);
   // a.drawGuides();
-  a.render();
-  window.adventure = a;
-  document.body.appendChild(a.tags.outer);
+  window.newAdventure = function() {
+    let ca = document.body.querySelector('.adventure');
+    if(ca) {
+      document.body.removeChild(ca);
+    }
+
+    let a = new AdventureEditor();
+    a.render();
+    window.adventure = a;
+    document.body.appendChild(a.tags.outer);
+  }
+  window.loadAdventure = function(aid) {
+    let ca = document.body.querySelector('.adventure');
+    if(ca) {
+      document.body.removeChild(ca);
+    }
+
+    let a = AdventureEditor.create(adventures.find(a => a.id == aid));
+    a.render();
+    window.adventure = a;
+    document.body.appendChild(a.tags.outer);
+    console.log('loaded adventure', aid)
+  }
+
+  window.loadAdventure('1a1f19de-3da3-e850-3815-0a3bcb0c218f');
 })

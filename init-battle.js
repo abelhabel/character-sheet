@@ -194,7 +194,7 @@ Module.onLoad(['DungeonCrawl_ProjectUtumnoTileset.png', 'Hell2.jpg', 'defeat.jpg
 'Quest.js', 'QuestLog.js', 'AdventureMessage.js', 'Check.js',
 'Arena.js', 'Armory.js', 'AdventureOptions.js', 'AdventureHelp.js',
 'TeamSheet.js', 'TeamViewer.js', 'Team.js', 'TeamSelect.js', 'UnitPlacement.js', 'BattleResult.js', 'Match.js',
-'Gauntlet.js', 'View.js', 'Lobby.js', 'Battle.js', 'Maze.js', 'Adventure.js', 'GameUI.js',
+'Gauntlet.js', 'View.js', 'Lobby.js', 'Player.js', 'Battle.js', 'Maze.js', 'Adventure.js', 'GameUI.js',
 'game-modes.js', 'lobby-channels-client.js' ], () => {
   const storage = require('storage.js');
   const abilities = require('abilities.js');

@@ -25,6 +25,7 @@ class Terrain {
       action: t.adventure && t.adventure.action,
       item: t.adventure && t.adventure.item,
       actionAmount: t.adventure && t.adventure.actionAmount || 0,
+      actionAmountVariation: t.adventure && t.adventure.actionAmountVariation || 0,
       charges: t.adventure && t.adventure.charges || 0,
       chargeActivation: t.adventure && t.adventure.chargeActivation || '',
       description: t.adventure && t.adventure.description || '',
