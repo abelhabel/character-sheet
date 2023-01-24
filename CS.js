@@ -784,19 +784,19 @@ class CS {
   }
 
   import(monster) {
-    Object.keys(monster).forEach(cname => {
-      if(typeof monster[cname] !== 'object') return;
-      let category = this.categories.find(c => (c.exportAs || c.name) == cname);
-      Object.keys(monster[cname]).forEach(key => {
-        let item = category.items.find(i => (i.exportAs || i.name) == key);
-        if(!item) return;
-        let value = monster[cname][key];
+    this.categories.forEach(c => {
+      let cKey = c.exportAs || c.name;
+      c.items.forEach(item => {
+        let iKey = item.exportAs || item.name;
+        // pick monster value first if it does not have key
+        // use default value from template
+        let value = monster[cKey] && monster[cKey].hasOwnProperty(iKey) ? monster[cKey][iKey] : item.initial;
         let listName = item.type + 'Tags';
-        let tag = this[item.type + 'Tags'].find(t => t.name == item.name && category.name == t.cname);
+        let tag = this[item.type + 'Tags'].find(t => t.name == item.name && c.name == t.cname);
         if(tag && typeof tag.update == 'function') tag.update(value);
-        this.setState(category, item, value, true);
+        this.setState(c, item, value, true);
       })
-    });
+    })
     this.importingId = monster.id;
   }
 

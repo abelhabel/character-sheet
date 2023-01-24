@@ -2,6 +2,8 @@ const guid = require('guid.js');
 const monsters = require('monsters.js');
 const abilities = require('abilities.js');
 const equipments = require('equipments.js');
+const tpl = require('team-tpl.js');
+const CS = require('CS.js');
 const Monster = require('Monster.js');
 const TeamSheet = require('TeamSheet.js');
 const Component = require('Component.js');
@@ -230,4 +232,24 @@ class Team {
   }
 }
 
+
+class TeamEditor extends Team {
+  constructor(name, units, max = 600) {
+    super(name, units, max = 600);
+  }
+
+  render() {
+    let t = new Component(false, 'team');
+    this.monsters.forEach(m => {
+      t.append(m.canvas.clone());
+    })
+    let cs = new CS(tpl, t.tags.outer, null, (c, i, v) => {
+      this[c.exportAs][i.exportAs] = v;
+    }, true);
+    cs.render();
+    return t.tags.outer;
+  }
+}
+
+Team.Editor = TeamEditor;
 module.exports = Team;

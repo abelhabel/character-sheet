@@ -222,5 +222,6 @@ Module.onLoad(['DungeonCrawl_ProjectUtumnoTileset.png', 'Hell2.jpg', 'defeat.jpg
   gameModes.gauntlet(gameui.lobby, gameui);
   gameModes.adventure(gameui.lobby, gameui);
   gameModes.loadAdventure(gameui.lobby, gameui);
+  gameModes.adventureAITest(gameui.lobby, gameui);
   gameui.show('lobby');
 })

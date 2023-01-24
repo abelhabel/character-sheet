@@ -1,7 +1,7 @@
 const Component = require('Component.js');
 const AdventureOptions = require('AdventureOptions.js');
 class AdventureHelp extends Component {
-  constructor(config) {
+  constructor(config = {}) {
     super(true);
     this.options = new AdventureOptions(config);
     this.options.on('config changed', o => this.trigger('config changed', o));

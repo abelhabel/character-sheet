@@ -4,6 +4,7 @@ const backup = require("./backup");
 const URL = require('url').URL;
 const fs = require('fs');
 const PORT = process.env.PORT || 5000;
+console.log('PORT:', PORT)
 const Folder = require('./Folder.js');
 const soundNames = new Folder('sounds');
 const wrap = {
@@ -292,9 +293,9 @@ const server = http.createServer(function(req, res) {
           <li><a href='/animation.html'>Animation Editor</a></li>
           <li><a href='/skilltree.html'>Skilltree editor</a></li>
           <li><a href='/arena.html'>Arena Editor</a></li>
-          <li><a href='/?part=terrain'>Terrain Editor</a></li>
-          <li><a href='/?part=icons'>Icon Editor</a></li>
-          <li><a href='/?part=abilities'>Aility Editor</a></li>
+          <li><a href='/index.html?part=terrain'>Terrain Editor</a></li>
+          <li><a href='/index.html?part=icons'>Icon Editor</a></li>
+          <li><a href='/index.html?part=abilities'>Aility Editor</a></li>
           <li><a href='/team.html'>Team Editor</a></li>
           <li><a href='/bestiary.html'>Bestiary</a></li>
           <li><a href='/ability-compendium.html'>Ability Compendium</a></li>

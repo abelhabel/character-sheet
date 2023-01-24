@@ -76,6 +76,12 @@ var tpl = {
           initial: false
         },
         {
+          name: 'Resource',
+          exportAs: 'resource',
+          type: 'binary',
+          initial: false
+        },
+        {
           name: 'Ability Glyph',
           exportAs: 'abilityGlyph',
           type: 'binary',

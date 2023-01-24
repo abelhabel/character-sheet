@@ -13,18 +13,13 @@ var tpl = {
       exportAs: 'bio',
       items: [
         {
-          name: 'Name',
-          exportAs: 'name',
+          name: 'Clan',
+          exportAs: 'clan',
+          initial: 'neutral',
           type: 'input',
           minCharacters: 1,
           maxCharacters: 128,
         },
-        {
-          name: 'Monsters',
-          type: 'multiselect',
-          exportAs: 'monsters',
-          values: monsters.map(m => m.bio.name).sort(sortAlphabetically)
-        }
       ]
     }
   ]

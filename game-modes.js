@@ -110,13 +110,38 @@ gameModes.loadAdventure = function(lobby, ui) {
   });
 }
 
+gameModes.adventureAITest = function(lobby, ui) {
+  lobby.on('adventure ai test', (saveFile) => {
+    let aid = "6141dde5-5bf8-7c57-1975-1374df392ef6";
+    let tpl = adventures.find(a => a.id == aid);
+    let sp = tpl.startPositions[0];
+    let a = Adventure.create(tpl, saveFile, true, sp);
+    // a.layers.fog.show = false;
+    window.adventure = a;
+    let players = tpl.startPositions.map((p, i) => {
+      let leadertpl = leaders[i % leaders.length];
+      let leader = new Monster(leadertpl);
+      let team = Team.fromMonsters('team' + i, [leader]);
+      let player = new Player(team, 'clan' + i, !!i);
+      a.addPlayer(player, p);
+      return p;
+    })
+    ui.show('adventure');
+    a.startTurn();
+    ui.append(a.render());
+    a.start();
+  })
+};
+
 gameModes.adventure = function(lobby, ui) {
   lobby.on('adventure', (saveFile) => {
     console.log('adventure', saveFile);
     let id = saveFile ? saveFile.name : '1a1f19de-3da3-e850-3815-0a3bcb0c218f';
     let tpl = adventures.find(a => a.id == id);
     console.log('create adventure')
-    let a = Adventure.create(tpl, saveFile, true);
+    // has to choose a startposition
+    let sp = tpl.startPositions[0];
+    let a = Adventure.create(tpl, saveFile, true, sp);
 
     a.on('open ability trainer', () => {
       let cards = [];
@@ -171,7 +196,7 @@ gameModes.adventure = function(lobby, ui) {
       ui.clear('team select');
       ui.show('adventure');
       window.adventure = a;
-      let player = new Player(team);
+      let player = new Player(team, 'player', false);
 
       player.inventory.on('crafted ability', (tpl, items) => {
         console.log('items used', items);
@@ -253,8 +278,8 @@ gameModes.adventure = function(lobby, ui) {
           a.shadow.appendChild(t);
         }
       });
-
-      a.addPlayer(player);
+      console.log('addplayer', sp)
+      a.addPlayer(player, sp);
       saveFile && a.loadPlayer();
       ui.append(a.render());
       a.start();

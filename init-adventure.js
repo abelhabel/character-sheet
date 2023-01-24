@@ -92,7 +92,8 @@ Module.loaders = [];
 Module.loadOrder = [];
 
 Module.onLoad(['DungeonCrawl_ProjectUtumnoTileset.png', 'Rand.js',
-  'icons.js', 'terrains.js', 'equipments.js', 'adventures.js', 'teams.js', 'monsters.js', 'abilities.js', 'sounds.js', 'quest-tpl.js',
+  'icons.js', 'terrains.js', 'equipments.js', 'adventures.js', 'teams.js', 'monsters.js', 'abilities.js', 'sounds.js',
+  'quest-tpl.js', 'team-tpl.js', 'CS.js',
   'PositionList2d.js', 'FixedList.js', 'guid.js', 'SoundPlayer.js', 'Slider.js',
   'Component.js', 'Canvas.js', 'Sprite.js', 'CompositeSprite.js',  'Terrain.js',  'Scroll.js', 'Equipment.js',
   'Quest.js', 'QuestLog.js', 'Check.js',

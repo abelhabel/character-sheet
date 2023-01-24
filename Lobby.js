@@ -298,6 +298,10 @@ class Lobby extends Component {
     this.trigger('load adventure');
   }
 
+  createAdventureAITest() {
+    this.trigger('adventure ai test');
+  }
+
   didJoinGame(data) {
     let game = this.games.find(g => g.id == data.game.id);
     let user = this.users.find(u => u.id == data.user.id);
@@ -511,6 +515,10 @@ class Lobby extends Component {
           {
             text: 'Load',
             fn: () => this.loadAdventure()
+          },
+          {
+            text: 'AI Test',
+            fn: () => this.createAdventureAITest()
           }
         ]
       },

@@ -16,6 +16,18 @@ class PositionList2d {
     return n;
   }
 
+  static combine(lists) {
+    let pl = new PositionList2d(lists[0].w, lists[0].h);
+    for(var y = 0; y < this.h; y++) {
+      for(var x = 0; x < this.w; x++) {
+        if(lists.find(l => l.get(x, y))) {
+          pl.set(x, y, true);
+        }
+      }
+    }
+    return pl;
+  }
+
   transfer(pl, setOnly, unset) {
     if(this.w != pl.w || this.h != pl.h) return;
     for(var y = 0; y < this.h; y++) {
@@ -449,6 +461,22 @@ class PositionList2d {
 
   path(sx, sy, ex, ey, diagonal = 'Never') {
     return new PF.AStarFinder({diagonalMovement: PF.DiagonalMovement[diagonal]}).findPath(sx, sy, ex, ey, this.matrix);
+  }
+
+  pathToAdjacent(sx, sy, ex, ey) {
+    let out;
+    let r = 1;
+    for(var sy = ey - r; sy <= ey + r; sy++) {
+      if(sy < 0 || sy > this.h-1) continue;
+      for(var sx = ex - r; sx <= ex + r; sx++) {
+        if(sx < 0 || sx > this.w-1) continue;
+        let path = this.path(sx, sy, ex, ey);
+        if(!out || out.length > path.length) {
+          out = path;
+        }
+      }
+    }
+    return out;
   }
 
   _list() {

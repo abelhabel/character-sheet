@@ -64,38 +64,35 @@ class ControlPanel extends Component {
   }
 
   renderItem(item) {
-    let t = html`<div class='control-item'>
-    </div>`;
+    let t = new Component(false, 'control-item');
     if(item.g) {
-      t.appendChild(item.g.canvas.clone());
+      t.append(item.g.canvas.clone());
     }
     if(item.o) {
-      t.appendChild(item.o.canvas.clone());
+      t.append(item.o.canvas.clone());
     }
     if(item.m) {
-      item.m.monsters.forEach(m => {
-        t.appendChild(m.canvas.clone());
-      })
+      t.append(Team.Editor.prototype.render.call(item.m));
     }
     if(item.d) {
-      t.appendChild(item.d.render());
+      t.append(item.d.render());
     }
     if(item.t) {
-      t.appendChild(html`<div>Transports to: ${item.t.x}, ${item.t.y}</div>`);
+      t.append(html`<div>Transports to: ${item.t.x}, ${item.t.y}</div>`);
     }
     if(item.p) {
-      t.appendChild(html`<div>Planeports to: ${item.p.plane} ${item.p.x}, ${item.p.y}</div>`);
+      t.append(html`<div>Planeports to: ${item.p.plane} ${item.p.x}, ${item.p.y}</div>`);
     }
     if(item.q) {
-      t.appendChild(Quest.Editor.prototype.render.call(item.q));
+      t.append(Quest.Editor.prototype.render.call(item.q));
     }
     if(item.rd) {
-      t.appendChild(Maze.Editor.prototype.render.call(item.rd));
+      t.append(Maze.Editor.prototype.render.call(item.rd));
     }
     if(item.c) {
-      t.appendChild(Check.Editor.prototype.render.call(item.c));
+      t.append(Check.Editor.prototype.render.call(item.c));
     }
-    return t;
+    return t.tags.outer;
   }
 
   render(layers) {
@@ -104,7 +101,7 @@ class ControlPanel extends Component {
     this.addStyle(ControlPanel.style);
     let c = html`<div id='control-panel'></div>`;
     let items = [];
-    select.items.each(item => {
+    select.items.each((item, i) => {
       if(!item.item) return;
       let d = dialog.items.get(item.x, item.y);
       let g = ground.items.get(item.x, item.y);
@@ -117,7 +114,8 @@ class ControlPanel extends Component {
       let c = checks.items.get(item.x, item.y);
       items.push({d,g,o,m,t,p,q,rd,c});
     })
-    items.forEach(item => {
+    items.forEach((item, i) => {
+      if(i > 10) return;
       let t = this.renderItem(item);
       c.appendChild(t);
 
@@ -227,6 +225,8 @@ class Panel extends Component {
     return this.tags.outer;
   }
 }
+
+
 class AdventureEditor extends Adventure {
   constructor(w = 50, h = 50) {
     super(w, h, 12, 12);
@@ -241,7 +241,12 @@ class AdventureEditor extends Adventure {
     this.renderControlPanel();
     if(layer == this.layers.select) {
     }
-    Adventure.prototype.draw.call(this, layer);
+    if(layer) {
+      Adventure.prototype.draw.call(this, layer);
+    }
+    this.startPositions.forEach(p => {
+      this.layers.decorations.canvas.drawRect(p.x*this.tw, p.y*this.th, this.tw, this.th, false, 'red');
+    })
   }
 
   compressLayer(layer) {
@@ -290,7 +295,7 @@ class AdventureEditor extends Adventure {
       name: this.name,
       w: this.w,
       h: this.h,
-      startPosition: this.startPosition,
+      startPositions: this.startPositions,
       planes: this.planes.map(p => {
         return {
           name: p.name,
@@ -326,14 +331,24 @@ class AdventureEditor extends Adventure {
     })
   }
 
+  mouseEvent(e) {
+    return {
+      offsetX: e.offsetX,
+      offsetY: e.offsetY,
+      ctrlKey: e.ctrlKey,
+      shiftKey: e.shiftKey
+    };
+  }
+
   mouseDown(e) {
     if(e.button != 0) return;
-    this.mouse.down = e;
+    this.mouse.down = this.mouseEvent(e);
+    console.log(e.offsetX, e.offsetY)
   }
 
   mouseUp(e) {
     if(e.button != 0) return;
-    this.mouse.up = e;
+    this.mouse.up = this.mouseEvent(e);
     let p = this.tpos(e);
     this.layers.preselect.items.set(p.x, p.y, selectSprite);
     this.select();
@@ -341,7 +356,8 @@ class AdventureEditor extends Adventure {
 
   mouseMove(e) {
     if(!this.mouse.down) return;
-    this.mouse.move = e;
+    this.mouse.move = this.mouseEvent(e);
+    console.log(this.mouse.down.offsetX, this.mouse.down.offsetY)
     this.drawPreSelect();
   }
 
@@ -359,7 +375,7 @@ class AdventureEditor extends Adventure {
 
   select() {
     let layer = this.layers.select;
-    let remove = this.mouse.down.shiftKey || this.mouse.up.shiftKey;
+    let remove = (this.mouse.down && this.mouse.down.shiftKey) || (this.mouse.up && this.mouse.up.shiftKey);
     this.layers.preselect.items.transfer(layer.items, true, remove);
     this.shadow.querySelector('.selections').textContent = this.selected.map(i => `${i.x}:${i.y}`).join(',');
     this.draw(layer);
@@ -488,9 +504,18 @@ class AdventureEditor extends Adventure {
   }
 
   addStartPosition() {
-    let selected = this.selected;
-    if(selected.length != 1) return;
-    this.startPosition = {x: selected[0].x, y: selected[0].y};
+    let selected = this.selected.map(s => ({x: s.x, y: s.y}));
+
+    this.startPositions = selected;
+    this.draw();
+  }
+
+  selectStartPosition() {
+    this.deselectAll();
+    this.startPositions.map(s => {
+      this.layers.preselect.items.set(s.x, s.y, selectSprite)
+    });
+    this.select();
   }
 
   addTransport(e) {
@@ -681,6 +706,7 @@ class AdventureEditor extends Adventure {
         <button id='add-monsters'>Add Monsters</button>
         <button id='remove-monsters'>Remove Monsters</button>
         <button id='add-start-position'>Set Start</button>
+        <button id='select-start-position'>Select Start</button>
         <button id='add-transport'>Add Transport</button>
         <button id='remove-transport'>Remove Transport</button>
         <button id='add-planeport'>Add Planeport</button>
@@ -724,6 +750,7 @@ class AdventureEditor extends Adventure {
     foot.querySelector('#add-monsters').addEventListener('click', this.addMonsters.bind(this));
     foot.querySelector('#remove-monsters').addEventListener('click', this.removeMonsters.bind(this));
     foot.querySelector('#add-start-position').addEventListener('click', this.addStartPosition.bind(this));
+    foot.querySelector('#select-start-position').addEventListener('click', this.selectStartPosition.bind(this));
     foot.querySelector('#add-transport').addEventListener('click', this.addTransport.bind(this));
     foot.querySelector('#remove-transport').addEventListener('click', this.removeTransport.bind(this));
     foot.querySelector('#add-planeport').addEventListener('click', this.addPlaneport.bind(this));

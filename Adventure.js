@@ -90,6 +90,7 @@ class Layer {
     this.items = new PL(w, h);
     this.canvas = canvas && new Canvas(tw * w, th * h);
     this.animations = new PL(w, h);
+    this.show = true;
   }
 }
 
@@ -180,10 +181,30 @@ class Record {
   }
 }
 
+class AdventureTurns {
+  constructor(players = []) {
+    this.players = players || [];
+    this.turn = 1;
+    this.round = 1;
+  }
+
+  get player() {
+    return this.players[this.turn -1];
+  }
+
+  nextTurn() {
+    this.turn += 1;
+    if(this.turn > this.players.length) {
+      this.turn = 1;
+      this.round += 1;
+    }
+  }
+}
+
 class Adventure extends Component {
   constructor(w, h, tw, th, seed) {
     super(true, 'adventure');
-    this.id = Math.random();
+    this.id = '';
     this.seed = seed || Date.now();
     this.rand = new Rand(this.seed);
     this.name = "Adventure";
@@ -193,6 +214,7 @@ class Adventure extends Component {
     this.h = h;
     this.zoomed = true;
     this.startPosition = {x: 0, y: 0};
+    this.startPositions = [];
     this.planes = [
       this.createPlane('surface'),
       this.createPlane('underground')
@@ -208,7 +230,7 @@ class Adventure extends Component {
     this.tags.resources = new Component(false, 'resources');
     this.tags.time = new AdventureTime();
     this.menu = new AdventureMenu();
-    this.menu.on('end turn', () => this.endTurn());
+    this.menu.on('end turn', () => this.endThenStartTurn());
     this.menu.on('open inventory', () => this.openInventory());
     this.menu.on('open equipment', () => this.openEquipment());
     this.menu.on('open team', () => this.openTeamSheet());
@@ -222,8 +244,20 @@ class Adventure extends Component {
       down: null,
       move: null
     };
-    this.player = null;
-    this.pp = {x: 0, y: 0};
+    this.walkTimer = null;
+    // this.player = null;
+    // this.pp = {x: 0, y: 0};
+
+    this.turns = new AdventureTurns();
+    console.log(this.turns)
+  }
+
+  get player() {
+    return this.turns.player;
+  }
+
+  get pp() {
+    return this.player.position;
   }
 
   nextPlane() {
@@ -679,7 +713,7 @@ class Adventure extends Component {
 
   startKeyboard() {
     this.keyboard = this.keyboard || new Keyboard(this.id, {
-      e: this.endTurn.bind(this),
+      e: this.endThenStartTurn.bind(this),
       c: this.openTeamSheet.bind(this),
       i: this.openInventory.bind(this),
       q: this.openQuests.bind(this)
@@ -687,11 +721,12 @@ class Adventure extends Component {
     this.keyboard.start();
   }
 
-  static create(t, saveFile, generate) {
+  static create(t, saveFile, generate, startPosition) {
     let a = new this(t.w, t.h, t.tw, t.th, saveFile && saveFile.data.seed);
     a.id = t.id;
     a.name = t.name;
-    a.startPosition = t.startPosition;
+    a.startPositions = t.startPositions || [];
+    a.startPosition = startPosition;
     a.planes = [];
     t.planes.forEach(p => {
       let plane = a.createPlane(p.name);
@@ -799,18 +834,49 @@ class Adventure extends Component {
     return a;
   }
 
-  endTurn() {
-    this.tags.time.nextDay();
-    this.planes.forEach(p => {
-      p.layers.obstacles.items.each(item => {
-        if(!item.item) return;
-        let record = p.layers.history.items.get(item.x, item.y);
-        record.resetConsumption(item.item);
-      })
+  startTurn() {
+    console.log('START TURN');
+    this.tags.time.player = this.player;
+    this.resources = [];
+    this.resources.push(new Resource('gold', this.player.resources.gold, goldIcon));
+    this.resources.push(new Resource('azurite', this.player.resources.azurite, azuriteIcon));
+    this.resources.push(new Resource('zircon', this.player.resources.zircon, zirconIcon));
+    this.resources.push(new Resource('iron', this.player.resources.iron, ironIcon));
+    this.resources.push(new Resource('topaz', this.player.resources.topaz, topazIcon));
+    this.resources.push(new Resource('adamite', this.player.resources.adamite, adamiteIcon));
+    this.resources.push(new Resource('brucite', this.player.resources.brucite, bruciteIcon));
+    this.resources.push(new Resource('mud', this.player.resources.mud, mudIcon));
+    this.updateResources();
+    this.centerOnPlayer();
+    this.revealFog(this.pp.x, this.pp.y);
+    logger.log(`${this.player.AIControlled ? 'Computer' : 'Human'} player's turn`);
+    if(this.player.AIControlled) {
+      this.player.AI.plan(this);
+    }
+  }
 
-    })
+  endTurn() {
+    let round = this.turns.round;
+    console.log('END TURN');
+    this.turns.nextTurn();
+    if(this.turns.round > round) {
+      this.tags.time.nextDay();
+      this.planes.forEach(p => {
+        p.layers.obstacles.items.each(item => {
+          if(!item.item) return;
+          let record = p.layers.history.items.get(item.x, item.y);
+          record.resetConsumption(item.item);
+        })
+
+      })
+    }
     this.save();
     this.savePlayer();
+  }
+
+  endThenStartTurn() {
+    this.endTurn();
+    this.startTurn();
   }
 
   save() {
@@ -1076,26 +1142,26 @@ class Adventure extends Component {
 
   }
 
-  addPlayer(p) {
-    this.player = p;
-    this.movePlayer(this.startPosition.x, this.startPosition.y);
-    this.resources.push(new Resource('gold', this.player.resources.gold, goldIcon));
-    this.resources.push(new Resource('azurite', this.player.resources.azurite, azuriteIcon));
-    this.resources.push(new Resource('zircon', this.player.resources.zircon, zirconIcon));
-    this.resources.push(new Resource('iron', this.player.resources.iron, ironIcon));
-    this.resources.push(new Resource('topaz', this.player.resources.topaz, topazIcon));
-    this.resources.push(new Resource('adamite', this.player.resources.adamite, adamiteIcon));
-    this.resources.push(new Resource('brucite', this.player.resources.brucite, bruciteIcon));
-    this.resources.push(new Resource('mud', this.player.resources.mud, mudIcon));
-    this.tags.time.player = this.player;
-    this.planes.forEach(plane => {
-      plane.layers.quests.items.filled(item => {
-        let q = item.item;
-        if(!q.bio.global) return;
-        p.quests.add(q);
-      })
+  addPlayer(p, pos) {
+    this.turns.players.push(p);
+    if(this.turns)
+    p.position.x = pos.x;
+    p.position.y = pos.y;
+    let {monsters} = this.layers;
+    monsters.canvas.clearRect(pos.x * this.tw, pos.y * this.th, this.tw, this.th);
+    monsters.items.remove(pos.x, pos.y);
+    monsters.items.set(pos.x, pos.y, p.team);
+    monsters.canvas.drawSprite(p.team.highestTier.sprite, pos.x * this.tw, pos.y * this.th, this.tw, this.th);
+    if(!p.AIControlled) {
+      this.planes.forEach(plane => {
+        plane.layers.quests.items.filled(item => {
+          let q = item.item;
+          if(!q.bio.global) return;
+          p.quests.add(q);
+        })
 
-    })
+      })
+    }
 
     this.draw(this.layers.monsters);
   }
@@ -1207,6 +1273,7 @@ class Adventure extends Component {
   draw(layer, x, y) {
     if(!layer.canvas) return;
     if(!layer.items) return;
+    if(!layer.show) return;
     this.clearAnimations(layer, x, y);
     if(x && y) {
       this.drawTile(layer, {x, y});
@@ -1254,6 +1321,7 @@ class Adventure extends Component {
   }
 
   mouseMove(e) {
+    if(this.player.AIControlled) return;
     this.mouse.move = e;
     if(this.mouse.down && this.mouse.down.button == 2) {
       let a = this.shadow.querySelector('.adventure');
@@ -1306,6 +1374,10 @@ class Adventure extends Component {
     if(e.which == 3) {
       return this.showInfo(mp);
     }
+    this.interact(mp);
+  }
+
+  interact(mp) {
     let {ground, obstacles, transport, planeport, monsters, dialog, quests, dungeons, history, checks} = this.layers;
     let item = obstacles.items.get(mp.x, mp.y);
     let record = history.items.get(mp.x, mp.y);
@@ -1347,7 +1419,6 @@ class Adventure extends Component {
       let toPlane = this.planes.find(p => p.name == planep.plane);
       this.setPlane(toPlane.name);
       this.render();
-      console.log(planep, toPlane.layers.obstacles.items.inx(planep.x, planep.y))
       let empty = toPlane.layers.obstacles.items.closestEmpty(planep.x, planep.y);
       monsters.items.remove(this.pp.x, this.pp.y);
       this.movePlayer(empty.x, empty.y);
@@ -1361,7 +1432,7 @@ class Adventure extends Component {
     if(item.adventure.event != 'click') return;
     if(obstacles.items.distance(this.pp.x, this.pp.y, mp.x, mp.y) > 1) return;
     let message;
-    if(item.adventure.description) {
+    if(item.adventure.description && !this.player.AIControlled) {
       message = this.showMessage(item, record);
     }
     if(record.isConsumed(item)) return;
@@ -1373,10 +1444,10 @@ class Adventure extends Component {
       obstacles.items.remove(mp.x, mp.y);
       record.removeObstacle();
     }
-    if(item.adventure.action == 'give azurite') {
+    if(item.stats.resource) {
       this.rand.between(item.adventure.actionAmount - item.adventure.actionAmountVariation, item.adventure.actionAmount + item.adventure.actionAmountVariation).round();
-      console.log('give azurite', this.rand.n)
-      this.addResource(this.rand.n, 'azurite');
+      let name = item.adventure.action.match(/give (.+)/)[1];
+      this.addResource(this.rand.n, name);
       sp.play('gold');
       obstacles.items.remove(mp.x, mp.y);
       record.removeObstacle();
@@ -1550,7 +1621,11 @@ class Adventure extends Component {
       n = '';
     } else {
       t = item.adventure.description;
-      n = `+${item.adventure.actionAmount} ${item.adventureItem.bio.name}`;
+      if(item.adventure.actionAmountVariation) {
+        n = `+${item.adventure.actionAmount - item.adventure.actionAmountVariation} - ${item.adventure.actionAmount + item.adventure.actionAmountVariation}${item.adventureItem.bio.name}`;
+      } else {
+        n = `+${item.adventure.actionAmount} ${item.adventureItem.bio.name}`;
+      }
     }
     let dtag = html`<div>
       <p>${t}</p>
@@ -1703,7 +1778,7 @@ class Adventure extends Component {
     }
   }
 
-  walk(a, path) {
+  walk(team, path) {
     let monsters = this.layers.monsters;
     this.moving = true;
     var int;
@@ -1713,13 +1788,13 @@ class Adventure extends Component {
       resolve();
     };
     return new Promise((resolve, reject) => {
-      int = setInterval(() => {
+      this.walkTimer = setInterval(() => {
         let p = path.shift();
         if(!p) {
           return done(resolve);
         }
         let item = monsters.items.get(p[0], p[1]);
-        if(item && item != a) {
+        if(item && item != team) {
           this.showBattle(item, p);
           return done(resolve);
         }
@@ -1732,6 +1807,32 @@ class Adventure extends Component {
       }, 100);
 
     })
+  }
+
+  stopWalk() {
+    clearInterval(this.walkTimer);
+  }
+
+  movePlayer(x, y) {
+    let {layers, player, pp} = this;
+    if(player.movesLeft < 1) return;
+    let {monsters, fog} = layers;
+    monsters.canvas.clearRect(pp.x * this.tw, pp.y * this.th, this.tw, this.th);
+    monsters.items.remove(pp.x, pp.y);
+    this.player.position.x = x;
+    this.player.position.y = y;
+    monsters.items.set(x, y, this.player.team);
+    monsters.canvas.drawSprite(this.player.team.highestTier.sprite, pp.x * this.tw, pp.y * this.th, this.tw, this.th);
+    this.passivePlayerCheck(x, y);
+    this.revealFog(x, y);
+    this.player.pools.movement += 1;
+    if(this.tags.time.player) {
+      if(this.autoEndTurn && !this.player.movesLeft) {
+        this.stopWalk();
+        this.endThenStartTurn();
+      }
+      this.tags.time.render();
+    }
   }
 
   inLOS(x1, y1, x2, y2) {
@@ -1752,25 +1853,6 @@ class Adventure extends Component {
       let record = this.layers.history.items.get(item.x, item.y);
       record.removeFog();
     });
-  }
-
-  movePlayer(x, y) {
-    if(this.player.movesLeft < 1) return;
-    let {monsters, fog} = this.layers;
-    monsters.canvas.clearRect(this.pp.x * this.tw, this.pp.y * this.th, this.tw, this.th);
-    monsters.items.remove(this.pp.x, this.pp.y);
-    this.pp = {x, y};
-    monsters.items.set(x, y, this.player.team);
-    monsters.canvas.drawSprite(this.player.team.highestTier.sprite, this.pp.x * this.tw, this.pp.y * this.th, this.tw, this.th);
-    this.passivePlayerCheck(x, y);
-    this.revealFog(x, y);
-    this.player.pools.movement += 1;
-    if(this.tags.time.player) {
-      if(this.autoEndTurn && !this.player.movesLeft) {
-        this.endTurn();
-      }
-      this.tags.time.render();
-    }
   }
 
   checkReward(check, x, y) {
@@ -1813,11 +1895,13 @@ class Adventure extends Component {
     let top = this.pp.y * this.th - window.innerHeight/2;
     top = Math.max(0, top);
     top = Math.min(this.h * this.th - window.innerHeight, top);
+    console.log('this.panTo(-left, -top);', left, top)
     this.panTo(-left, -top);
   }
 
   panTo(x, y) {
     let a = this.shadow.querySelector('.adventure');
+    if(!a) return;
     a.style.left = x + 'px';
     a.style.top = y + 'px';
     this.pans.x = x;

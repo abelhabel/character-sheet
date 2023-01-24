@@ -18,6 +18,7 @@ class Terrain {
       animation: t.stats.animation,
       composite: t.stats.composite,
       ingredient: t.stats.ingredient,
+      resource: t.stats.resource,
     };
     this.adventure = {
       consumable: t.adventure && t.adventure.consumable,

@@ -1,7 +1,7 @@
 const Component = require('Component.js');
 const Slider = require('Slider.js');
 class AdventureOptions extends Component {
-  constructor(t) {
+  constructor(t = {}) {
     super(true);
     this.config = {
       autoEnd: t.hasOwnProperty('autoEnd') ? t.autoEnd : true,
