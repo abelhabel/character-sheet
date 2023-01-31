@@ -65,7 +65,7 @@ class Canvas {
     }
   }
 
-  drawRect(x, y, w, h, fill = '#000', stroke = false) {
+  drawRect(x = 0, y = 0, w = this.w, h = this.h, fill = '#000', stroke = false) {
     let c = this.context;
     if(fill) {
       c.fillStyle = fill;

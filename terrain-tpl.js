@@ -106,18 +106,93 @@ var tpl = {
           exportAs: 'action',
           initial: '',
           type: 'select',
-          values: ['', 'give gold', 'give azurite', 'give zircon',
+          values: ['', 'give one', 'give all', 'give gold', 'give azurite', 'give zircon',
           'give topaz', 'give adamite', 'give iron', 'give brucite',
-          'give mud', 'give item', 'open tavern',
+          'give mud', 'give item', 'give xp or gold',
+          'open tavern',
           'give movement' , 'open armory', 'open ability trainer',
           'give ability', 'give equipment'
           ]
+        },
+        {
+          name: 'Random',
+          exportAs: 'random',
+          initial: false,
+          type: 'binary'
         },
         {
           name: 'Tags',
           exportAs: 'tags',
           initial: '',
           type: 'text'
+        },
+        {
+          name: 'XP',
+          exportAs: 'xp',
+          initial: 0,
+          type: 'increment',
+          range: [0, 10000]
+        },
+        {
+          name: 'Resources',
+          exportAs: 'resources',
+          initial: [],
+          type: 'multiselect',
+          values: terrains.filter(t => t.stats.resource).sort(sortOnName),
+          get(item) {
+            if(!item) return '';
+            if(typeof item == 'string') {
+              let t = this.values.find(v => v && v.id == item);
+              if(t) return t.bio.name;
+              return item;
+            }
+            return item.bio.name;
+          },
+          set(name) {
+            if(!name) return '';
+            t = this.values.find(v => v && v.bio && v.bio.name == name);
+            if(t) return t.id;
+            return '';
+          }
+        },
+        {
+          name: 'Ingredients',
+          exportAs: 'ingredients',
+          initial: [],
+          type: 'multiselect',
+          values: terrains.filter(t => t.stats.ingredient).sort(sortOnName),
+          get(item) {
+            if(!item) return '';
+            if(typeof item == 'string') {
+              let t = this.values.find(v => v && v.id == item);
+              if(t) return t.bio.name;
+              return item;
+            }
+            return item.bio.name;
+          },
+          set(name) {
+            if(!name) return '';
+            t = this.values.find(v => v && v.bio && v.bio.name == name);
+            if(t) return t.id;
+            return '';
+          }
+        },
+        {
+          name: 'Leader Stats',
+          exportAs: 'leaderStats',
+          initial: [],
+          type: 'multiselect',
+          values: ['attack', 'defence', 'spellPower', 'spellResistance',
+            'damage', 'movement', 'initiative', 'range', 'apr', 'tpr',
+            'health', 'mana'
+          ],
+        },
+        {
+          name: 'Adventure Stats',
+          exportAs: 'adventureStats',
+          initial: [],
+          type: 'multiselect',
+          values: ['movement', 'vision'],
         },
         {
           name: 'Item',

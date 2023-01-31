@@ -65,7 +65,9 @@ class MonsterCard {
           let Battle = require('Battle.js');
           let popup = Battle.prototype.popup();
           popup.style.display = 'block';
-          this.item.drawMonsterCS(popup, () => document.body.removeChild(popup));
+          let cs = this.item.drawMonsterCS();
+          cs.on('close', () => document.body.removeChild(popup));
+          popup.appendChild(cs.render());
         } else {
           this.item.battle.toggleAbilityBook(this.item);
         }

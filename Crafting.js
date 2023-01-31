@@ -87,7 +87,6 @@ class Crafting extends GridBox {
     let selected = this.selectedItems;
     if(selected.length < 2) return;
     let match = this.checkRecipe(selected);
-    console.log('match', match);
     match && this.trigger('crafting success', new Recipe(match, selected));
   }
 

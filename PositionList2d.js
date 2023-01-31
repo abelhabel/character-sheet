@@ -18,11 +18,12 @@ class PositionList2d {
 
   static combine(lists) {
     let pl = new PositionList2d(lists[0].w, lists[0].h);
-    for(var y = 0; y < this.h; y++) {
-      for(var x = 0; x < this.w; x++) {
-        if(lists.find(l => l.get(x, y))) {
-          pl.set(x, y, true);
-        }
+    for(var y = 0; y < pl.h; y++) {
+      for(var x = 0; x < pl.w; x++) {
+        lists.forEach(l => {
+          if(pl.get(x, y)) return;
+          pl.set(x, y, l.get(x, y))
+        });
       }
     }
     return pl;

@@ -150,8 +150,9 @@ Module.onLoad(['DungeonCrawl_ProjectUtumnoTileset.png', 'sheet_of_old_paper.png'
     }
 
     drawMonsterCS(m, popup) {
-      popup.innerHTML = '';
-      m.drawMonsterCS(popup)
+      let cs = m.drawMonsterCS();
+      cs.on('close', () => cs.unmount());
+      popup.appendChild(cs.render());
     }
 
   }

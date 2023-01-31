@@ -2,6 +2,8 @@ const Sprite = require('Sprite.js');
 const CompositeSprite = require('CompositeSprite.js');
 const abilities = require('abilities.js');
 const terrains = require('terrains.js');
+const resources = terrains.filter(t => t.stats.resource);
+const ingredients = terrains.filter(t => t.stats.ingredient);
 const Ability = require('Ability.js');
 class Terrain {
   constructor(t) {
@@ -24,6 +26,12 @@ class Terrain {
       consumable: t.adventure && t.adventure.consumable,
       event: t.adventure && t.adventure.event,
       action: t.adventure && t.adventure.action,
+      random: t.adventure && t.adventure.random,
+      xp: t.adventure && t.adventure.xp || 0,
+      resources: t.adventure && t.adventure.resources || [],
+      ingredients: t.adventure && t.adventure.ingredients || [],
+      leaderStats: t.adventure && t.adventure.leaderStats || [],
+      adventureStats: t.adventure && t.adventure.adventureStats || [],
       item: t.adventure && t.adventure.item,
       actionAmount: t.adventure && t.adventure.actionAmount || 0,
       actionAmountVariation: t.adventure && t.adventure.actionAmountVariation || 0,
@@ -61,6 +69,22 @@ class Terrain {
     return this.adventureItemCount >= this.adventure.charges * this.adventure.actionAmount;
   }
 
+  get adventureResources() {
+    return this.adventure.resources.map(r => new Terrain(resources.find(t => t.id == r)));
+  }
+
+  get adventureIngredients() {
+    return this.adventure.ingredients.map(r => new Terrain(ingredients.find(t => t.id == r)));
+  }
+
+  get containsResource() {
+    return !!this.adventure.resources.length;
+  }
+
+  get containsIngredients() {
+    return !!this.adventure.ingredients.length;
+  }
+
   consume() {
     this.adventureItemCount += this.adventure.actionAmount;
   }
@@ -90,6 +114,10 @@ class Terrain {
     }
     this.consume();
     return out;
+  }
+
+  get containsResource() {
+    return this.stats.resource || this.adventure.resources.length;
   }
 
   get ability() {

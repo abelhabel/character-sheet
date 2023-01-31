@@ -4,7 +4,7 @@ class TeamSheet extends Component {
   constructor(team) {
     super(true);
     this.team = team;
-    this.selected = null;
+    this.selected = team.monsters[0];
   }
 
   static get style() {
@@ -34,27 +34,38 @@ class TeamSheet extends Component {
 
   render() {
     this.clear();
-    this.addStyle(Monster.csStyle);
-    this.addStyle(TeamSheet.style);
+    let f = new Component.Fragment();
+    f.append(Monster.csStyle);
+    f.append(TeamSheet.style);
     this.tags.outer.classList.add('team-sheet');
     let units = html`<div class='team-units'>
       <div class='close'>Close</div>
     </div>`;
-    units.querySelector('.close').addEventListener('click', e => {
-      this.unmount();
+    f.append(units);
+    f.listen('.close', 'click', e => {
+      this.trigger('close');
     })
     this.team.monsters.forEach((m, i) => {
       m.sprite.drawStack(m.stacks);
       m.canvas.addEventListener('click', () => this.selectMonster(m));
-      units.appendChild(m.canvas);
+      f.appendIn('.team-units', m.canvas);
     });
-    this.append(units);
     if(this.selected) {
-      let sheet = html`<div class='team-unit-cs'></div>`;
+      let sheet = new Component(false, 'team-unit-cs');
       let monster = this.selected;
-      monster.drawMonsterCS(sheet, () => this.selectMonster(null), (c, s) => this.team.upgradeStats(monster, c, s));
-      this.append(sheet);
+      let unit = this.team.units.find(u => monster.suuid == u.suuid);
+      let onClose = () => this.selectMonster(null);
+      let levelUp = (stat, spent) => unit.upgradeStats(stat, spent);
+      let cs = monster.drawMonsterCS();
+      cs.on('close', onClose);
+      sheet.append(cs);
+      sheet.append(unit.drawLevelUp((commits, spent) => {
+        levelUp(commits, spent);
+        this.render();
+      }));
+      f.append(sheet);
     }
+    this.append(f);
     return this.tags.outer;
   }
 }

@@ -24,6 +24,7 @@ const storage = require('storage.js');
 const icons = require('icons.js');
 const abilities = require('abilities.js');
 const terrains = require('terrains.js');
+const resourceNames = terrains.filter(t => t.stats.resource).map(t => t.bio.name);
 const equipments = require('equipments.js');
 const teams = require('teams.js');
 const interactIcon = icons.find(i => i.bio.name == 'Interact');
@@ -49,7 +50,7 @@ const interactSprite = new Sprite(interactIcon.bio.sprite);
 const portingSprite = new Sprite(portingIcon.bio.sprite);
 const checkSprite = new Sprite(checkIcon.bio.sprite);
 const sp = new SoundPlayer();
-
+window.terrains = terrains;
 
 
 class Dialog extends Component {
@@ -161,6 +162,7 @@ class Record {
   }
 
   consume(terrain) {
+    // use when a tile has been used
     this.adventureItemCount += terrain.adventure.actionAmount;
   }
 
@@ -219,6 +221,7 @@ class Adventure extends Component {
       this.createPlane('surface'),
       this.createPlane('underground')
     ];
+    this.playerPlanes = {};
     this.setPlane('surface');
     this.resources = [
 
@@ -245,9 +248,11 @@ class Adventure extends Component {
       move: null
     };
     this.walkTimer = null;
-    // this.player = null;
-    // this.pp = {x: 0, y: 0};
 
+    this.teamSheetOpen = null;
+    this.inventoryOpen = null
+    this.equipmentOpen = null;
+    this.helpOpen = null;
     this.turns = new AdventureTurns();
     console.log(this.turns)
   }
@@ -281,6 +286,10 @@ class Adventure extends Component {
     return this.currentPlane.layers;
   }
 
+  get playerLayers() {
+    return this.currentPlane.playerLayers[this.player.id];
+  }
+
   createPlane(name, los) {
     let p = {
       name: name,
@@ -301,11 +310,27 @@ class Adventure extends Component {
         quests: new Layer('quests', false, this.w, this.h, this.tw, this.th),
         history: new Layer('history', false, this.w, this.h, this.tw, this.th),
         checks: new Layer('checks', false, this.w, this.h, this.tw, this.th),
+      },
+      playerLayers: {
+
       }
     };
     p.layers.fog.items.each(i => p.layers.fog.items.set(i.x, i.y, true));
     p.layers.history.items.each(i => p.layers.history.items.set(i.x, i.y, new Record()));
     return p;
+  }
+
+  createPlayerLayers(player) {
+    this.planes.forEach(plane => {
+      let layers = {
+        fog: new Layer('fog', true, this.w, this.h, this.tw, this.th),
+        checks: new Layer('checks', false, this.w, this.h, this.tw, this.th),
+      };
+      layers.fog.canvas.drawRect();
+      layers.fog.canvas.canvas.classList.add(player.clan);
+      layers.fog.items.each(i => layers.fog.items.set(i.x, i.y, true));
+      plane.playerLayers[player.id] = layers;
+    })
   }
 
   static style(a) {
@@ -835,7 +860,11 @@ class Adventure extends Component {
   }
 
   startTurn() {
-    console.log('START TURN');
+    console.log('start turn')
+    let layers = this.layers;
+    layers.fog = this.playerLayers.fog;
+    layers.checks = this.playerLayers.checks;
+    this.player.resetMovement();
     this.tags.time.player = this.player;
     this.resources = [];
     this.resources.push(new Resource('gold', this.player.resources.gold, goldIcon));
@@ -849,15 +878,15 @@ class Adventure extends Component {
     this.updateResources();
     this.centerOnPlayer();
     this.revealFog(this.pp.x, this.pp.y);
-    logger.log(`${this.player.AIControlled ? 'Computer' : 'Human'} player's turn`);
+    this.tags.time.render();
     if(this.player.AIControlled) {
       this.player.AI.plan(this);
     }
   }
 
   endTurn() {
+    console.log('end turn');
     let round = this.turns.round;
-    console.log('END TURN');
     this.turns.nextTurn();
     if(this.turns.round > round) {
       this.tags.time.nextDay();
@@ -1104,7 +1133,14 @@ class Adventure extends Component {
   }
 
   openTeamSheet() {
-    this.append(this.player.team.cs.render());
+    if(this.teamSheetOpen) {
+      this.teamSheetOpen.unmount();
+      this.teamSheetOpen = null;
+    } else {
+      this.teamSheetOpen = this.player.team.cs;
+      this.teamSheetOpen.on('close', () => this.openTeamSheet());
+      this.append(this.teamSheetOpen.render());
+    }
   }
 
   openQuests() {
@@ -1144,7 +1180,7 @@ class Adventure extends Component {
 
   addPlayer(p, pos) {
     this.turns.players.push(p);
-    if(this.turns)
+    this.createPlayerLayers(p);
     p.position.x = pos.x;
     p.position.y = pos.y;
     let {monsters} = this.layers;
@@ -1226,24 +1262,6 @@ class Adventure extends Component {
     let x = Math.floor(e.offsetX / this.tw);
     let y = Math.floor(e.offsetY / this.th);
     return {x, y};
-  }
-
-  drawOne(layer, x, y) {
-    let item = layer.items.get(x, y);
-    layer.canvas.clearRect(x, y, this.tw, this.th);
-    if(!item) return;
-    if(item instanceof Sprite) {
-      layer.canvas.drawSprite(item, x * this.tw, y * this.th, this.tw, this.th);
-    }
-    if(item instanceof Terrain) {
-      layer.canvas.drawSprite(item.sprite, x * this.tw, y * this.th, this.tw, this.th);
-      if(item.stats.animation) {
-        this.animateTerrain({item,x,y}, layer);
-      }
-    }
-    if(item instanceof Team) {
-      layer.canvas.drawSprite(item.highestTier.sprite, x * this.tw, y * this.th, this.tw, this.th);
-    }
   }
 
   drawTile(layer, item) {
@@ -1430,24 +1448,102 @@ class Adventure extends Component {
     // Interactables
     if(!item) return;
     if(item.adventure.event != 'click') return;
-    if(obstacles.items.distance(this.pp.x, this.pp.y, mp.x, mp.y) > 1) return;
+    if(obstacles.items.squareRadius(this.pp.x, this.pp.y, mp.x, mp.y) > 1) return;
     let message;
     if(item.adventure.description && !this.player.AIControlled) {
-      message = this.showMessage(item, record);
+      // message = this.showMessage(item, record);
     }
-    if(record.isConsumed(item)) return;
 
-    if(item.adventure.action == 'give gold') {
-      this.rand.between(item.adventure.actionAmount - item.adventure.actionAmountVariation, item.adventure.actionAmount + item.adventure.actionAmountVariation).round();
-      this.addGold(this.rand.n);
-      sp.play('gold');
-      obstacles.items.remove(mp.x, mp.y);
-      record.removeObstacle();
+    if(record.isConsumed(item)) {
+      let m = new AdventureMessage({
+        title: item.bio.name,
+        text: `${item.bio.name} has already been used`,
+        buttons: [{
+          text: `Leave it`,
+          fn: () => m.unmount()
+        }]
+      });
+      return this.append(m.render());
     }
-    if(item.stats.resource) {
+
+    if(item.adventure.action == 'give one') {
+      let buttons = [];
+      let m = new AdventureMessage({
+        title: item.bio.name,
+        text: item.adventure.description,
+        prompt: item.adventure.random ? '' : 'Pick one',
+      });
+      if(item.adventure.resources.length) {
+        db.resourceNames.forEach(name => {
+          buttons.push({
+            text: name,
+            fn: () => (this.takeResource(mp.x, mp.y, name), this.consumeTile(mp.x, mp.y), m.unmount())
+          })
+        })
+      }
+      if(item.adventure.ingredients.length) {
+        db.ingredientNames.forEach(name => {
+          buttons.push({
+            text: name,
+            fn: () => (this.takeIngredient(mp.x, mp.y, name), this.consumeTile(mp.x, mp.y), m.unmount())
+          })
+        })
+      }
+      if(item.adventure.xp) {
+        buttons.push({
+          text: 'XP',
+          fn: () => (this.takeXP(mp.x, mp.y, name), this.consumeTile(mp.x, mp.y), m.unmount())
+        })
+      }
+      if(item.adventure.item) {
+        let adventureItem = item.adventureItem;
+        buttons.push({
+          text: adventureItem.bio.name,
+          fn: () => (this.takeItem(mp.x, mp.y, name), this.consumeTile(mp.x, mp.y), m.unmount())
+        })
+      }
+      if(item.adventure.leaderStats.length) {
+        item.adventure.leaderStats.forEach(name => {
+          buttons.push({
+            text: name,
+            fn: () => (this.takeLeaderStat(mp.x, mp.y, name), this.consumeTile(mp.x, mp.y), m.unmount())
+          })
+        })
+      }
+      if(item.adventure.random) {
+        let pick = this.rand.pick(buttons);
+        buttons = [pick];
+      }
+      buttons.push({
+        text: `Leave it`,
+        fn: () => m.unmount()
+      });
+      m.buttons = buttons;
+      return this.append(m.render());
+
+    }
+    if(item.adventure.action == 'give all') {
+      let {resources, xp} = item.adventure;
+      let buttons = [{
+        text: 'Take all',
+        fn: () => (this.takeAll(mp.x, mp.y), this.consumeTile(mp.x, mp.y), m.unmount())
+      },{
+        text: 'Close',
+        fn: () => m.unmount()
+      }];
+      let m = new AdventureMessage({
+        title: item.bio.name,
+        text: item.adventure.description,
+        buttons: buttons
+      });
+      return this.append(m.render());
+
+    }
+    if(false && item.containsResource) {
       this.rand.between(item.adventure.actionAmount - item.adventure.actionAmountVariation, item.adventure.actionAmount + item.adventure.actionAmountVariation).round();
-      let name = item.adventure.action.match(/give (.+)/)[1];
-      this.addResource(this.rand.n, name);
+      item.adventure.resources.forEach(r => {
+        this.addResource(this.rand.n, r);
+      })
       sp.play('gold');
       obstacles.items.remove(mp.x, mp.y);
       record.removeObstacle();
@@ -1462,12 +1558,6 @@ class Adventure extends Component {
           this.player.inventory.add(i)
         }
       });
-
-      if(item.adventure.consumable && record.isConsumed(item)) {
-        // obstacles.items.remove(mp.x, mp.y);
-      }
-
-
     }
 
     if(item.adventure.action == 'give movement' && !record.isConsumed(item)) {
@@ -1726,7 +1816,112 @@ class Adventure extends Component {
     if(r) r.amount = this.player.resources.gold;
   }
 
+  consumeTile(x, y) {
+    let {obstacles, history} = this.layers;
+    let item = obstacles.items.get(x, y);
+    let record = history.items.get(x, y);
+    record.consume(item);
+    if(item.adventure.consumable && record.isConsumed(item)) {
+      obstacles.items.remove(x, y);
+      record.removeObstacle();
+      this.draw(obstacles, x, y);
+      this.updateResources();
+    }
+  }
+
+  takeResource(x, y, name) {
+    let {obstacles, history} = this.layers;
+    let item = obstacles.items.get(x, y);
+    let record = history.items.get(x, y);
+    if(record.isConsumed(item)) return;
+    this.rand.next();
+    this.rand.between(item.adventure.actionAmount - item.adventure.actionAmountVariation, item.adventure.actionAmount + item.adventure.actionAmountVariation).round();
+    let amount = this.rand.n;
+    this.addResource(amount, name)
+    logger.log(`Player picked up ${amount} ${name} from ${item.bio.name}`);
+    sp.play('gold');
+  }
+
+  takeIngredient(x, y, name) {
+    let {obstacles, history} = this.layers;
+    let item = obstacles.items.get(x, y);
+    let record = history.items.get(x, y);
+    if(record.isConsumed(item)) return;
+    this.rand.next();
+    this.rand.between(item.adventure.actionAmount - item.adventure.actionAmountVariation, item.adventure.actionAmount + item.adventure.actionAmountVariation).round();
+    let amount = this.rand.n;
+    for(var i = 0; i < amount; i++) {
+      let tpl = db.ingredients.find(i => i.id == item.template.id);
+      this.player.crafting.add(new Terrain(tpl));
+    }
+    logger.log(`Player picked up ${amount} ${name} from ${item.bio.name}`);
+    sp.play('gold');
+  }
+
+  takeXP(x, y) {
+    let {obstacles, history} = this.layers;
+    let item = obstacles.items.get(x, y);
+    let record = history.items.get(x, y);
+    if(record.isConsumed(item)) return;
+    this.rand.next();
+    this.rand.between(item.adventure.actionAmount - item.adventure.actionAmountVariation, item.adventure.actionAmount + item.adventure.actionAmountVariation).round();
+    let amount = this.rand.n * item.adventure.xp;
+    this.player.addXP(amount);
+    logger.log(`Player gained ${amount} XP from ${item.bio.name}`);
+  }
+
+  takeItem(x, y) {
+    let {obstacles, history} = this.layers;
+    let item = obstacles.items.get(x, y);
+    let record = history.items.get(x, y);
+    if(record.isConsumed(item)) return;
+    let items = record.takeAdventureItems(item);
+    items.forEach(i => {
+      logger.log(`Player picked up ${i.bio.name} from ${item.bio.name}`);
+      if(i.stats.ingredient) {
+        this.player.crafting.add(i)
+      } else {
+        this.player.inventory.add(i)
+      }
+    });
+  }
+
+  takeLeaderStat(x, y, name) {
+    let {obstacles, history} = this.layers;
+    let item = obstacles.items.get(x, y);
+    let record = history.items.get(x, y);
+    if(record.isConsumed(item)) return;
+    this.rand.next();
+    this.rand.between(item.adventure.actionAmount - item.adventure.actionAmountVariation, item.adventure.actionAmount + item.adventure.actionAmountVariation).round();
+    let amount = this.rand.n;
+    this.player.addLeaderStat(name, amount);
+    logger.log(`Leader gained ${amount > 0 ? '+' : '-'}${amount} to ${item.bio.name} from ${item.bio.name}`);
+  }
+
+  takeAll(x, y) {
+    let {obstacles, history} = this.layers;
+    let item = obstacles.items.get(x, y);
+    let record = history.items.get(x, y);
+    if(item.adventure.resources.length) {
+      db.resourceNames.forEach(name => {
+        this.takeResource(x, y, name);
+      })
+    }
+    if(item.adventure.xp) {
+      this.takeXP(x, y);
+    }
+    if(item.adventure.item) {
+      this.takeItem(x, y);
+    }
+    if(item.adventure.leaderStats.length) {
+      db.leaderStats.forEach(name => {
+        this.takeLeaderStat(x, y, name);
+      })
+    }
+  }
+
   addResource(n, r) {
+    r = r.toLowerCase();
     this.player.addResource(n, r);
     let a = this.resources.find(b => b.name == r);
     if(a) a.amount = this.player.resources[r];
@@ -1753,7 +1948,8 @@ class Adventure extends Component {
     let {ground, monsters, obstacles, select} = this.layers;
     if(!ground.items.get(mp.x, mp.y)) return;
     select.canvas.clear();
-    let path = obstacles.items.path(this.pp.x, this.pp.y, mp.x, mp.y);
+    let grid = PL.combine([obstacles.items, monsters.items]);
+    let path = grid.path(this.pp.x, this.pp.y, mp.x, mp.y);
     path.shift();
     let c = select.canvas;
     path.forEach((p, i) => {
@@ -1895,7 +2091,6 @@ class Adventure extends Component {
     let top = this.pp.y * this.th - window.innerHeight/2;
     top = Math.max(0, top);
     top = Math.min(this.h * this.th - window.innerHeight, top);
-    console.log('this.panTo(-left, -top);', left, top)
     this.panTo(-left, -top);
   }
 

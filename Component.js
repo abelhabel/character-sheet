@@ -13,6 +13,7 @@ class Events {
   }
 
   on(event, fn) {
+    if(Array.isArray(event)) return event.forEach(e => this.on(e, fn));
     if(!this.events[event]) this.events[event] = [];
     this.events[event].push(fn);
   }
@@ -20,18 +21,22 @@ class Events {
   off(event, fn) {
     if(!this.events[event]) return;
     let index = this.events[event].indexOf(fn);
-    if(!~index) return;
-    this.events[event].splice(index, 1);
+    if(~index) {
+      this.events[event].splice(index, 1);
+    } else {
+      this.events[event] = [];
+    }
   }
 
   trigger(event) {
     if(!Array.isArray(this.events[event])) return;
     this.events[event].forEach(fn => fn.apply(null, Array.from(arguments).splice(1)));
+    return this.events[event].length;
   }
 }
 
 class Component extends Events {
-  constructor(shadow, klass = '', tagName = 'div') {
+  constructor(shadow = false, klass = '', tagName = 'div') {
     super();
     this.tags = {
       outer: html`<${tagName} class='component ${klass}'></${tagName}>`,
@@ -55,20 +60,28 @@ class Component extends Events {
     this.tags.outer.classList.remove(c);
   }
 
-  listen(selector, event, fn) {
+  listen(selector, event, fn, capture = false) {
+    if(Array.isArray(event)) {
+      event.forEach(e => this.listen(selector, e, fn, capture));
+    } else
+    if(selector instanceof HTMLElement) {
+      selector.addEventListener(event, fn, capture);
+    } else
     if(!selector) {
-      this.tags.outer.addEventListener(event, fn);
+      this.tags.outer.addEventListener(event, fn, capture);
     } else {
-      this.shadow.querySelector(selector).addEventListener(event, fn);
+      this.shadow.querySelector(selector).addEventListener(event, fn, capture);
     }
   }
 
-  removeListener(selector, event, fn) {
-    if(!selector) {
-      this.tags.outer.removeEventListener(event, fn);
+  listenAll(selector, event, fn, capture = false) {
+    if(Array.isArray(selector)) {
+      selector.forEach(s => this.listen(s, event, fn, capture));
     } else {
-      let t = this.shadow.querySelector(selector);
-      t && this.shadow.querySelector(selector).removeEventListener(event, fn);
+      Array.from(this.shadow.querySelectorAll(selector))
+      .forEach(node => {
+        node.addEventListener(event, fn, capture);
+      })
     }
   }
 
@@ -172,6 +185,21 @@ class Component extends Events {
     }
   }
 
+  prepend(tag) {
+    if(!tag) return;
+    if(Array.isArray(tag)) {
+      return tag.forEach(t => this.prepend(t));
+    }
+    if(tag instanceof Component) {
+      tag = tag.render();
+    }
+    if(this.tags.inner) {
+      this.tags.inner.prepend(tag)
+    } else {
+      this.shadow.prepend(tag);
+    }
+  }
+
   appendIn(selector, tag) {
     if(Array.isArray(tag)) {
       return tag.forEach(t => this.appendIn(selector, t));
@@ -179,9 +207,28 @@ class Component extends Events {
     if(tag instanceof Component) {
       tag = tag.render();
     }
+    if(selector instanceof HTMLElement) {
+      selector.appendChild(tag);
+    } else {
+      let child = this.q(selector);
+      if(!child) {
+        console.warn('Child not found.');
+        return;
+      }
+      child.appendChild(tag);
+    }
+  }
+
+  prependIn(selector, tag) {
+    if(Array.isArray(tag)) {
+      return tag.forEach(t => this.prependIn(selector, t));
+    }
+    if(tag instanceof Component) {
+      tag = tag.render();
+    }
     let child = this.q(selector);
     if(!child) return;
-    child.appendChild(tag);
+    child.prepend(tag);
   }
 
   get shadow() {
@@ -206,9 +253,12 @@ class Fragment extends DocumentFragment {
 }
 
 Fragment.prototype.append = Component.prototype.append;
+Fragment.prototype.prepend = Component.prototype.prepend;
 Fragment.prototype.appendIn = Component.prototype.appendIn;
+Fragment.prototype.prependIn = Component.prototype.prependIn;
 Fragment.prototype.q = Component.prototype.q;
 Fragment.prototype.listen = Component.prototype.listen;
+Fragment.prototype.listenAll = Component.prototype.listenAll;
 Fragment.prototype.addStyle = Component.prototype.addStyle;
 Component.Fragment = Fragment;
 Component.Events = Events;

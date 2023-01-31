@@ -189,7 +189,7 @@ Module.onLoad(['DungeonCrawl_ProjectUtumnoTileset.png', 'Hell2.jpg', 'defeat.jpg
 'special-effects.js','FixedList.js', 'Component.js', 'ToolTip.js', 'CardList.js', 'Logger.js', 'Rand.js',
 'Canvas.js', 'Sprite.js', 'CompositeSprite.js', 'SoundPlayer.js', 'Keyboard.js',
 'AbilityEffect.js', 'Animation.js', 'AdventureTime.js',
-'PositionList2d.js', 'pathfinding.js', 'AbilityCard.js', 'Ability.js',  'Equipment.js', 'AI.js', 'Terrain.js', 'Scroll.js', 'Menu.js', 'Slider.js', 'MonsterCard.js', 'Monster.js', 'CS.js',
+'PositionList2d.js', 'pathfinding.js', 'AbilityCard.js', 'Ability.js',  'Equipment.js', 'AI.js', 'Terrain.js', 'Scroll.js', 'Menu.js', 'Slider.js', 'MonsterCard.js', 'MonsterCS.js', 'Monster.js', 'CS.js',
 'BattleMenu.js', 'AdventureMenu.js', 'PrimeVessel.js', 'GridBox.js', 'Inventory.js', 'Crafting.js',
 'Quest.js', 'QuestLog.js', 'AdventureMessage.js', 'Check.js',
 'Arena.js', 'Armory.js', 'AdventureOptions.js', 'AdventureHelp.js',
@@ -209,6 +209,26 @@ Module.onLoad(['DungeonCrawl_ProjectUtumnoTileset.png', 'Hell2.jpg', 'defeat.jpg
   const Logger = require('Logger.js');
   const logger = new Logger();
   window.logger = logger;
+
+  window.db = {
+    terrains: require('terrains.js'),
+    monsters: require('monsters.js'),
+    abilities: require('abilities.js'),
+    icons: require('icons.js'),
+    recipes: require('recipes.js'),
+    resources: [],
+    ingredients: [],
+    resourceNames: [],
+    ingredientNames: [],
+    leaderStats: ['attack', 'defence', 'spellPower', 'spellResistance',
+      'damage', 'movement', 'initiative', 'range', 'apr', 'tpr',
+      'health', 'mana'
+    ],
+  };
+  window.db.resources = window.db.terrains.filter(t => t.stats.resource);
+  window.db.ingredients = window.db.terrains.filter(t => t.stats.ingredient);
+  window.db.resourceNames = window.db.resources.map(r => r.bio.name.toLowerCase());
+  window.db.ingredientNames = window.db.ingredients.map(r => r.bio.name.toLowerCase());
 
   const gameModes = require('game-modes.js');
   gameModes.humanVSAI(gameui.lobby, gameui);

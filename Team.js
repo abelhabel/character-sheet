@@ -19,8 +19,12 @@ class TeamUnit {
     this.equipment = equipment || [];
     this.abilities = abilities || [];
     this.customAbilities = [];
-    this.upgradePointsLeft = 0;
-    this.upgradePointsSpent = 0;
+
+    this.xp = 0;
+    this.statPointsSpent = 0;
+    this.skillPointsSpent = 0;
+    this.trickPointsSpent = 0;
+    this.abilityPointsSpent = 0;
     this.upgrades = {
       stats: {
         health: 0,
@@ -35,7 +39,89 @@ class TeamUnit {
         apr: 0,
         tpr: 0
       },
-    }
+      changes: {
+        health: 0,
+        mana: 0,
+        attack: 0,
+        defence: 0,
+        spellPower: 0,
+        spellResistance: 0,
+        damage: 0,
+        movement: 0,
+        initiative: 0,
+        apr: 0,
+        tpr: 0
+      },
+      rules: {
+        health: {
+          cost: 1,
+          return: 2,
+          min: 1,
+          max: 1000
+        },
+        mana: {
+          cost: 2,
+          return: 1,
+          min: 0,
+          max: 1000
+        },
+        attack: {
+          cost: 1,
+          return: 1,
+          min: 1,
+          max: 1000
+        },
+        defence: {
+          cost: 1,
+          return: 1,
+          min: 1,
+          max: 1000
+        },
+        spellPower: {
+          cost: 3,
+          return: 1,
+          min: 1,
+          max: 10
+        },
+        spellResistance: {
+          cost: 1,
+          return: 2,
+          min: 0,
+          max: 10
+        },
+        damage: {
+          cost: 4,
+          return: 1,
+          min: 1,
+          max: 10
+        },
+        movement: {
+          cost: 3,
+          return: 1,
+          min: 1,
+          max: 10
+        },
+        initiative: {
+          cost: 2,
+          return: 1,
+          min: 1,
+          max: 20
+        },
+        apr: {
+          cost: 10,
+          return: 1,
+          min: 1,
+          max: 10
+        },
+        tpr: {
+          cost: 5,
+          return: 1,
+          min: 1,
+          max: 10
+        }
+      }
+    };
+    this.xpBase = 20;
   }
 
   get tpl() {
@@ -66,11 +152,79 @@ class TeamUnit {
     return this.upgradePointsLeft - this.upgradePointsSpent;
   }
 
-  upgradeStats(stats, spent) {
-    Object.keys(stats).forEach(stat => {
-      this.upgrades.stats[stat] += stats[stat];
+  addXP(xp) {
+    this.xp += xp;
+  }
+
+  get xpStats() {
+    let base = this.xpBase;
+    let level = Math.floor((base + Math.sqrt(base*base + 4*base*this.xp)) / (base*2));
+    let totalXPForLevel = base*(level - 1)*(level -1) + base*(level-1);
+    let totalXPForNextLevel = base*level*level + base*level;
+    return {
+      level: level,
+      totalXPForLevel: totalXPForLevel,
+      totalXPForNextLevel: totalXPForNextLevel,
+      currentXPRange: totalXPForNextLevel - totalXPForLevel,
+      skillPoints: level,
+      statPoints: level * 3,
+      trickPoints: Math.floor(level/2),
+      abilityPoints: Math.floor(level/2),
+    };
+  }
+
+  drawLevelUp(onCommit) {
+    let m = this.monster;
+    let names = {
+      health: 'Health', mana: 'Mana',
+      attack: 'Attack', defence: 'Defence',
+      spellPower: 'Spell Power', spellResistance: 'Spell Resistance',
+      initiative: 'Initiative', movement: 'Movement',
+      tpr: 'Triggers Per Turn', apr: 'Actions Per Turn',
+      damage: 'Bonus Damage'
+    };
+    let s = this.xpStats;
+    let t = html`<div class='monster-stat-upgrades'>
+      <div class='bold upgrade-points'>Points: ${s.statPoints - this.statPointsSpent}</div>
+      <div class='bold upgrade-points'>Level: ${s.level}</div>
+      <div class='bold upgrade-points'>XP: ${this.xp}</div>
+      <div class='bold upgrade-points'>XP progress: ${this.xp - s.totalXPForLevel} / ${s.currentXPRange}</div>
+    </div>`;
+    Object.keys(this.upgrades.stats).forEach(stat => {
+      let cost = this.upgrades.rules[stat].cost;
+      let ret = this.upgrades.rules[stat].return;
+      let status = cost <= s.statPoints - this.statPointsSpent ? 'available' : 'unavailable';
+      let d = html`<div class='upgrade-stat ${status}'>
+        <span class='bold'>${names[stat]}</span>
+        <span class='controls'>
+          <span class='upgrade-stat-value'>${m.baseStat(stat) + this.upgrades.changes[stat]}</span>
+          <span class='decrease-stat'>-</span>
+          <span class='increase-stat'>+</span>
+        </span>
+      </div>`;
+      d.addEventListener('click', e => {
+        if(cost <= s.statPoints - this.statPointsSpent && e.target.classList.contains('increase-stat')) {
+          if(this.statPoints < 1) return;
+          if(this.statPoints < cost) return;
+          this.upgrades.changes[stat] += ret;
+          this.statPointsSpent += cost;
+          let p = t.parentNode;
+          p.removeChild(t);
+          p.appendChild(this.drawLevelUp(onCommit));
+        }
+        if(e.target.classList.contains('decrease-stat')) {
+          if(this.upgrades.changes[stat] < 1) return;
+          if(this.statPoints >= this.statPointsLeft) return;
+          this.upgrades.changes[stat] -= ret;
+          this.statPointsSpent -= cost;
+          let p = t.parentNode;
+          p.removeChild(t);
+          p.appendChild(this.drawLevelUp(onCommit));
+        }
+      })
+      t.appendChild(d);
     });
-    this.upgradePointsSpent += spent;
+    return t;
   }
 
   addEquipment(itemId) {
@@ -139,11 +293,6 @@ class Team {
     if(!unitId) {
       this.units[0].addAbility(abilityId);
     }
-  }
-
-  upgradeStats(monster, stats, spent) {
-    let unit = this.units.find(u => u.suuid == monster.suuid);
-    unit.upgradeStats(stats, spent);
   }
 
   createTemplate() {

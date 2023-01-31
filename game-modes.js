@@ -116,14 +116,15 @@ gameModes.adventureAITest = function(lobby, ui) {
     let tpl = adventures.find(a => a.id == aid);
     let sp = tpl.startPositions[0];
     let a = Adventure.create(tpl, saveFile, true, sp);
-    // a.layers.fog.show = false;
+    a.layers.fog.show = false;
     window.adventure = a;
     let players = tpl.startPositions.map((p, i) => {
       let leadertpl = leaders[i % leaders.length];
       let leader = new Monster(leadertpl);
       let team = Team.fromMonsters('team' + i, [leader]);
-      let player = new Player(team, 'clan' + i, !!i);
+      let player = new Player(team, 'clan' + i, true);
       a.addPlayer(player, p);
+      a.playerLayers.fog.show = false;
       return p;
     })
     ui.show('adventure');

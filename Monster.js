@@ -16,6 +16,7 @@ const Scroll = require('Scroll.js');
 const AI = require('AI.js');
 const FixedList = require('FixedList.js');
 const MonsterCard = require('MonsterCard.js');
+const MonsterCS = require('MonsterCS.js');
 const Component = require('Component.js');
 const Events = Component.Events;
 class StatBonus {
@@ -160,6 +161,7 @@ class Monster extends Events {
     this.permanentAilments = [];
     this.permanentVigors = [];
     this.minions = [];
+    this.xp = 0;
     this.upgradePointsLeft = 0;
     this.upgradePointsSpent = 0;
     this.upgrades = {
@@ -1300,6 +1302,9 @@ class Monster extends Events {
       .upgrade-stat {
         height: 22px;
       }
+      .upgrade-stat.unavailable {
+        color: grey;
+      }
       .upgrade-stat-value {
 
       }
@@ -1325,75 +1330,11 @@ class Monster extends Events {
     </style>`;
   }
 
-  drawLevelUp(names, onCommit) {
-    // let t = html`<div class='monster-stat-upgrades'>
-    //   <div class='bold upgrade-points'>Points: ${this.upgradePoints}</div>
-    // </div>`;
-    // Object.keys(this.upgrades.stats).forEach(stat => {
-    //   let cost = this.upgrades.rules[stat].cost;
-    //   let ret = this.upgrades.rules[stat].return;
-    //   let d = html`<div class='upgrade-stat'>
-    //     <span class='bold'>${names[stat]}</span>
-    //     <span class='controls'>
-    //       <span class='upgrade-stat-value'>${this.baseStat(stat) + this.upgrades.changes[stat]}</span>
-    //       <span class='decrease-stat'>-</span>
-    //       <span class='increase-stat'>+</span>
-    //     </span>
-    //   </div>`;
-    //   d.addEventListener('click', e => {
-    //     if(e.target.classList.contains('increase-stat')) {
-    //       if(this.upgradePoints < 1) return;
-    //       if(this.upgradePoints < cost) return;
-    //       this.upgrades.changes[stat] += ret;
-    //       this.upgradePointsSpent += cost;
-    //       let p = t.parentNode;
-    //       p.removeChild(t);
-    //       p.appendChild(this.drawLevelUp(names, onCommit));
-    //     }
-    //     if(e.target.classList.contains('decrease-stat')) {
-    //       if(this.upgrades.changes[stat] < 1) return;
-    //       if(this.upgradePoints >= this.upgradePointsLeft) return;
-    //       this.upgrades.changes[stat] -= ret;
-    //       this.upgradePointsSpent -= cost;
-    //       let p = t.parentNode;
-    //       p.removeChild(t);
-    //       p.appendChild(this.drawLevelUp(names, onCommit));
-    //     }
-    //   })
-    //   t.appendChild(d);
-    // });
-    let t = html`<div class='monster-stat-upgrades'></div>`;
-    let commit = html`<div class='monster-upgrades-commit'>Level Up</div>`;
-    commit.addEventListener('click', e => {
-      let changes = Object.assign({}, this.upgrades.changes);
-      Object.keys(this.upgrades.changes).forEach(stat => {
-        this.upgrades.stats[stat] += this.upgrades.changes[stat];
-        this.upgrades.changes[stat] = 0;
-      });
-      onCommit && onCommit(changes, this.upgradePointsSpent);
-    })
-    t.appendChild(commit);
-    return t;
-  }
-
-  drawMonsterCS(popup, onClose, levelUp) {
+  drawMonsterCS(popup, onClose) {
+    return new MonsterCS(this);
     let m = this;
     popup.innerHTML = '';
     let {name, family, cost, maxStacks} = m.bio;
-    let names = {
-      health: 'Health', mana: 'Mana',
-      attack: 'Attack', defence: 'Defence',
-      spellPower: 'Spell Power', spellResistance: 'Spell Resistance',
-      initiative: 'Initiative', movement: 'Movement',
-      tpr: 'Triggers Per Turn', apr: 'Actions Per Turn',
-      damage: 'Bonus Damage'
-    };
-    if(levelUp && this.bio.leader) {
-      popup.appendChild(this.drawLevelUp(names, (commits, spent) => {
-        typeof levelUp == 'function' && levelUp(commits, spent);
-        this.drawMonsterCS(popup, onClose, levelUp);
-      }));
-    }
     let health = new Sprite(icons.find(i => i.bio.name == 'Health Stat').bio.sprite);
     let mana = new Sprite(icons.find(i => i.bio.name == 'Mana Stat').bio.sprite);
     let attack = new Sprite(icons.find(i => i.bio.name == 'Attack Stat').bio.sprite);
@@ -1412,7 +1353,7 @@ class Monster extends Events {
         <div id='close'>Close</div>
         <div class='bio' id='monster-image'></div>
         <div class='bio'>
-          <div id='monster-name'>${m.bio.name} (${m.team})<span class='right'>${family}</span></div><br>
+          <div id='monster-name'>${m.bio.name}<span class='right'>${family}</span></div><br>
           <div id='monster-description'>${m.bio.description || 'No description available for this monster'}</div>
           <div id='monster-ailments'>Ailments: ${this.ailments.join()}</div>
           <div id='monster-vigors'>Vigors: ${this.vigors.join()}</div>

@@ -97,6 +97,7 @@ loadFile('Rand.js');
 loadFile('Ability.js');
 loadFile('Monster.js');
 loadFile('MonsterCard.js');
+loadFile('MonsterCS.js');
 loadFile('Terrain.js');
 loadFile('Logger.js');
 loadFile('Lobby.js');
@@ -294,6 +295,7 @@ const server = http.createServer(function(req, res) {
           <li><a href='/skilltree.html'>Skilltree editor</a></li>
           <li><a href='/arena.html'>Arena Editor</a></li>
           <li><a href='/index.html?part=terrain'>Terrain Editor</a></li>
+          <li><a href='/index.html?part=recipes'>Recipe Editor</a></li>
           <li><a href='/index.html?part=icons'>Icon Editor</a></li>
           <li><a href='/index.html?part=abilities'>Aility Editor</a></li>
           <li><a href='/team.html'>Team Editor</a></li>

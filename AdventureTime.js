@@ -24,7 +24,6 @@ class AdventureTime extends Component {
   }
 
   nextDay() {
-    this.player.resetMovement();
     this.index += 1;
     this.totalDays += 1;
     if(this.index >= this.days.length) {
